@@ -21,7 +21,7 @@ struct VirtualControllerEditorView: View {
                         Text(displayTitle(for: button))
                             .font(.headline)
                             .frame(width: button.id == "menu" ? 48 : 54, height: button.id == "menu" ? 48 : 54)
-                            .background(.ultraThinMaterial, in: ["up", "down", "left", "right"].contains(button.id) ? AnyShape(RoundedRectangle(cornerRadius: 10, style: .continuous)) : AnyShape(Circle()))
+                            .background(buttonBackground(for: button))
                             .overlay(Circle().stroke(selectedButtonId == button.id ? Color.yellow : .clear, lineWidth: 2))
                             .position(x: button.x * geo.size.width, y: button.y * geo.size.height)
                             .onTapGesture {
@@ -87,10 +87,14 @@ struct VirtualControllerEditorView: View {
     }
 }
 
-private struct AnyShape: Shape {
-    private let pathBuilder: (CGRect) -> Path
-    init<S: Shape>(_ wrapped: S) { self.pathBuilder = { rect in wrapped.path(in: rect) } }
-    func path(in rect: CGRect) -> Path { pathBuilder(rect) }
+@ViewBuilder
+private func buttonBackground(for button: VirtualButtonLayout) -> some View {
+    if ["up", "down", "left", "right"].contains(button.id) {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(.ultraThinMaterial)
+    } else {
+        Circle().fill(.ultraThinMaterial)
+    }
 }
 
 private func displayTitle(for button: VirtualButtonLayout) -> String {

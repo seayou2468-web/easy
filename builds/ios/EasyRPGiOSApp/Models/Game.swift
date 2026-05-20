@@ -72,7 +72,6 @@ final class GameLibrary: ObservableObject {
     @Published private(set) var games: [Game] = []
     @Published var isScanning = false
 
-    private let fileManager = FileManager.default
     private let configManager = ConfigManager.shared
     private let favoritesKey = "ios.favoriteGames"
 
@@ -86,14 +85,15 @@ final class GameLibrary: ObservableObject {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self, easyRPGFolder, labelMode] in
             guard let self = self else { return }
+            let fileManager = FileManager.default
 
             var found: [Game] = []
             let favoritePaths = Self.loadFavoritePaths(favoritesKey: self.favoritesKey)
 
             if let folder = easyRPGFolder {
-                let discovered = Self.discoverGames(in: folder, fileManager: self.fileManager)
+                let discovered = Self.discoverGames(in: folder, fileManager: fileManager)
                 found.append(contentsOf: discovered.map { base in
-                    Self.loadGameMetadata(at: base, isFavorite: favoritePaths.contains(base.path), fileManager: self.fileManager)
+                    Self.loadGameMetadata(at: base, isFavorite: favoritePaths.contains(base.path), fileManager: fileManager)
                 })
             }
 
@@ -139,7 +139,7 @@ final class GameLibrary: ObservableObject {
         reloadGames()
     }
 
-    private static func loadGameMetadata(at url: URL, isFavorite: Bool, fileManager: FileManager) -> Game {
+    nonisolated private static func loadGameMetadata(at url: URL, isFavorite: Bool, fileManager: FileManager) -> Game {
         AppLogger.log("ENTER loadGameMetadata")
         let folderName = url.lastPathComponent
         var title = folderName
@@ -177,12 +177,12 @@ final class GameLibrary: ObservableObject {
         )
     }
 
-    private static func loadFavoritePaths(favoritesKey: String) -> Set<String> {
+    nonisolated private static func loadFavoritePaths(favoritesKey: String) -> Set<String> {
         AppLogger.log("ENTER loadFavoritePaths")
         return Set(UserDefaults.standard.stringArray(forKey: favoritesKey) ?? [])
     }
 
-    private static func discoverGames(in root: URL, fileManager: FileManager) -> [URL] {
+    nonisolated private static func discoverGames(in root: URL, fileManager: FileManager) -> [URL] {
         AppLogger.log("ENTER discoverGames")
         var matches: [URL] = []
         
@@ -205,13 +205,13 @@ final class GameLibrary: ObservableObject {
         return matches
     }
 
-    private static func containsRpgMarkerFiles(in directory: URL, fileManager: FileManager) -> Bool {
+    nonisolated private static func containsRpgMarkerFiles(in directory: URL, fileManager: FileManager) -> Bool {
         AppLogger.log("ENTER containsRpgMarkerFiles")
         let candidates = ["RPG_RT.ldb", "RPG_RT.lmt", "RPG_RT.ini", "easyrpg-player-manifest.json"]
         return candidates.contains(where: { fileManager.fileExists(atPath: directory.appendingPathComponent($0).path) })
     }
 
-    private static func findFile(in directory: URL, named: String, fileManager: FileManager) -> String? {
+    nonisolated private static func findFile(in directory: URL, named: String, fileManager: FileManager) -> String? {
         AppLogger.log("ENTER findFile")
         let path = directory.appendingPathComponent(named).path
         if fileManager.fileExists(atPath: path) {
