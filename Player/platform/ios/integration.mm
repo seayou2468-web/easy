@@ -4,7 +4,6 @@
 
 #include <functional>
 #include <mutex>
-#include <thread>
 #include <atomic>
 #include <algorithm>
 #include <array>
@@ -12,6 +11,7 @@
 #include <cctype>
 #include <vector>
 #include <string>
+#include <dispatch/dispatch.h>
 #include <SDL3/SDL.h>
 #include "platform/ios/integration.h"
 #include "output.h"
@@ -98,13 +98,13 @@ void StartRuntimeIfNeeded() {
 		return;
 	}
 
-	std::thread([]() {
+	dispatch_async(dispatch_get_main_queue(), ^{
 		std::vector<std::string> args;
 		args.emplace_back("EasyRPGPlayer");
 		Player::Init(std::move(args));
 		Player::Run();
 		runtime_started = false;
-	}).detach();
+	});
 }
 
 void Invoke() {

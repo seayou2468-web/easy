@@ -186,6 +186,8 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
+        PlayerBridge.startRuntime()
+
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
         _ = projectURL.startAccessingSecurityScopedResource()
         let projectPath = projectURL.path
