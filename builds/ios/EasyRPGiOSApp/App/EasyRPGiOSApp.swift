@@ -14,6 +14,7 @@ struct EasyRPGiOSApp: App {
                 InitView(onContinue: { config.completeOnboardingIfNeeded(); path = [.browser] })
                     .onAppear {
                         // Initialize everything
+                        PlayerBridge.startPlayerRuntime()
                         mappingStore.applyToPlayer()
                         for button in layoutStore.buttons {
                             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
