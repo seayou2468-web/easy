@@ -204,6 +204,10 @@ struct PlayerView: View {
         .onChange(of: config.font2Name) { _, _ in applySettings() }
         .onChange(of: config.font1Size) { _, _ in applySettings() }
         .onChange(of: config.font2Size) { _, _ in applySettings() }
+        .onChange(of: config.fastForwardMultiplier) { _, _ in applySettings() }
+        .onChange(of: config.fastForwardMultiplierB) { _, _ in applySettings() }
+        .onChange(of: config.settingsInMenu) { _, _ in applySettings() }
+        .onChange(of: config.languageSelectOnStart) { _, _ in applySettings() }
     }
 
     private func setupPlayerWithGame() {
@@ -248,6 +252,10 @@ struct PlayerView: View {
         PlayerBridge.setFont2(config.font2Name ?? "")
         PlayerBridge.setFont1Size(config.font1Size)
         PlayerBridge.setFont2Size(config.font2Size)
+        PlayerBridge.setFastForwardSpeedA(config.fastForwardMultiplier)
+        PlayerBridge.setFastForwardSpeedB(config.fastForwardMultiplierB)
+        PlayerBridge.setSettingsInMenu(config.settingsInMenu)
+        PlayerBridge.setLanguageSelectOnStart(config.languageSelectOnStart)
         applyVirtualLayoutToPlayer()
     }
 

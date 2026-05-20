@@ -52,6 +52,10 @@ void EasyRPG_iOS_SetFont1(const char* font_name);
 void EasyRPG_iOS_SetFont2(const char* font_name);
 void EasyRPG_iOS_SetFont1Size(int32_t size);
 void EasyRPG_iOS_SetFont2Size(int32_t size);
+void EasyRPG_iOS_SetFastForwardSpeedA(int32_t speed);
+void EasyRPG_iOS_SetFastForwardSpeedB(int32_t speed);
+void EasyRPG_iOS_SetSettingsInMenu(bool enabled);
+void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode);
 
 #ifdef __cplusplus
 }

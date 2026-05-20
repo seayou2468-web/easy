@@ -255,6 +255,14 @@ struct SettingsInputView: View {
                         }
                         Slider(value: .init(get: { Double(config.fastForwardMultiplier) }, set: { config.fastForwardMultiplier = Int($0) }), in: 2...100, step: 1)
                             .onChange(of: config.fastForwardMultiplier) { _, _ in config.saveSettings() }
+
+                        HStack {
+                            Text("高速化倍率 B")
+                            Spacer()
+                            Text("\(config.fastForwardMultiplierB)x").foregroundStyle(.secondary)
+                        }
+                        Slider(value: .init(get: { Double(config.fastForwardMultiplierB) }, set: { config.fastForwardMultiplierB = Int($0) }), in: 2...100, step: 1)
+                            .onChange(of: config.fastForwardMultiplierB) { _, _ in config.saveSettings() }
                     }
                 }
                 .padding(.bottom, 8)
@@ -315,6 +323,22 @@ struct SettingsInputView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                }
+                .padding(.bottom, 8)
+
+                Divider()
+
+                Section(header: Text("PC互換設定").font(.headline)) {
+                    Toggle("メニューに設定項目を表示", isOn: $config.settingsInMenu)
+                        .onChange(of: config.settingsInMenu) { _, _ in config.saveSettings() }
+
+                    Picker("起動時言語選択", selection: $config.languageSelectOnStart) {
+                        Text("しない").tag(0)
+                        Text("初回のみ").tag(1)
+                        Text("毎回").tag(2)
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: config.languageSelectOnStart) { _, _ in config.saveSettings() }
                 }
                 .padding(.bottom, 8)
             }

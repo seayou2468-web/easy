@@ -23,6 +23,9 @@ final class ConfigManager: ObservableObject {
     @Published var showABasZX = false
     @Published var fastForwardMode = 0 // 0: hold, 1: tap
     @Published var fastForwardMultiplier = 3
+    @Published var fastForwardMultiplierB = 10
+    @Published var settingsInMenu = false
+    @Published var languageSelectOnStart = 0 // 0: never, 1: first startup, 2: always
 
     // Layout settings
     @Published var layoutTransparency = 100
@@ -75,6 +78,9 @@ final class ConfigManager: ObservableObject {
         defaults.set(showABasZX, forKey: userDefaultsPrefix + "showABasZX")
         defaults.set(fastForwardMode, forKey: userDefaultsPrefix + "fastForwardMode")
         defaults.set(fastForwardMultiplier, forKey: userDefaultsPrefix + "fastForwardMultiplier")
+        defaults.set(fastForwardMultiplierB, forKey: userDefaultsPrefix + "fastForwardMultiplierB")
+        defaults.set(settingsInMenu, forKey: userDefaultsPrefix + "settingsInMenu")
+        defaults.set(languageSelectOnStart, forKey: userDefaultsPrefix + "languageSelectOnStart")
 
         defaults.set(layoutTransparency, forKey: userDefaultsPrefix + "layoutTransparency")
         defaults.set(layoutSize, forKey: userDefaultsPrefix + "layoutSize")
@@ -117,6 +123,9 @@ final class ConfigManager: ObservableObject {
         showABasZX = defaults.bool(forKey: userDefaultsPrefix + "showABasZX")
         fastForwardMode = defaults.integer(forKey: userDefaultsPrefix + "fastForwardMode")
         fastForwardMultiplier = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplier"))
+        fastForwardMultiplierB = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") : 10)
+        settingsInMenu = defaults.bool(forKey: userDefaultsPrefix + "settingsInMenu")
+        languageSelectOnStart = defaults.integer(forKey: userDefaultsPrefix + "languageSelectOnStart")
 
         layoutTransparency = defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") : 100
         layoutSize = defaults.integer(forKey: userDefaultsPrefix + "layoutSize") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutSize") : 100
@@ -187,12 +196,15 @@ final class ConfigManager: ObservableObject {
         iniContent += "ShowABasZX=\(showABasZX ? 1 : 0)\n"
         iniContent += "FastForwardMode=\(fastForwardMode)\n"
         iniContent += "FastForwardMultiplier=\(fastForwardMultiplier)\n"
+        iniContent += "FastForwardMultiplierB=\(fastForwardMultiplierB)\n"
         iniContent += "LayoutTransparency=\(layoutTransparency)\n"
         iniContent += "LayoutSize=\(layoutSize)\n"
         iniContent += "IgnoreLayoutSize=\(ignoreLayoutSize ? 1 : 0)\n"
         iniContent += "\n"
 
         iniContent += "[Engine]\n"
+        iniContent += "SettingsInMenu=\(settingsInMenu ? 1 : 0)\n"
+        iniContent += "LanguageSelectOnStart=\(languageSelectOnStart)\n"
         iniContent += "Font1Size=\(font1Size)\n"
         iniContent += "Font2Size=\(font2Size)\n"
         iniContent += "\n"

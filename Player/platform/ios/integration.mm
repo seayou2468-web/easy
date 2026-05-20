@@ -467,6 +467,35 @@ void EasyRPG_iOS_SetFont2Size(int32_t size) {
 		Font::ResetDefault();
 	});
 }
+
+void EasyRPG_iOS_SetFastForwardSpeedA(int32_t speed) {
+	Schedule([speed]() {
+		const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, speed));
+		Player::player_config.speed_modifier_a.Set(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetFastForwardSpeedB(int32_t speed) {
+	Schedule([speed]() {
+		const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, speed));
+		Player::player_config.speed_modifier_b.Set(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetSettingsInMenu(bool enabled) {
+	Schedule([enabled]() {
+		Player::player_config.settings_in_menu.Set(enabled);
+	});
+}
+
+void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode) {
+	Schedule([mode]() {
+		ConfigEnum::StartupLangSelect value = ConfigEnum::StartupLangSelect::Never;
+		if (mode == 1) value = ConfigEnum::StartupLangSelect::FirstStartup;
+		else if (mode == 2) value = ConfigEnum::StartupLangSelect::Always;
+		Player::player_config.lang_select_on_start.Set(value);
+	});
+}
 }
 
 #endif

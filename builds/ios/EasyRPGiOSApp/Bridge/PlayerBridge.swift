@@ -124,4 +124,20 @@ enum PlayerBridge {
     static func setFont2Size(_ size: Int) {
         EasyRPG_iOS_SetFont2Size(Int32(size))
     }
+
+    static func setFastForwardSpeedA(_ speed: Int) {
+        EasyRPG_iOS_SetFastForwardSpeedA(Int32(speed))
+    }
+
+    static func setFastForwardSpeedB(_ speed: Int) {
+        EasyRPG_iOS_SetFastForwardSpeedB(Int32(speed))
+    }
+
+    static func setSettingsInMenu(_ enabled: Bool) {
+        EasyRPG_iOS_SetSettingsInMenu(enabled)
+    }
+
+    static func setLanguageSelectOnStart(_ mode: Int) {
+        EasyRPG_iOS_SetLanguageSelectOnStart(Int32(mode))
+    }
 }
