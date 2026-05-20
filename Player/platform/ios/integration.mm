@@ -230,7 +230,23 @@ void LaunchGame(const char* args) {
 void SendKeyDown(const char* button_id) {
 	Schedule([button = std::string(button_id ? button_id : "")]() {
 		if (!Input::source) return;
+		auto btn = ResolveButtonId(button.c_str());
+		if (btn != Input::BUTTON_COUNT) {
+			auto& mappings = Input::source->GetButtonMappings();
+			for (auto it = mappings.LowerBound(btn);
+				 it != mappings.end() && it->first == btn; ++it) {
+				Input::source->SimulateKeyPress(it->second);
+			}
+			return;
+		}
+
 		auto key = ResolveVirtualButtonKey(button.c_str());
+		if (key == Input::Keys::NONE) {
+			std::string key_upper = button;
+			std::transform(key_upper.begin(), key_upper.end(), key_upper.begin(),
+				[](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+			Input::Keys::kInputKeyNames.etag(key_upper.c_str(), key);
+		}
 		if (key != Input::Keys::NONE) {
 			Input::source->SimulateKeyPress(key);
 		}
