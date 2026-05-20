@@ -59,7 +59,7 @@ final class ConfigManager: ObservableObject {
     private let rtpFolderBookmarkKey = "ios.bookmark.rtpFolder"
     private func defaultEasyRPGDocumentsFolder() -> URL? {
         AppLogger.log("ENTER defaultEasyRPGDocumentsFolder")
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
             .appendingPathComponent("EasyRPG", isDirectory: true)
     }
 

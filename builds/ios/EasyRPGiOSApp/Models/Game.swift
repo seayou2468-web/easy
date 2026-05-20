@@ -179,7 +179,7 @@ final class GameLibrary: ObservableObject {
 
     private func loadFavoritePaths() -> Set<String> {
         AppLogger.log("ENTER loadFavoritePaths")
-        Set(UserDefaults.standard.stringArray(forKey: favoritesKey) ?? [])
+        return Set(UserDefaults.standard.stringArray(forKey: favoritesKey) ?? [])
     }
 
     private func discoverGames(in root: URL) -> [URL] {

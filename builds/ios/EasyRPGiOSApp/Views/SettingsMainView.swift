@@ -36,7 +36,7 @@ struct SettingsMainView: View {
 
     private func settingsNavButton<Destination: View>(_ title: String, _ icon: String, subtitle: String, destination: Destination) -> some View {
         AppLogger.log("ENTER settingsNavButton")
-        NavigationLink(destination: destination) {
+        return NavigationLink(destination: destination) {
             HStack {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
