@@ -583,8 +583,9 @@ struct DocumentPicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
         AppLogger.log("ENTER updateUIViewController")
+    }
 
     func makeCoordinator() -> Coordinator {
         AppLogger.log("ENTER makeCoordinator")
@@ -619,8 +620,9 @@ struct FolderPickerView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
         AppLogger.log("ENTER updateUIViewController")
+    }
 
     func makeCoordinator() -> Coordinator {
         AppLogger.log("ENTER makeCoordinator")

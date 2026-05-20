@@ -12,11 +12,14 @@ struct FolderPicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
         AppLogger.log("ENTER updateUIViewController")
+    }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onPicked: onPicked) }
+    func makeCoordinator() -> Coordinator {
         AppLogger.log("ENTER makeCoordinator")
+        return Coordinator(onPicked: onPicked)
+    }
 
     final class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
