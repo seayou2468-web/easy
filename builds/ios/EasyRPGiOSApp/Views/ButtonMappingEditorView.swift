@@ -27,6 +27,10 @@ struct ButtonMappingEditorView: View {
         .onAppear {
             store.load()
         }
+        .onChange(of: store.mappings) { _, _ in
+            store.save()
+            store.applyToPlayer()
+        }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("保存") {

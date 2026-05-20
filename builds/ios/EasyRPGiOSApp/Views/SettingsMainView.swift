@@ -287,6 +287,10 @@ struct SettingsInputView: View {
                 Divider()
 
                 Section(header: Text("カスタマイズ").font(.headline)) {
+                    Text("仮想コントローラーに L/R・FPS・Reset ボタンを含む全ボタンを配置できます。位置が崩れた場合はレイアウトエディターのリセットを使ってください。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Button(action: { showLayoutEditor = true }) {
                         HStack {
                             Image(systemName: "square.grid.2x2.fill")
