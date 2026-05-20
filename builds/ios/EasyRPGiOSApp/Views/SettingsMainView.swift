@@ -123,7 +123,10 @@ struct SettingsAudioView: View {
                             Spacer()
                             Text("\(Int(config.musicVolume))").foregroundStyle(.secondary)
                         }
-                        Slider(value: $config.musicVolume, in: 0...100, step: 1)
+                        Slider(value: .init(
+                            get: { Double(config.musicVolume) },
+                            set: { config.musicVolume = Int($0) }
+                        ), in: 0...100, step: 1)
                             .onChange(of: config.musicVolume) { _, _ in config.saveSettings() }
                     }
 
@@ -133,7 +136,10 @@ struct SettingsAudioView: View {
                             Spacer()
                             Text("\(Int(config.soundVolume))").foregroundStyle(.secondary)
                         }
-                        Slider(value: $config.soundVolume, in: 0...100, step: 1)
+                        Slider(value: .init(
+                            get: { Double(config.soundVolume) },
+                            set: { config.soundVolume = Int($0) }
+                        ), in: 0...100, step: 1)
                             .onChange(of: config.soundVolume) { _, _ in config.saveSettings() }
                     }
                 }
@@ -231,7 +237,10 @@ struct SettingsInputView: View {
                         Spacer()
                         Text("\(Int(config.layoutTransparency))%").foregroundStyle(.secondary)
                     }
-                    Slider(value: $config.layoutTransparency, in: 0...255, step: 1)
+                    Slider(value: .init(
+                        get: { Double(config.layoutTransparency) },
+                        set: { config.layoutTransparency = Int($0) }
+                    ), in: 0...255, step: 1)
                         .onChange(of: config.layoutTransparency) { _, _ in config.saveSettings() }
 
                     Toggle("レイアウトサイズ設定を無視", isOn: $config.ignoreLayoutSize)
@@ -243,7 +252,10 @@ struct SettingsInputView: View {
                             Spacer()
                             Text("\(Int(config.layoutSize))%").foregroundStyle(.secondary)
                         }
-                        Slider(value: $config.layoutSize, in: 50...150, step: 1)
+                        Slider(value: .init(
+                            get: { Double(config.layoutSize) },
+                            set: { config.layoutSize = Int($0) }
+                        ), in: 50...150, step: 1)
                             .onChange(of: config.layoutSize) { _, _ in config.saveSettings() }
                     }
                 }
