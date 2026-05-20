@@ -31,7 +31,6 @@
 #if defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS
 #  include <TargetConditionals.h>
 #  include "platform/ios/integration.h"
-static bool ios_main_started = false;
 #endif
 #ifdef _WIN32
 #  include <windows.h>
@@ -62,7 +61,6 @@ static void LogCallback(LogLevel lvl, std::string const& msg, LogCallbackUserDat
  * functions of the other platforms as well.
  */
 extern "C" int main(int argc, char* argv[]) {
-	ios_main_started = true;
 	std::vector<std::string> args;
 
 #if defined(__APPLE__) && TARGET_OS_IOS
@@ -117,9 +115,3 @@ extern "C" int main(int argc, char* argv[]) {
 	// Close
 	return Player::exit_code;
 }
-
-#if defined(__APPLE__) && TARGET_OS_IOS
-extern "C" bool EasyRPG_iOS_IsPlayerMainStarted() {
-	return ios_main_started;
-}
-#endif
