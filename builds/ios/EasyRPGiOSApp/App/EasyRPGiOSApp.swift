@@ -11,7 +11,11 @@ struct EasyRPGiOSApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
-                InitView(onContinue: { path.append(.browser) })
+                GameBrowserView(
+                    onOpenSettings: { path.append(.settings) },
+                    onPlay: { game in path.append(.player(game)) },
+                    library: library
+                )
                     .onAppear {
                         AppLogger.log("Root view appeared")
                         // Initialize everything
@@ -23,7 +27,7 @@ struct EasyRPGiOSApp: App {
                     .navigationDestination(for: AppScreen.self) { screen in
                         switch screen {
                         case .initScreen:
-                            InitView(onContinue: { path.append(.browser) })
+                            InitView()
 
                         case .browser:
                             GameBrowserView(

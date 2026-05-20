@@ -4,7 +4,6 @@ import SwiftUI
 struct InitView: View {
     private static let tutorialURL = URL(string: "https://www.youtube.com/watch?v=r9qU-6P3HOs")
     private static let websiteURL = URL(string: "https://easyrpg.org")
-    let onContinue: () -> Void
     @State private var showFolderPicker = false
     @StateObject private var config = ConfigManager.shared
 
@@ -97,20 +96,6 @@ struct InitView: View {
                 Spacer(minLength: 20)
 
                 VStack(spacing: 12) {
-                    if let _ = config.easyRPGFolderURL {
-                        Button(action: onContinue) {
-                            HStack {
-                                Image(systemName: "arrow.right.circle.fill")
-                                Text("ゲームブラウザに進む")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .foregroundStyle(.white)
-                            .cornerRadius(8)
-                        }
-                    }
-
                     if let tutorialURL = Self.tutorialURL {
                         Link(destination: tutorialURL) {
                             HStack {
@@ -156,5 +141,5 @@ struct InitView: View {
 }
 
 #Preview {
-    InitView(onContinue: {})
+    InitView()
 }

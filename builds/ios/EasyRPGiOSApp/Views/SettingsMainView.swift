@@ -28,6 +28,7 @@ struct SettingsMainView: View {
                     settingsNavButton("入力", "gamecontroller.fill", subtitle: "振動・高速化・レイアウト", destination: SettingsInputView())
                     settingsNavButton("フォント", "textformat", subtitle: "フォントと文字サイズ", destination: SettingsFontView())
                     settingsNavButton("EasyRPG フォルダ", "folder.fill", subtitle: "ゲームフォルダ/RTPパス", destination: SettingsGamesFolderView())
+                    settingsNavButton("はじめに", "sparkles", subtitle: "初期設定ガイド", destination: InitView())
                 }
                 .padding(14)
             }
