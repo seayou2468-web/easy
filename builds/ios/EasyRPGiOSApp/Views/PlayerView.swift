@@ -186,10 +186,6 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
-        // Ensure runtime exists when entering the player screen.
-        // This mirrors Android behavior where the player activity owns the engine lifetime.
-        PlayerBridge.startRuntime()
-
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
         _ = projectURL.startAccessingSecurityScopedResource()
         let projectPath = projectURL.path

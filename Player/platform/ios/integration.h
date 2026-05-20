@@ -6,7 +6,6 @@
 
 namespace IOSIntegration {
 	void InitPlatformFeatures();
-	void StartRuntimeIfNeeded();
 	void Invoke();
 	void EndGame();
 	void ResetGame();
@@ -30,7 +29,6 @@ extern "C" {
 #endif
 
 void EasyRPG_iOS_EndGame(void);
-void EasyRPG_iOS_StartRuntime(void);
 void EasyRPG_iOS_ResetGame(void);
 void EasyRPG_iOS_ToggleFps(void);
 void EasyRPG_iOS_OpenSettings(void);

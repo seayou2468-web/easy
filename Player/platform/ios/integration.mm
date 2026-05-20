@@ -4,8 +4,6 @@
 
 #include <functional>
 #include <mutex>
-#include <thread>
-#include <atomic>
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -24,7 +22,6 @@
 #include "font.h"
 #include "filefinder.h"
 
-extern "C" int EasyRPG_PlatformMain(int argc, char* argv[]);
 
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
@@ -44,7 +41,6 @@ std::vector<VirtualPoint> virtual_points = {
 std::vector<std::string> launch_args;
 bool has_launch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
-std::atomic<bool> runtime_started{false};
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -91,20 +87,6 @@ namespace IOSIntegration {
 void InitPlatformFeatures() {
 	SDL_SetHint("SDL_IOS_HIDE_HOME_INDICATOR", "1");
 	SDL_SetHint("SDL_IOS_IDLE_TIMER_DISABLED", "1");
-}
-
-void StartRuntimeIfNeeded() {
-	bool expected = false;
-	if (!runtime_started.compare_exchange_strong(expected, true)) {
-		return;
-	}
-
-	std::thread([]() {
-		char arg0[] = "EasyRPGPlayer";
-		char* argv[] = { arg0, nullptr };
-		EasyRPG_PlatformMain(1, argv);
-		runtime_started = false;
-	}).detach();
 }
 
 void Invoke() {
@@ -354,10 +336,6 @@ extern "C" {
 void EasyRPG_iOS_EndGame() {
 	IOSIntegration::EndGame();
 }
-void EasyRPG_iOS_StartRuntime() {
-	IOSIntegration::StartRuntimeIfNeeded();
-}
-
 void EasyRPG_iOS_ResetGame() {
 	IOSIntegration::ResetGame();
 }
