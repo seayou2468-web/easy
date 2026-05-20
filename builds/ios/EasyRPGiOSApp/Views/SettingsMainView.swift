@@ -4,9 +4,7 @@ import UniformTypeIdentifiers
 
 struct ParitySettingsRootView: View {
     var body: some View {
-        NavigationStack {
-            SettingsMainView()
-        }
+        SettingsMainView()
     }
 }
 
