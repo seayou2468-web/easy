@@ -184,6 +184,13 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
+        guard PlayerBridge.isPlayerMainStarted() else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                setupPlayerWithGame()
+            }
+            return
+        }
+
         let projectPath = URL(fileURLWithPath: game.path).standardizedFileURL.path
         guard FileManager.default.fileExists(atPath: projectPath) else {
             print("[iOS] Project path does not exist: \(projectPath)")
