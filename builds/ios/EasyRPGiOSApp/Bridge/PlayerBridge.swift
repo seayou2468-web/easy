@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 
 enum PlayerBridge {
+    private static let launchArgSeparator = "\u{1F}" // Unit Separator (ASCII 31)
     // MARK: - Game Control
     static func endGame() { EasyRPG_iOS_EndGame() }
     static func resetGame() { EasyRPG_iOS_ResetGame() }
@@ -10,7 +11,7 @@ enum PlayerBridge {
 
     // MARK: - Game Launch
     static func launchGame(withArgs args: [String]) {
-        let argsStr = args.joined(separator: " ")
+        let argsStr = args.joined(separator: launchArgSeparator)
         argsStr.withCString { argsCStr in
             EasyRPG_iOS_LaunchGame(argsCStr)
         }
@@ -124,4 +125,3 @@ enum PlayerBridge {
         EasyRPG_iOS_SetFont2Size(Int32(size))
     }
 }
-

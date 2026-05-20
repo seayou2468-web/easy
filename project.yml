@@ -231,6 +231,10 @@ targets:
         SWIFT_VERSION: "5.0"
         SWIFT_OBJC_BRIDGING_HEADER: "builds/ios/EasyRPGiOSApp/Bridge/PlayerBridge.h"
         CLANG_ENABLE_MODULES: "YES"
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - "$(inherited)"
+          - "USE_SDL=3"
+          - "DISABLE_NON_IOS_PLATFORM_CODE=1"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/Player"
           - "$(SRCROOT)/Player/lcf"

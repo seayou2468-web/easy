@@ -16,6 +16,11 @@
 #include "player.h"
 #include "input.h"
 #include "input_buttons.h"
+#include "utils.h"
+#include "baseui.h"
+#include "audio.h"
+#include "font.h"
+#include "filefinder.h"
 
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
@@ -32,6 +37,9 @@ std::vector<VirtualPoint> virtual_points = {
 	{360.f, 420.f, Input::Keys::TAB},
 	{420.f, 420.f, Input::Keys::F1},
 };
+std::vector<std::string> launch_args;
+bool has_launch_args = false;
+std::vector<Input::Keys::InputKey> held_keys;
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -93,6 +101,14 @@ void Invoke() {
 	}
 
 	fn();
+
+	if (Input::source) {
+		for (auto key : held_keys) {
+			if (key != Input::Keys::NONE) {
+				Input::source->SimulateKeyPress(key);
+			}
+		}
+	}
 }
 
 void EndGame() {
@@ -210,6 +226,109 @@ void SetVirtualButtonPoint(const char* button_id, float x, float y) {
 		virtual_points.push_back({x, y, key});
 	});
 }
+
+void LaunchGame(const char* args) {
+	Schedule([args_str = std::string(args ? args : "")]() {
+		launch_args.clear();
+		launch_args.emplace_back("EasyRPGPlayer");
+		auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == 0x1F; });
+		launch_args.insert(launch_args.end(), split.begin(), split.end());
+		has_launch_args = true;
+
+		// Runtime path wiring for custom iOS UI -> Player connection.
+		// This allows launching/switching games after the app is already running.
+		for (size_t i = 0; i + 1 < launch_args.size(); ++i) {
+			if (launch_args[i] == "--project-path") {
+				auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
+				if (gamefs) {
+					FileFinder::SetGameFilesystem(gamefs);
+				}
+				++i;
+				continue;
+			}
+			if (launch_args[i] == "--save-path") {
+				auto savefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
+				if (savefs) {
+					FileFinder::SetSaveFilesystem(savefs);
+				}
+				++i;
+				continue;
+			}
+		}
+
+		// Request a reset so the newly selected game path is picked up.
+		Player::reset_flag = true;
+	});
+}
+
+void SendKeyDown(const char* button_id) {
+	Schedule([button = std::string(button_id ? button_id : "")]() {
+		if (!Input::source) return;
+		auto add_held_key = [](Input::Keys::InputKey key) {
+			if (key == Input::Keys::NONE) return;
+			if (std::find(held_keys.begin(), held_keys.end(), key) == held_keys.end()) {
+				held_keys.push_back(key);
+			}
+		};
+		auto btn = ResolveButtonId(button.c_str());
+		if (btn != Input::BUTTON_COUNT) {
+			auto& mappings = Input::source->GetButtonMappings();
+			for (auto it = mappings.LowerBound(btn);
+				 it != mappings.end() && it->first == btn; ++it) {
+				add_held_key(it->second);
+			}
+			return;
+		}
+
+		auto key = ResolveVirtualButtonKey(button.c_str());
+		if (key == Input::Keys::NONE) {
+			std::string key_upper = button;
+			std::transform(key_upper.begin(), key_upper.end(), key_upper.begin(),
+				[](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+			Input::Keys::kInputKeyNames.etag(key_upper.c_str(), key);
+		}
+		if (key != Input::Keys::NONE) {
+			add_held_key(key);
+		}
+	});
+}
+
+void SendKeyUp(const char* button_id) {
+	Schedule([button = std::string(button_id ? button_id : "")]() {
+		auto remove_held_key = [](Input::Keys::InputKey key) {
+			if (key == Input::Keys::NONE) return;
+			held_keys.erase(std::remove(held_keys.begin(), held_keys.end(), key), held_keys.end());
+		};
+
+		auto btn = ResolveButtonId(button.c_str());
+		if (btn != Input::BUTTON_COUNT && Input::source) {
+			auto& mappings = Input::source->GetButtonMappings();
+			for (auto it = mappings.LowerBound(btn);
+				 it != mappings.end() && it->first == btn; ++it) {
+				remove_held_key(it->second);
+			}
+			return;
+		}
+
+		auto key = ResolveVirtualButtonKey(button.c_str());
+		if (key == Input::Keys::NONE) {
+			std::string key_upper = button;
+			std::transform(key_upper.begin(), key_upper.end(), key_upper.begin(),
+				[](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+			Input::Keys::kInputKeyNames.etag(key_upper.c_str(), key);
+		}
+		remove_held_key(key);
+	});
+}
+
+bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
+	if (!has_launch_args) {
+		return false;
+	}
+	out_args = launch_args;
+	has_launch_args = false;
+	return !out_args.empty();
+}
 }
 
 extern "C" {
@@ -251,6 +370,102 @@ void EasyRPG_iOS_VirtualTouchUp() {
 
 void EasyRPG_iOS_SetVirtualButtonPoint(const char* button_id, float x, float y) {
 	IOSIntegration::SetVirtualButtonPoint(button_id, x, y);
+}
+
+void EasyRPG_iOS_LaunchGame(const char* args) { IOSIntegration::LaunchGame(args); }
+void EasyRPG_iOS_SendKeyDown(const char* button_id) { IOSIntegration::SendKeyDown(button_id); }
+void EasyRPG_iOS_SendKeyUp(const char* button_id) { IOSIntegration::SendKeyUp(button_id); }
+void EasyRPG_iOS_SetLayoutTransparency(float) {}
+void EasyRPG_iOS_SetLayoutSize(float) {}
+void EasyRPG_iOS_SetVibrationEnabled(bool) {}
+void EasyRPG_iOS_SetVibrateWhenSlidingEnabled(bool) {}
+
+void EasyRPG_iOS_SetMusicVolume(int32_t volume) {
+	Schedule([volume]() {
+		const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, volume));
+		Audio().BGM_SetGlobalVolume(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetSoundVolume(int32_t volume) {
+	Schedule([volume]() {
+		const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, volume));
+		Audio().SE_SetGlobalVolume(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetSoundFont(const char* path) {
+	Schedule([soundfont = std::string(path ? path : "")]() {
+		Audio().SetFluidsynthSoundfont(soundfont);
+	});
+}
+
+void EasyRPG_iOS_SetFullscreen(bool enabled) {
+	Schedule([enabled]() {
+		if (!DisplayUi) return;
+		if (DisplayUi->GetConfig().fullscreen.Get() != enabled) {
+			DisplayUi->ToggleFullscreen();
+		}
+	});
+}
+
+void EasyRPG_iOS_SetForcedLandscape(bool) {}
+
+void EasyRPG_iOS_SetImageScaleMode(int32_t mode) {
+	Schedule([mode]() {
+		if (!DisplayUi) return;
+		ConfigEnum::ScalingMode sm = ConfigEnum::ScalingMode::Nearest;
+		if (mode == 1) sm = ConfigEnum::ScalingMode::Integer;
+		else if (mode == 2) sm = ConfigEnum::ScalingMode::Bilinear;
+		DisplayUi->SetScalingMode(sm);
+	});
+}
+
+void EasyRPG_iOS_SetStretch(bool enabled) {
+	Schedule([enabled]() {
+		if (!DisplayUi) return;
+		if (DisplayUi->GetConfig().stretch.Get() != enabled) {
+			DisplayUi->ToggleStretch();
+		}
+	});
+}
+
+void EasyRPG_iOS_SetGameResolution(int32_t resolution) {
+	Schedule([resolution]() {
+		if (!DisplayUi) return;
+		ConfigEnum::GameResolution gr = ConfigEnum::GameResolution::Original;
+		if (resolution == 1) gr = ConfigEnum::GameResolution::Widescreen;
+		else if (resolution == 2) gr = ConfigEnum::GameResolution::Ultrawide;
+		DisplayUi->SetGameResolution(gr);
+	});
+}
+
+void EasyRPG_iOS_SetFont1(const char* font_name) {
+	Schedule([font = std::string(font_name ? font_name : "")]() {
+		Player::player_config.font1.Set(font);
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont2(const char* font_name) {
+	Schedule([font = std::string(font_name ? font_name : "")]() {
+		Player::player_config.font2.Set(font);
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont1Size(int32_t size) {
+	Schedule([size]() {
+		Player::player_config.font1_size.Set(static_cast<int>(size));
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont2Size(int32_t size) {
+	Schedule([size]() {
+		Player::player_config.font2_size.Set(static_cast<int>(size));
+		Font::ResetDefault();
+	});
 }
 }
 

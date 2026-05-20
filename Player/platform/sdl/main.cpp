@@ -30,6 +30,7 @@
 #endif
 #if defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS
 #  include <TargetConditionals.h>
+#  include "platform/ios/integration.h"
 #endif
 #ifdef _WIN32
 #  include <windows.h>
@@ -80,6 +81,15 @@ extern "C" int main(int argc, char* argv[]) {
 	LocalFree(argv_w);
 #else
 	args.assign(argv, argv + argc);
+#endif
+
+#if defined(__APPLE__) && TARGET_OS_IOS
+	{
+		std::vector<std::string> launch_args;
+		if (IOSIntegration::ConsumeLaunchArgs(launch_args) && !launch_args.empty()) {
+			args = std::move(launch_args);
+		}
+	}
 #endif
 #if defined(__APPLE__) && TARGET_OS_IOS
 	SDL_Log("EasyRPG iOS startup: argv vector prepared with %zu entries", args.size());

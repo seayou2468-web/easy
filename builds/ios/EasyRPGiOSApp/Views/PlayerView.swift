@@ -402,15 +402,3 @@ struct PlayerMenuSheet: View {
         savePath: "/path/to/saves"
     ))
 }
-
-                    Button("仮想ボタンの切り替え") { dismiss(); onToggleUI() }
-                    Link("バグ報告", destination: URL(string: "https://github.com/EasyRPG/Player/issues")!)
-                    Button("ゲームをリセット", role: .destructive) { dismiss(); onReset() }
-                    Button("ゲームを終了", role: .destructive) { dismiss(); onEnd() }
-                }
-            }
-            .navigationTitle("Player Menu")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("閉じる") { dismiss() } } }
-        }
-    }
-}

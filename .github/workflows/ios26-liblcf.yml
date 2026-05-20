@@ -81,7 +81,7 @@ jobs:
         run: |
           xcodebuild \
             -project easyrpg-ios.xcodeproj \
-            -scheme EasyRPGPlayer-iOS \
+            -scheme EasyRPGPlayerUI-iOS \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
@@ -95,14 +95,14 @@ jobs:
       # =========================
       - name: Package unsigned .ipa
         run: |
-          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Release-iphoneos/*.app' -print -quit)
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Release-iphoneos/EasyRPGPlayerUI.app' -print -quit)
           test -n "$APP_PATH"
 
-          rm -rf /tmp/Payload /tmp/EasyRPGPlayer.app
+          rm -rf /tmp/Payload /tmp/EasyRPGPlayerUI.app
           mkdir -p /tmp/Payload
 
-          cp -R "$APP_PATH" /tmp/EasyRPGPlayer.app
-          cp -R /tmp/EasyRPGPlayer.app /tmp/Payload/
+          cp -R "$APP_PATH" /tmp/EasyRPGPlayerUI.app
+          cp -R /tmp/EasyRPGPlayerUI.app /tmp/Payload/
 
           (cd /tmp && /usr/bin/zip -qry easyrpg-ios-unsigned.ipa Payload)
 
@@ -117,4 +117,4 @@ jobs:
           name: easyrpg-ios-unsigned-artifacts
           path: |
             /tmp/easyrpg-ios-unsigned.ipa
-            /tmp/EasyRPGPlayer.app
+            /tmp/EasyRPGPlayerUI.app
