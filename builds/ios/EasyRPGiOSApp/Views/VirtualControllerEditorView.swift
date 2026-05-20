@@ -58,6 +58,8 @@ struct VirtualControllerEditorView: View {
             }
         }
         .navigationTitle("レイアウト編集")
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.black.ignoresSafeArea())
         .onAppear { workingButtons = store.buttons }
         .confirmationDialog("編集メニュー", isPresented: $showMenu) {
             Button("ボタンを追加") { showAddMenu = true }
@@ -71,6 +73,13 @@ struct VirtualControllerEditorView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showMenu = true
+                } label: {
+                    Label("メニュー", systemImage: "line.3.horizontal")
+                }
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("保存") { store.buttons = workingButtons; store.save() }
             }

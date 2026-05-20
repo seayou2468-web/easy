@@ -136,11 +136,14 @@ struct PlayerView: View {
                 onEnd: { showEndConfirm = true }
             )
         }
-        .sheet(isPresented: $showLayoutEditor) {
-            VirtualControllerEditorView()
-                .onDisappear {
-                    layoutStore.load()
-                }
+        .fullScreenCover(isPresented: $showLayoutEditor) {
+            NavigationStack {
+                VirtualControllerEditorView()
+            }
+            .interactiveDismissDisabled(true)
+            .onDisappear {
+                layoutStore.load()
+            }
         }
         .sheet(isPresented: $showButtonMapping) {
             ButtonMappingEditorView()
