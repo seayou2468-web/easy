@@ -75,6 +75,13 @@ struct SettingsVideoView: View {
 
                     Toggle("強制的に横置きにする", isOn: $config.forcedLandscape)
                         .onChange(of: config.forcedLandscape) { _, _ in config.saveSettings() }
+
+                    Picker("ゲーム一覧のタイトル表示", selection: $config.gameBrowserLabelMode) {
+                        Text("ゲームタイトル").tag(0)
+                        Text("フォルダ名").tag(1)
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: config.gameBrowserLabelMode) { _, _ in config.saveSettings() }
                 }
                 .padding(.bottom, 8)
 
@@ -341,6 +348,13 @@ struct SettingsFontView: View {
 
                 Section(header: Text("ゲームフォント 1 (通常)").font(.headline)) {
                     VStack(spacing: 8) {
+                        TextField("フォント名（例: VL Gothic）", text: Binding(
+                            get: { config.font1Name ?? "" },
+                            set: { config.font1Name = $0.isEmpty ? nil : $0 }
+                        ))
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: config.font1Name) { _, _ in config.saveSettings() }
+
                         HStack {
                             Text("フォント")
                             Spacer()
@@ -363,6 +377,13 @@ struct SettingsFontView: View {
 
                 Section(header: Text("ゲームフォント 2 (モノスペース)").font(.headline)) {
                     VStack(spacing: 8) {
+                        TextField("フォント名（例: M+ 1m）", text: Binding(
+                            get: { config.font2Name ?? "" },
+                            set: { config.font2Name = $0.isEmpty ? nil : $0 }
+                        ))
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: config.font2Name) { _, _ in config.saveSettings() }
+
                         HStack {
                             Text("フォント")
                             Spacer()

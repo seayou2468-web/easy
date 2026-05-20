@@ -190,6 +190,20 @@ struct PlayerView: View {
         }
         .onChange(of: config.layoutTransparency) { _, _ in applySettings() }
         .onChange(of: config.layoutSize) { _, _ in applySettings() }
+        .onChange(of: config.fullscreen) { _, _ in applySettings() }
+        .onChange(of: config.forcedLandscape) { _, _ in applySettings() }
+        .onChange(of: config.scaleMode) { _, _ in applySettings() }
+        .onChange(of: config.stretch) { _, _ in applySettings() }
+        .onChange(of: config.gameResolution) { _, _ in applySettings() }
+        .onChange(of: config.musicVolume) { _, _ in applySettings() }
+        .onChange(of: config.soundVolume) { _, _ in applySettings() }
+        .onChange(of: config.selectedSoundFont) { _, _ in applySettings() }
+        .onChange(of: config.enableVibration) { _, _ in applySettings() }
+        .onChange(of: config.vibrateWhenSliding) { _, _ in applySettings() }
+        .onChange(of: config.font1Name) { _, _ in applySettings() }
+        .onChange(of: config.font2Name) { _, _ in applySettings() }
+        .onChange(of: config.font1Size) { _, _ in applySettings() }
+        .onChange(of: config.font2Size) { _, _ in applySettings() }
     }
 
     private func setupPlayerWithGame() {
@@ -213,10 +227,27 @@ struct PlayerView: View {
     }
 
     private func applySettings() {
+        PlayerBridge.setFullscreen(config.fullscreen)
+        PlayerBridge.setForcedLandscape(config.forcedLandscape)
+        PlayerBridge.setImageScaleMode(config.scaleMode)
+        PlayerBridge.setStretch(config.stretch)
+        PlayerBridge.setGameResolution(config.gameResolution)
+
+        PlayerBridge.setMusicVolume(config.musicVolume)
+        PlayerBridge.setSoundVolume(config.soundVolume)
+        if let soundFont = config.selectedSoundFont {
+            PlayerBridge.setSoundFont(soundFont.path)
+        }
+
         PlayerBridge.setLayoutTransparency(Double(config.layoutTransparency))
         PlayerBridge.setLayoutSize(Double(config.layoutSize))
         PlayerBridge.setVibrationEnabled(config.enableVibration)
         PlayerBridge.setVibrateWhenSlidingEnabled(config.vibrateWhenSliding)
+
+        PlayerBridge.setFont1(config.font1Name ?? "")
+        PlayerBridge.setFont2(config.font2Name ?? "")
+        PlayerBridge.setFont1Size(config.font1Size)
+        PlayerBridge.setFont2Size(config.font2Size)
         applyVirtualLayoutToPlayer()
     }
 
