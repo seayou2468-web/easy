@@ -119,6 +119,8 @@ struct PlayerView: View {
                 }
             }
         })
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
         .background(Color.clear)
         .sheet(isPresented: $showMenu) {
             PlayerMenuSheet(
@@ -184,7 +186,9 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
-        let projectPath = URL(fileURLWithPath: game.path).standardizedFileURL.path
+        let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
+        _ = projectURL.startAccessingSecurityScopedResource()
+        let projectPath = projectURL.path
         guard FileManager.default.fileExists(atPath: projectPath) else {
             print("[iOS] Project path does not exist: \(projectPath)")
             return
@@ -198,16 +202,20 @@ struct PlayerView: View {
             args.append(savePath)
         }
 
+        if let configPath = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?.path {
+            args.append("--config-path")
+            args.append(configPath)
+            args.append("--log-file")
+            args.append("\(configPath)/easyrpg-player.log")
+        }
+
         if game.encoding != "auto" {
             args.append("--encoding")
             args.append(game.encoding)
         }
 
-        // Launch once immediately and once shortly after in case the runtime is still transitioning scenes.
+        // Keep launch behavior aligned with Android: one explicit launch command.
         PlayerBridge.launchGame(withArgs: args)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            PlayerBridge.launchGame(withArgs: args)
-        }
     }
 
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {

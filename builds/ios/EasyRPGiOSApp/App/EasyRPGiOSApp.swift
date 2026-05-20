@@ -13,6 +13,7 @@ struct EasyRPGiOSApp: App {
             NavigationStack(path: $path) {
                 InitView(onContinue: { path.append(.browser) })
                     .onAppear {
+                        PlayerBridge.startRuntime()
                         // Initialize everything
                         mappingStore.applyToPlayer()
                         for button in layoutStore.buttons {
@@ -42,4 +43,3 @@ struct EasyRPGiOSApp: App {
         }
     }
 }
-
