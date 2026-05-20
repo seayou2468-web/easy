@@ -267,7 +267,7 @@ final class ConfigManager: ObservableObject {
 
     private func persistSecurityScopedBookmark(for url: URL, key: String) {
         do {
-            let data = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+            let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: key)
         } catch {
             print("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
@@ -283,7 +283,7 @@ final class ConfigManager: ObservableObject {
             var isStale = false
             let url = try URL(
                 resolvingBookmarkData: data,
-                options: [.withSecurityScope],
+                options: [],
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )

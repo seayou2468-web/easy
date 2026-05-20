@@ -77,11 +77,13 @@ final class GameLibrary: ObservableObject {
 
     func reloadGames(forceScan: Bool = false) {
         isScanning = true
-        
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+
+        let easyRPGFolder = configManager.easyRPGFolderURL
+        let labelMode = configManager.gameBrowserLabelMode
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self, easyRPGFolder, labelMode] in
             guard let self = self else { return }
-            
-            let easyRPGFolder = self.configManager.easyRPGFolderURL
+
             var found: [Game] = []
             let favoritePaths = self.loadFavoritePaths()
 
@@ -105,8 +107,8 @@ final class GameLibrary: ObservableObject {
                     }
                     return false
                 }
-                return game1.getDisplayTitle(labelMode: self.configManager.gameBrowserLabelMode)
-                    .localizedCaseInsensitiveCompare(game2.getDisplayTitle(labelMode: self.configManager.gameBrowserLabelMode)) == .orderedAscending
+                return game1.getDisplayTitle(labelMode: labelMode)
+                    .localizedCaseInsensitiveCompare(game2.getDisplayTitle(labelMode: labelMode)) == .orderedAscending
             }
 
             DispatchQueue.main.async {
