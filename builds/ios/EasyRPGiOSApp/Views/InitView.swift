@@ -41,12 +41,11 @@ struct InitView: View {
                             Text("ゲームフォルダを選択")
                         }
                     }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
-                        .cornerRadius(8)
-                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundStyle(.white)
+                    .cornerRadius(8)
 
                     if let folder = config.easyRPGFolderURL {
                         VStack(alignment: .leading, spacing: 4) {
@@ -114,15 +113,15 @@ struct InitView: View {
 
                     if let tutorialURL = Self.tutorialURL {
                         Link(destination: tutorialURL) {
-                        HStack {
-                            Image(systemName: "play.circle.fill")
-                            Text("説明動画を見る")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .foregroundStyle(.primary)
-                        .cornerRadius(8)
+                            HStack {
+                                Image(systemName: "play.circle.fill")
+                                Text("説明動画を見る")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .foregroundStyle(.primary)
+                            .cornerRadius(8)
                         }
                     }
 

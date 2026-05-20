@@ -349,7 +349,6 @@ struct GameOptionsSheet: View {
                         Text("パス")
                         Spacer()
                         Text(game.path).font(.caption).foregroundStyle(.secondary)
-                        }
                     }
                 }
 
@@ -364,7 +363,6 @@ struct GameOptionsSheet: View {
                         HStack {
                             Image(systemName: "pencil.circle.fill")
                             Text("カスタムタイトルを編集")
-                        }
                         }
                     }
                 }
@@ -404,8 +402,7 @@ struct CustomTitleEditorSheet: View {
                             ConfigManager.shared.setCustomGameTitle("", for: game.path)
                             dismiss()
                         }
-                        }
-                    }
+                    } 
                 }
             }
             .navigationTitle("タイトル編集")
