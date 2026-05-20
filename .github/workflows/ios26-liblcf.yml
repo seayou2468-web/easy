@@ -11,15 +11,45 @@ on:
 jobs:
   build-ios-device:
     runs-on: macos-latest
+
     steps:
+      # =========================
+      # Checkout（LFSなし）
+      # =========================
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          lfs: true
 
-      - name: Pull git-lfs objects
-        run: git lfs pull
+      # =========================
+      # iOS Toolchain取得
+      # =========================
+      - name: Download iOS toolchain
+        run: |
+          curl -L -o ios_toolchain.tar.gz \
+          https://github.com/seayou2468-web/easy/releases/download/tool/ios_toolchain.tar.gz
 
+      - name: Prepare Dependencies directory
+        run: |
+          rm -rf Dependencies
+          mkdir -p Dependencies
+
+      # =========================
+      # universal/ の中身を直接展開
+      # =========================
+      - name: Extract universal into Dependencies
+        run: |
+          set -e
+
+          tar -xzf ios_toolchain.tar.gz \
+            -C Dependencies \
+            --strip-components=1 \
+            universal
+
+          echo "=== Dependencies structure ==="
+          ls -R Dependencies
+
+      # =========================
+      # Xcode setup
+      # =========================
       - name: Select Xcode 16.2
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -31,7 +61,10 @@ jobs:
       - name: Generate project
         run: xcodegen generate --spec project.yml
 
-      - name: Build liblcf static library (iOS device, standalone)
+      # =========================
+      # Build liblcf
+      # =========================
+      - name: Build liblcf static library (iOS device)
         run: |
           xcodebuild \
             -project easyrpg-ios.xcodeproj \
@@ -41,10 +74,9 @@ jobs:
             -destination 'generic/platform=iOS' \
             build
 
-
-
-
-
+      # =========================
+      # Build app
+      # =========================
       - name: Build unsigned iOS app (.app)
         run: |
           xcodebuild \
@@ -58,17 +90,27 @@ jobs:
             CODE_SIGN_IDENTITY= \
             build
 
+      # =========================
+      # IPA packaging
+      # =========================
       - name: Package unsigned .ipa
         run: |
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Release-iphoneos/*.app' -print -quit)
           test -n "$APP_PATH"
+
           rm -rf /tmp/Payload /tmp/EasyRPGPlayer.app
           mkdir -p /tmp/Payload
+
           cp -R "$APP_PATH" /tmp/EasyRPGPlayer.app
           cp -R /tmp/EasyRPGPlayer.app /tmp/Payload/
+
           (cd /tmp && /usr/bin/zip -qry easyrpg-ios-unsigned.ipa Payload)
+
           test -f /tmp/easyrpg-ios-unsigned.ipa
 
+      # =========================
+      # Artifact upload
+      # =========================
       - name: Upload iOS app artifacts
         uses: actions/upload-artifact@v4
         with:
