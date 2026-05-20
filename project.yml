@@ -53,6 +53,17 @@ targets:
         excludes:
           - "platform/**"
           - "**/main.cpp"
+      - path: Player/platform/sdl
+        includes:
+          - "sdl3_*.cpp"
+          - "sdl3_*.h"
+          - "axis.h"
+        excludes:
+          - "main.cpp"
+          - "sdl_ui.cpp"
+          - "sdl_ui.h"
+          - "sdl2_*.cpp"
+          - "sdl2_*.h"
       - path: Player/platform/ios
         includes:
           - "**/*.mm"
