@@ -24,8 +24,19 @@ std::string IOSUtils::GetDocumentsDir() {
 		if (documents == nil) {
 			return GetBundleDir();
 		}
-		const char* fsPath = [documents fileSystemRepresentation];
-		return fsPath ? std::string(fsPath) : GetBundleDir();
+		NSString* path = [[[documents URLByResolvingSymlinksInPath] URLByStandardizingPath] path];
+		if (path == nil || [path length] == 0) {
+			path = [documents path];
+		}
+		if (path == nil || [path length] == 0) {
+			return GetBundleDir();
+		}
+		// Defensive fallback: ensure an absolute path is returned.
+		if (![path hasPrefix:@"/"]) {
+			NSString* home = NSHomeDirectory();
+			path = [home stringByAppendingPathComponent:path];
+		}
+		return std::string([path UTF8String]);
 	}
 }
 
