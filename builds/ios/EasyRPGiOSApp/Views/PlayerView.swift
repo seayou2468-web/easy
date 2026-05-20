@@ -12,6 +12,7 @@ struct PlayerView: View {
     @State private var showButtonMapping = false
     @State private var showSettings = false
     @State private var showFpsIndicator = false
+    @State private var hasProjectSecurityScopeAccess = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -168,6 +169,12 @@ struct PlayerView: View {
             applySettings()
             buttonMappingStore.applyToPlayer()
         }
+        .onDisappear {
+            if hasProjectSecurityScopeAccess {
+                URL(fileURLWithPath: game.path).standardizedFileURL.stopAccessingSecurityScopedResource()
+                hasProjectSecurityScopeAccess = false
+            }
+        }
         .onChange(of: showFpsIndicator) { _, isVisible in
             guard isVisible else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -186,15 +193,16 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
-        PlayerBridge.startRuntime()
-
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
-        _ = projectURL.startAccessingSecurityScopedResource()
+        hasProjectSecurityScopeAccess = projectURL.startAccessingSecurityScopedResource()
+
         let projectPath = projectURL.path
         guard FileManager.default.fileExists(atPath: projectPath) else {
             print("[iOS] Project path does not exist: \(projectPath)")
             return
         }
+
+        PlayerBridge.startRuntime()
 
         var args: [String] = ["--project-path", projectPath]
 
