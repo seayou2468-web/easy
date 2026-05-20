@@ -23,7 +23,7 @@ struct VirtualButtonLayout: Identifiable, Codable, Hashable {
         .init(id: "reset", title: "RST", x: 420, y: 470)
     ]
 
-    static let requiredIds: [String] = default.map(\.id)
+    static let requiredIds: [String] = Self.default.map(\.id)
 }
 
 @MainActor

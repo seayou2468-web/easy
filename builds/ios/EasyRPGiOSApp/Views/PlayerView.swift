@@ -188,34 +188,9 @@ struct PlayerView: View {
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
         }
-        .onChange(of: config.layoutTransparency) { _, _ in applySettings() }
-        .onChange(of: config.layoutSize) { _, _ in applySettings() }
-        .onChange(of: config.fullscreen) { _, _ in applySettings() }
-        .onChange(of: config.forcedLandscape) { _, _ in applySettings() }
-        .onChange(of: config.scaleMode) { _, _ in applySettings() }
-        .onChange(of: config.stretch) { _, _ in applySettings() }
-        .onChange(of: config.gameResolution) { _, _ in applySettings() }
-        .onChange(of: config.musicVolume) { _, _ in applySettings() }
-        .onChange(of: config.soundVolume) { _, _ in applySettings() }
-        .onChange(of: config.selectedSoundFont) { _, _ in applySettings() }
-        .onChange(of: config.enableVibration) { _, _ in applySettings() }
-        .onChange(of: config.vibrateWhenSliding) { _, _ in applySettings() }
-        .onChange(of: config.font1Name) { _, _ in applySettings() }
-        .onChange(of: config.font2Name) { _, _ in applySettings() }
-        .onChange(of: config.font1Size) { _, _ in applySettings() }
-        .onChange(of: config.font2Size) { _, _ in applySettings() }
-        .onChange(of: config.fastForwardMultiplier) { _, _ in applySettings() }
-        .onChange(of: config.fastForwardMultiplierB) { _, _ in applySettings() }
-        .onChange(of: config.settingsInMenu) { _, _ in applySettings() }
-        .onChange(of: config.languageSelectOnStart) { _, _ in applySettings() }
-        .onChange(of: config.settingsInTitle) { _, _ in applySettings() }
-        .onChange(of: config.languageInTitle) { _, _ in applySettings() }
-        .onChange(of: config.loggingEnabled) { _, _ in applySettings() }
-        .onChange(of: config.screenshotTimestamp) { _, _ in applySettings() }
-        .onChange(of: config.automaticScreenshots) { _, _ in applySettings() }
-        .onChange(of: config.screenshotScale) { _, _ in applySettings() }
-        .onChange(of: config.automaticScreenshotsInterval) { _, _ in applySettings() }
-        .onChange(of: config.startupLogos) { _, _ in applySettings() }
+        .onReceive(config.objectWillChange) { _ in
+            applySettings()
+        }
     }
 
     private func setupPlayerWithGame() {
