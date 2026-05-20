@@ -17,6 +17,9 @@
 #include "input.h"
 #include "input_buttons.h"
 #include "utils.h"
+#include "baseui.h"
+#include "audio.h"
+#include "font.h"
 
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
@@ -294,18 +297,94 @@ void EasyRPG_iOS_SetLayoutTransparency(float) {}
 void EasyRPG_iOS_SetLayoutSize(float) {}
 void EasyRPG_iOS_SetVibrationEnabled(bool) {}
 void EasyRPG_iOS_SetVibrateWhenSlidingEnabled(bool) {}
-void EasyRPG_iOS_SetMusicVolume(int32_t) {}
-void EasyRPG_iOS_SetSoundVolume(int32_t) {}
-void EasyRPG_iOS_SetSoundFont(const char*) {}
-void EasyRPG_iOS_SetFullscreen(bool) {}
+
+void EasyRPG_iOS_SetMusicVolume(int32_t volume) {
+	Schedule([volume]() {
+		const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, volume));
+		Audio().BGM_SetGlobalVolume(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetSoundVolume(int32_t volume) {
+	Schedule([volume]() {
+		const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, volume));
+		Audio().SE_SetGlobalVolume(static_cast<int>(clamped));
+	});
+}
+
+void EasyRPG_iOS_SetSoundFont(const char* path) {
+	Schedule([soundfont = std::string(path ? path : "")]() {
+		Audio().SetFluidsynthSoundfont(soundfont);
+	});
+}
+
+void EasyRPG_iOS_SetFullscreen(bool enabled) {
+	Schedule([enabled]() {
+		if (!DisplayUi) return;
+		if (DisplayUi->GetConfig().fullscreen.Get() != enabled) {
+			DisplayUi->ToggleFullscreen();
+		}
+	});
+}
+
 void EasyRPG_iOS_SetForcedLandscape(bool) {}
-void EasyRPG_iOS_SetImageScaleMode(int32_t) {}
-void EasyRPG_iOS_SetStretch(bool) {}
-void EasyRPG_iOS_SetGameResolution(int32_t) {}
-void EasyRPG_iOS_SetFont1(const char*) {}
-void EasyRPG_iOS_SetFont2(const char*) {}
-void EasyRPG_iOS_SetFont1Size(int32_t) {}
-void EasyRPG_iOS_SetFont2Size(int32_t) {}
+
+void EasyRPG_iOS_SetImageScaleMode(int32_t mode) {
+	Schedule([mode]() {
+		if (!DisplayUi) return;
+		ConfigEnum::ScalingMode sm = ConfigEnum::ScalingMode::Nearest;
+		if (mode == 1) sm = ConfigEnum::ScalingMode::Integer;
+		else if (mode == 2) sm = ConfigEnum::ScalingMode::Bilinear;
+		DisplayUi->SetScalingMode(sm);
+	});
+}
+
+void EasyRPG_iOS_SetStretch(bool enabled) {
+	Schedule([enabled]() {
+		if (!DisplayUi) return;
+		if (DisplayUi->GetConfig().stretch.Get() != enabled) {
+			DisplayUi->ToggleStretch();
+		}
+	});
+}
+
+void EasyRPG_iOS_SetGameResolution(int32_t resolution) {
+	Schedule([resolution]() {
+		if (!DisplayUi) return;
+		ConfigEnum::GameResolution gr = ConfigEnum::GameResolution::Original;
+		if (resolution == 1) gr = ConfigEnum::GameResolution::Widescreen;
+		else if (resolution == 2) gr = ConfigEnum::GameResolution::Ultrawide;
+		DisplayUi->SetGameResolution(gr);
+	});
+}
+
+void EasyRPG_iOS_SetFont1(const char* font_name) {
+	Schedule([font = std::string(font_name ? font_name : "")]() {
+		Player::player_config.font1.Set(font);
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont2(const char* font_name) {
+	Schedule([font = std::string(font_name ? font_name : "")]() {
+		Player::player_config.font2.Set(font);
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont1Size(int32_t size) {
+	Schedule([size]() {
+		Player::player_config.font1_size.Set(static_cast<int>(size));
+		Font::ResetDefault();
+	});
+}
+
+void EasyRPG_iOS_SetFont2Size(int32_t size) {
+	Schedule([size]() {
+		Player::player_config.font2_size.Set(static_cast<int>(size));
+		Font::ResetDefault();
+	});
+}
 }
 
 #endif
