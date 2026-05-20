@@ -2,6 +2,8 @@ import UIKit
 import SwiftUI
 
 struct InitView: View {
+    private static let tutorialURL = URL(string: "https://www.youtube.com/watch?v=r9qU-6P3HOs")
+    private static let websiteURL = URL(string: "https://easyrpg.org")
     let onContinue: () -> Void
     @State private var showFolderPicker = false
     @StateObject private var config = ConfigManager.shared
@@ -38,12 +40,12 @@ struct InitView: View {
                             Image(systemName: "folder.circle.fill")
                             Text("ゲームフォルダを選択")
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
-                        .cornerRadius(8)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundStyle(.white)
+                    .cornerRadius(8)
 
                     if let folder = config.easyRPGFolderURL {
                         VStack(alignment: .leading, spacing: 4) {
@@ -109,28 +111,32 @@ struct InitView: View {
                         }
                     }
 
-                    Link(destination: URL(string: "https://www.youtube.com/watch?v=r9qU-6P3HOs")!) {
-                        HStack {
-                            Image(systemName: "play.circle.fill")
-                            Text("説明動画を見る")
+                    if let tutorialURL = Self.tutorialURL {
+                        Link(destination: tutorialURL) {
+                            HStack {
+                                Image(systemName: "play.circle.fill")
+                                Text("説明動画を見る")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .foregroundStyle(.primary)
+                            .cornerRadius(8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .foregroundStyle(.primary)
-                        .cornerRadius(8)
                     }
 
-                    Link(destination: URL(string: "https://easyrpg.org")!) {
-                        HStack {
-                            Image(systemName: "globe")
-                            Text("公式サイトを訪問")
+                    if let websiteURL = Self.websiteURL {
+                        Link(destination: websiteURL) {
+                            HStack {
+                                Image(systemName: "globe")
+                                Text("公式サイトを訪問")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .foregroundStyle(.primary)
+                            .cornerRadius(8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .foregroundStyle(.primary)
-                        .cornerRadius(8)
                     }
                 }
             }
@@ -143,10 +149,12 @@ struct InitView: View {
                 config.setEasyRPGFolder(url)
             }
         }
+        .onAppear {
+            AppLogger.log("InitView onAppear")
+        }
     }
 }
 
 #Preview {
     InitView(onContinue: {})
 }
-

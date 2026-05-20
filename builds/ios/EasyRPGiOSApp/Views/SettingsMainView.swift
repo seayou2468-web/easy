@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ParitySettingsRootView: View {
     var body: some View {
@@ -35,7 +36,8 @@ struct SettingsMainView: View {
     }
 
     private func settingsNavButton<Destination: View>(_ title: String, _ icon: String, subtitle: String, destination: Destination) -> some View {
-        NavigationLink(destination: destination) {
+        AppLogger.log("ENTER settingsNavButton")
+        return NavigationLink(destination: destination) {
             HStack {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
@@ -575,16 +577,21 @@ struct DocumentPicker: UIViewControllerRepresentable {
     let onPicked: (URL) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [])
+        AppLogger.log("ENTER makeUIViewController")
+        let contentTypes = allowedContentTypes.compactMap { UTType($0) }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes, asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+        AppLogger.log("ENTER updateUIViewController")
+    }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked)
+        AppLogger.log("ENTER makeCoordinator")
+        return Coordinator(onPicked: onPicked)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
@@ -595,8 +602,11 @@ struct DocumentPicker: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
-                onPicked(url)
+                let normalized = url.standardizedFileURL
+                _ = normalized.startAccessingSecurityScopedResource()
+                onPicked(normalized)
             }
         }
     }
@@ -607,16 +617,20 @@ struct FolderPickerView: UIViewControllerRepresentable {
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        AppLogger.log("ENTER makeUIViewController")
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+        AppLogger.log("ENTER updateUIViewController")
+    }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPicked: onPicked, dismiss: dismiss)
+        AppLogger.log("ENTER makeCoordinator")
+        return Coordinator(onPicked: onPicked, dismiss: dismiss)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
@@ -629,8 +643,11 @@ struct FolderPickerView: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
-                onPicked(url)
+                let normalized = url.standardizedFileURL
+                _ = normalized.startAccessingSecurityScopedResource()
+                onPicked(normalized)
             }
             dismiss()
         }

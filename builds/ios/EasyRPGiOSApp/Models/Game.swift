@@ -49,6 +49,7 @@ struct Game: Identifiable, Hashable {
     }
 
     func getDisplayTitle(labelMode: Int) -> String {
+        AppLogger.log("ENTER getDisplayTitle")
         if let customTitle = customTitle, !customTitle.isEmpty {
             return customTitle
         }
@@ -76,6 +77,8 @@ final class GameLibrary: ObservableObject {
     private let favoritesKey = "ios.favoriteGames"
 
     func reloadGames(forceScan: Bool = false) {
+        AppLogger.log("ENTER reloadGames")
+        AppLogger.log("reloadGames forceScan=\(forceScan)")
         isScanning = true
 
         let easyRPGFolder = configManager.easyRPGFolderURL
@@ -85,12 +88,12 @@ final class GameLibrary: ObservableObject {
             guard let self = self else { return }
 
             var found: [Game] = []
-            let favoritePaths = self.loadFavoritePaths()
+            let favoritePaths = Self.loadFavoritePaths(favoritesKey: self.favoritesKey)
 
             if let folder = easyRPGFolder {
-                let discovered = self.discoverGames(in: folder)
+                let discovered = Self.discoverGames(in: folder, fileManager: self.fileManager)
                 found.append(contentsOf: discovered.map { base in
-                    self.loadGameMetadata(at: base, isFavorite: favoritePaths.contains(base.path))
+                    Self.loadGameMetadata(at: base, isFavorite: favoritePaths.contains(base.path), fileManager: self.fileManager)
                 })
             }
 
@@ -119,7 +122,8 @@ final class GameLibrary: ObservableObject {
     }
 
     func toggleFavorite(_ game: Game) {
-        var updated = loadFavoritePaths()
+        AppLogger.log("ENTER toggleFavorite")
+        var updated = Self.loadFavoritePaths(favoritesKey: favoritesKey)
         if updated.contains(game.path) {
             updated.remove(game.path)
         } else {
@@ -130,20 +134,22 @@ final class GameLibrary: ObservableObject {
     }
 
     func setCustomTitle(_ title: String, for game: Game) {
+        AppLogger.log("ENTER setCustomTitle")
         configManager.setCustomGameTitle(title, for: game.id)
         reloadGames()
     }
 
-    private func loadGameMetadata(at url: URL, isFavorite: Bool) -> Game {
+    private static func loadGameMetadata(at url: URL, isFavorite: Bool, fileManager: FileManager) -> Game {
+        AppLogger.log("ENTER loadGameMetadata")
         let folderName = url.lastPathComponent
         var title = folderName
         var savePath = ""
-        var projectType = ProjectType.supported
+        let projectType = ProjectType.supported
         var encoding = "auto"
         var titleImage: UIImage? = nil
 
         // Load from RPG_RT.ini
-        if let iniPath = findFile(in: url, named: "RPG_RT.ini"),
+        if let iniPath = findFile(in: url, named: "RPG_RT.ini", fileManager: fileManager),
            let iniContent = try? String(contentsOfFile: iniPath, encoding: .utf8) {
             title = parseIniValue(iniContent, key: "Title") ?? title
             savePath = parseIniValue(iniContent, key: "SavePath") ?? ""
@@ -151,7 +157,7 @@ final class GameLibrary: ObservableObject {
         }
 
         // Try to load title image
-        if let titlePath = findFile(in: url, named: "Title"),
+        if let titlePath = findFile(in: url, named: "Title", fileManager: fileManager),
            let image = UIImage(contentsOfFile: titlePath) {
             titleImage = image
         }
@@ -171,11 +177,13 @@ final class GameLibrary: ObservableObject {
         )
     }
 
-    private func loadFavoritePaths() -> Set<String> {
-        Set(UserDefaults.standard.stringArray(forKey: favoritesKey) ?? [])
+    private static func loadFavoritePaths(favoritesKey: String) -> Set<String> {
+        AppLogger.log("ENTER loadFavoritePaths")
+        return Set(UserDefaults.standard.stringArray(forKey: favoritesKey) ?? [])
     }
 
-    private func discoverGames(in root: URL) -> [URL] {
+    private static func discoverGames(in root: URL, fileManager: FileManager) -> [URL] {
+        AppLogger.log("ENTER discoverGames")
         var matches: [URL] = []
         
         if let enumerator = fileManager.enumerator(
@@ -187,7 +195,7 @@ final class GameLibrary: ObservableObject {
             for case let url as URL in enumerator {
                 let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
                 guard isDir else { continue }
-                if containsRpgMarkerFiles(in: url) {
+                if containsRpgMarkerFiles(in: url, fileManager: fileManager) {
                     matches.append(url)
                     enumerator.skipDescendants()
                 }
@@ -197,12 +205,14 @@ final class GameLibrary: ObservableObject {
         return matches
     }
 
-    private func containsRpgMarkerFiles(in directory: URL) -> Bool {
+    private static func containsRpgMarkerFiles(in directory: URL, fileManager: FileManager) -> Bool {
+        AppLogger.log("ENTER containsRpgMarkerFiles")
         let candidates = ["RPG_RT.ldb", "RPG_RT.lmt", "RPG_RT.ini", "easyrpg-player-manifest.json"]
         return candidates.contains(where: { fileManager.fileExists(atPath: directory.appendingPathComponent($0).path) })
     }
 
-    private func findFile(in directory: URL, named: String) -> String? {
+    private static func findFile(in directory: URL, named: String, fileManager: FileManager) -> String? {
+        AppLogger.log("ENTER findFile")
         let path = directory.appendingPathComponent(named).path
         if fileManager.fileExists(atPath: path) {
             return path
@@ -210,7 +220,8 @@ final class GameLibrary: ObservableObject {
         return nil
     }
 
-    private func parseIniValue(_ content: String, key: String) -> String? {
+    private static func parseIniValue(_ content: String, key: String) -> String? {
+        AppLogger.log("ENTER parseIniValue")
         let lines = content.components(separatedBy: .newlines)
         for line in lines {
             if line.starts(with: key + "=") {

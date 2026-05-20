@@ -58,11 +58,13 @@ final class ConfigManager: ObservableObject {
     private let easyRPGFolderBookmarkKey = "ios.bookmark.easyRPGFolder"
     private let rtpFolderBookmarkKey = "ios.bookmark.rtpFolder"
     private func defaultEasyRPGDocumentsFolder() -> URL? {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+        AppLogger.log("ENTER defaultEasyRPGDocumentsFolder")
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
             .appendingPathComponent("EasyRPG", isDirectory: true)
     }
 
     private func isInsideDocuments(_ url: URL) -> Bool {
+        AppLogger.log("ENTER isInsideDocuments")
         guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             return false
         }
@@ -83,6 +85,8 @@ final class ConfigManager: ObservableObject {
     // MARK: - Settings Management
 
     func saveSettings() {
+        AppLogger.log("ENTER saveSettings")
+        AppLogger.log("saveSettings called")
         // Save to UserDefaults for quick access
         let defaults = UserDefaults.standard
         defaults.set(fullscreen, forKey: userDefaultsPrefix + "fullscreen")
@@ -138,6 +142,8 @@ final class ConfigManager: ObservableObject {
     }
 
     private func loadSettings() {
+        AppLogger.log("ENTER loadSettings")
+        AppLogger.log("loadSettings called")
         let defaults = UserDefaults.standard
         fullscreen = defaults.bool(forKey: userDefaultsPrefix + "fullscreen") || fullscreen
         forcedLandscape = defaults.bool(forKey: userDefaultsPrefix + "forcedLandscape")
@@ -202,11 +208,13 @@ final class ConfigManager: ObservableObject {
     private let customTitlesKey = "ios.customGameTitles"
 
     func getCustomGameTitle(for gamePath: String) -> String? {
+        AppLogger.log("ENTER getCustomGameTitle")
         let titles = UserDefaults.standard.dictionary(forKey: customTitlesKey) as? [String: String] ?? [:]
         return titles[gamePath]
     }
 
     func setCustomGameTitle(_ title: String, for gamePath: String) {
+        AppLogger.log("ENTER setCustomGameTitle")
         var titles = UserDefaults.standard.dictionary(forKey: customTitlesKey) as? [String: String] ?? [:]
         if title.isEmpty {
             titles.removeValue(forKey: gamePath)
@@ -219,6 +227,7 @@ final class ConfigManager: ObservableObject {
     // MARK: - Config INI File
 
     private func saveConfigToIni() {
+        AppLogger.log("ENTER saveConfigToIni")
         guard let configURL = configURL else { return }
 
         var iniContent = ""
@@ -260,21 +269,23 @@ final class ConfigManager: ObservableObject {
         do {
             try iniContent.write(to: configURL, atomically: true, encoding: .utf8)
         } catch {
-            print("Failed to save config.ini: \(error)")
+            AppLogger.log("Failed to save config.ini: \(error)")
         }
     }
 
 
     private func persistSecurityScopedBookmark(for url: URL, key: String) {
+        AppLogger.log("ENTER persistSecurityScopedBookmark")
         do {
             let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: key)
         } catch {
-            print("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
+            AppLogger.log("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
         }
     }
 
     private func restoreSecurityScopedURL(from key: String) -> URL? {
+        AppLogger.log("ENTER restoreSecurityScopedURL")
         guard let data = UserDefaults.standard.data(forKey: key) else {
             return nil
         }
@@ -295,16 +306,19 @@ final class ConfigManager: ObservableObject {
             }
             return url
         } catch {
-            print("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
+            AppLogger.log("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
             return nil
         }
     }
 
     private func beginSecurityScopedAccessIfNeeded(_ url: URL) {
+        AppLogger.log("ENTER beginSecurityScopedAccessIfNeeded")
         _ = url.startAccessingSecurityScopedResource()
     }
 
     func setEasyRPGFolder(_ url: URL) {
+        AppLogger.log("ENTER setEasyRPGFolder")
+        AppLogger.log("setEasyRPGFolder url=\(url.path)")
         let normalized = url.standardizedFileURL
         easyRPGFolderURL = normalized
         if isInsideDocuments(normalized) {
@@ -318,6 +332,7 @@ final class ConfigManager: ObservableObject {
     }
 
     func completeOnboardingIfNeeded() {
+        AppLogger.log("ENTER completeOnboardingIfNeeded")
         if !hasCompletedOnboarding {
             hasCompletedOnboarding = true
             saveSettings()
@@ -325,6 +340,7 @@ final class ConfigManager: ObservableObject {
     }
 
     func setRTPFolder(_ url: URL) {
+        AppLogger.log("ENTER setRTPFolder")
         let normalized = url.standardizedFileURL
         rtpFolderURL = normalized
         if isInsideDocuments(normalized) {

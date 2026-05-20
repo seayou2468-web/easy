@@ -115,7 +115,7 @@ struct GameBrowserView: View {
             Button("並び替え: タイトル順") { sortMode = 1 }
             Button("並び替え: フォルダ順") { sortMode = 2 }
         }
-        .onAppear { library.reloadGames() }
+        .onAppear { AppLogger.log("GameBrowserView onAppear"); library.reloadGames() }
     }
 }
 
@@ -402,7 +402,7 @@ struct CustomTitleEditorSheet: View {
                             ConfigManager.shared.setCustomGameTitle("", for: game.path)
                             dismiss()
                         }
-                    }
+                    } 
                 }
             }
             .navigationTitle("タイトル編集")
@@ -419,6 +419,9 @@ struct CustomTitleEditorSheet: View {
 }
 
 struct BrowserDrawerSheet: View {
+    private static let websiteURL = URL(string: "https://easyrpg.org")
+    private static let issuesURL = URL(string: "https://github.com/EasyRPG/Player/issues")
+
     @Binding var favoritesOnly: Bool
     let onOpenSettings: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -444,16 +447,20 @@ struct BrowserDrawerSheet: View {
                         }
                     }
                     Toggle("お気に入りのみ表示", isOn: $favoritesOnly)
-                    Link(destination: URL(string: "https://easyrpg.org")!) {
-                        HStack {
-                            Image(systemName: "globe")
-                            Text("公式サイト")
+                    if let websiteURL = Self.websiteURL {
+                        Link(destination: websiteURL) {
+                            HStack {
+                                Image(systemName: "globe")
+                                Text("公式サイト")
+                            }
                         }
                     }
-                    Link(destination: URL(string: "https://github.com/EasyRPG/Player/issues")!) {
-                        HStack {
-                            Image(systemName: "exclamationmark.circle")
-                            Text("バグ報告")
+                    if let issuesURL = Self.issuesURL {
+                        Link(destination: issuesURL) {
+                            HStack {
+                                Image(systemName: "exclamationmark.circle")
+                                Text("バグ報告")
+                            }
                         }
                     }
                 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct VirtualControllerEditorView: View {
     @StateObject private var store = VirtualControllerLayoutStore()
     @State private var selectedButtonId: String?
+    @State private var showAddMenu = false
 
     var body: some View {
         VStack(spacing: 10) {
@@ -47,6 +48,25 @@ struct VirtualControllerEditorView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 12)
+            }
+
+            HStack(spacing: 12) {
+                Button("画面内に再配置") {
+                    for idx in store.buttons.indices {
+                        store.buttons[idx].x = min(max(30, store.buttons[idx].x), 450)
+                        store.buttons[idx].y = min(max(30, store.buttons[idx].y), 500)
+                    }
+                    store.save()
+                }
+                .buttonStyle(.bordered)
+
+                Button("不足ボタンを追加") {
+                    let existing = Set(store.buttons.map(\.id))
+                    let missing = VirtualButtonLayout.default.filter { !existing.contains($0.id) }
+                    store.buttons.append(contentsOf: missing)
+                    store.save()
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
         .navigationTitle("レイアウト編集")
