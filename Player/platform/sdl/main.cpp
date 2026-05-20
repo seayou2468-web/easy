@@ -60,7 +60,7 @@ static void LogCallback(LogLevel lvl, std::string const& msg, LogCallbackUserDat
  * If the main function ever needs to change, be sure to update the `main()`
  * functions of the other platforms as well.
  */
-extern "C" int main(int argc, char* argv[]) {
+extern "C" int EasyRPG_PlatformMain(int argc, char* argv[]) {
 	std::vector<std::string> args;
 
 #if defined(__APPLE__) && TARGET_OS_IOS
@@ -114,4 +114,8 @@ extern "C" int main(int argc, char* argv[]) {
 
 	// Close
 	return Player::exit_code;
+}
+
+extern "C" int main(int argc, char* argv[]) {
+	return EasyRPG_PlatformMain(argc, argv);
 }

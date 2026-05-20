@@ -24,6 +24,8 @@
 #include "font.h"
 #include "filefinder.h"
 
+extern "C" int EasyRPG_PlatformMain(int argc, char* argv[]);
+
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
 std::mutex ios_mutex;
@@ -98,10 +100,9 @@ void StartRuntimeIfNeeded() {
 	}
 
 	std::thread([]() {
-		std::vector<std::string> args;
-		args.emplace_back("EasyRPGPlayer");
-		Player::Init(std::move(args));
-		Player::Run();
+		char arg0[] = "EasyRPGPlayer";
+		char* argv[] = { arg0, nullptr };
+		EasyRPG_PlatformMain(1, argv);
 		runtime_started = false;
 	}).detach();
 }
