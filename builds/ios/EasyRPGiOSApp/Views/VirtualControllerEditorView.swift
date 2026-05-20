@@ -18,23 +18,11 @@ struct VirtualControllerEditorView: View {
                     Color.black.opacity(0.9).ignoresSafeArea()
 
                     ForEach($workingButtons) { $button in
-                        Text(displayTitle(for: button))
-                            .font(.headline)
-                            .frame(width: button.id == "menu" ? 48 : 54, height: button.id == "menu" ? 48 : 54)
-                            .background(buttonBackground(for: button))
-                            .overlay(Circle().stroke(selectedButtonId == button.id ? Color.yellow : .clear, lineWidth: 2))
-                            .position(x: button.x * geo.size.width, y: button.y * geo.size.height)
-                            .onTapGesture {
-                                selectedButtonId = button.id
-                            }
-                            .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        selectedButtonId = button.id
-                                        button.x = min(max(0.0, value.location.x / geo.size.width), 1.0)
-                                        button.y = min(max(0.0, value.location.y / geo.size.height), 1.0)
-                                    }
-                            )
+                        EditorButtonView(
+                            button: $button,
+                            selectedButtonId: $selectedButtonId,
+                            canvasSize: geo.size
+                        )
                     }
                 }
             }
@@ -84,6 +72,32 @@ struct VirtualControllerEditorView: View {
                 Button("保存") { store.buttons = workingButtons; store.save() }
             }
         }
+    }
+}
+
+private struct EditorButtonView: View {
+    @Binding var button: VirtualButtonLayout
+    @Binding var selectedButtonId: String?
+    let canvasSize: CGSize
+
+    var body: some View {
+        Text(displayTitle(for: button))
+            .font(.headline)
+            .frame(width: button.id == "menu" ? 48 : 54, height: button.id == "menu" ? 48 : 54)
+            .background(buttonBackground(for: button))
+            .overlay(Circle().stroke(selectedButtonId == button.id ? Color.yellow : .clear, lineWidth: 2))
+            .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
+            .onTapGesture {
+                selectedButtonId = button.id
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        selectedButtonId = button.id
+                        button.x = min(max(0.0, value.location.x / canvasSize.width), 1.0)
+                        button.y = min(max(0.0, value.location.y / canvasSize.height), 1.0)
+                    }
+            )
     }
 }
 

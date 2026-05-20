@@ -115,7 +115,12 @@ final class GameLibrary: ObservableObject {
             }
 
             DispatchQueue.main.async {
-                self.games = sorted
+                let withCustomTitles = sorted.map { game in
+                    var copy = game
+                    copy.customTitle = self.configManager.getCustomGameTitle(for: game.path)
+                    return copy
+                }
+                self.games = withCustomTitles
                 self.isScanning = false
             }
         }
@@ -162,8 +167,6 @@ final class GameLibrary: ObservableObject {
             titleImage = image
         }
 
-        let customTitle = ConfigManager.shared.getCustomGameTitle(for: url.path)
-
         return Game(
             title: title,
             path: url.path,
@@ -171,7 +174,6 @@ final class GameLibrary: ObservableObject {
             gameFolderName: folderName,
             favorite: isFavorite,
             projectType: projectType,
-            customTitle: customTitle,
             titleImage: titleImage,
             encoding: encoding
         )
@@ -220,7 +222,7 @@ final class GameLibrary: ObservableObject {
         return nil
     }
 
-    private static func parseIniValue(_ content: String, key: String) -> String? {
+    nonisolated private static func parseIniValue(_ content: String, key: String) -> String? {
         AppLogger.log("ENTER parseIniValue")
         let lines = content.components(separatedBy: .newlines)
         for line in lines {
