@@ -102,6 +102,11 @@ void StartRuntimeIfNeeded() {
 	}
 
 	dispatch_async(dispatch_get_main_queue(), ^{
+		// iOS SwiftUI entrypoint does not go through SDL's usual C main wrapper.
+		// Mark SDL as main-ready before first SDL_Init() to avoid
+		// "did you include SDL_main.h" initialization failure.
+		SDL_SetMainReady();
+
 		std::vector<std::string> args;
 		args.emplace_back("EasyRPGPlayer");
 		Player::Init(std::move(args));
