@@ -221,7 +221,7 @@ void LaunchGame(const char* args) {
 	Schedule([args_str = std::string(args ? args : "")]() {
 		launch_args.clear();
 		launch_args.emplace_back("EasyRPGPlayer");
-		auto split = Utils::Tokenize(args_str, " ");
+		auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == U' '; });
 		launch_args.insert(launch_args.end(), split.begin(), split.end());
 		has_launch_args = true;
 	});
