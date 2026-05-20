@@ -51,6 +51,7 @@ final class ConfigManager: ObservableObject {
     @Published var easyRPGFolderURL: URL? = nil
     @Published var enableRtpScanning = true
     @Published var rtpFolderURL: URL? = nil
+    @Published var hasCompletedOnboarding = false
 
     private let configFileName = "config.ini"
     private let userDefaultsPrefix = "ios.settings."
@@ -112,6 +113,7 @@ final class ConfigManager: ObservableObject {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "easyRPGFolder")
         }
         defaults.set(enableRtpScanning, forKey: userDefaultsPrefix + "enableRtpScanning")
+        defaults.set(hasCompletedOnboarding, forKey: userDefaultsPrefix + "hasCompletedOnboarding")
         if let url = rtpFolderURL {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "rtpFolder")
         }
@@ -171,6 +173,7 @@ final class ConfigManager: ObservableObject {
         if let rtpStr = defaults.string(forKey: userDefaultsPrefix + "rtpFolder") {
             rtpFolderURL = URL(string: rtpStr)
         }
+        hasCompletedOnboarding = defaults.object(forKey: userDefaultsPrefix + "hasCompletedOnboarding") as? Bool ?? false
     }
 
     // MARK: - Custom Game Titles
@@ -242,7 +245,15 @@ final class ConfigManager: ObservableObject {
 
     func setEasyRPGFolder(_ url: URL) {
         easyRPGFolderURL = url
+        hasCompletedOnboarding = true
         saveSettings()
+    }
+
+    func completeOnboardingIfNeeded() {
+        if !hasCompletedOnboarding {
+            hasCompletedOnboarding = true
+            saveSettings()
+        }
     }
 
     func setRTPFolder(_ url: URL) {

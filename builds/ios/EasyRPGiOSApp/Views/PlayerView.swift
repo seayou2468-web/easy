@@ -6,7 +6,7 @@ struct PlayerView: View {
 
     @State private var showEndConfirm = false
     @State private var showResetConfirm = false
-    @State private var uiVisible = true
+    @State private var uiVisible = false
     @State private var showMenu = false
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false
@@ -52,39 +52,7 @@ struct PlayerView: View {
 
                 Spacer()
 
-                // Control Buttons
-                if uiVisible {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 8) {
-                            Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
-                                Image(systemName: "speedometer")
-                                Text("FPS")
-                            }
-                            .buttonStyle(.bordered)
-
-                            Button(action: { uiVisible = false }) {
-                                Image(systemName: "eye.slash")
-                                Text("UI隠す")
-                            }
-                            .buttonStyle(.bordered)
-
-                            Button(action: { showMenu = true }) {
-                                Image(systemName: "line.3.horizontal")
-                                Text("メニュー")
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .font(.callout)
-
-                        Text("リセット / 終了 / 配置編集はメニューから")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.65))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal, 12)
-                }
+                
             }
             .padding(.vertical, 16)
 
@@ -106,6 +74,27 @@ struct PlayerView: View {
                 }
                 .padding(16)
             }
+
+
+            VStack {
+                HStack(spacing: 10) {
+                    Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
+                        Image(systemName: "speedometer")
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button(action: { showMenu = true }) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Spacer()
+                }
+                Spacer()
+            }
+            .padding(16)
 
             if showFpsIndicator {
                 VStack {
@@ -172,6 +161,7 @@ struct PlayerView: View {
             }
         }
         .onAppear {
+            uiVisible = true
             setupPlayerWithGame()
             applySettings()
             buttonMappingStore.applyToPlayer()
@@ -413,7 +403,10 @@ struct PlayerMenuSheet: View {
                 }
 
                 Section(header: Text("設定")) {
-                    Button(action: { dismiss(); onOpenSettings() }) {
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onOpenSettings() }
+                    }) {
                         HStack {
                             Image(systemName: "gearshape.fill")
                             Text("設定を開く")

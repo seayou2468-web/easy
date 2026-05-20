@@ -434,7 +434,10 @@ struct BrowserDrawerSheet: View {
                     .padding(.vertical, 4)
                 }
                 Section("ナビゲーション") {
-                    Button(action: { dismiss(); onOpenSettings() }) {
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onOpenSettings() }
+                    }) {
                         HStack {
                             Image(systemName: "gearshape.fill")
                             Text("設定")

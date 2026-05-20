@@ -11,18 +11,24 @@ struct EasyRPGiOSApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
-                InitView(onContinue: { path.append(.browser) })
+                InitView(onContinue: { config.completeOnboardingIfNeeded(); path = [.browser] })
                     .onAppear {
                         // Initialize everything
                         mappingStore.applyToPlayer()
                         for button in layoutStore.buttons {
                             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
                         }
+
+                        if path.isEmpty {
+                            if config.hasCompletedOnboarding || config.easyRPGFolderURL != nil {
+                                path = [.browser]
+                            }
+                        }
                     }
                     .navigationDestination(for: AppScreen.self) { screen in
                         switch screen {
                         case .initScreen:
-                            InitView(onContinue: { path.append(.browser) })
+                            InitView(onContinue: { config.completeOnboardingIfNeeded(); path = [.browser] })
 
                         case .browser:
                             GameBrowserView(
