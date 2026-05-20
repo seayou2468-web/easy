@@ -12,7 +12,9 @@ struct PlayerView: View {
     @State private var showButtonMapping = false
     @State private var showSettings = false
     @State private var showFpsIndicator = false
+    @State private var hasInitializedPlayer = false
     @State private var hasProjectSecurityScopeAccess = false
+    @State private var projectSecurityScopeURL: URL?
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -164,16 +166,15 @@ struct PlayerView: View {
             }
         }
         .onAppear {
+            guard !hasInitializedPlayer else { return }
+            hasInitializedPlayer = true
             uiVisible = true
             setupPlayerWithGame()
             applySettings()
             buttonMappingStore.applyToPlayer()
         }
         .onDisappear {
-            if hasProjectSecurityScopeAccess {
-                URL(fileURLWithPath: game.path).standardizedFileURL.stopAccessingSecurityScopedResource()
-                hasProjectSecurityScopeAccess = false
-            }
+            releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
             guard isVisible else { return }
@@ -194,6 +195,7 @@ struct PlayerView: View {
 
     private func setupPlayerWithGame() {
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
+        projectSecurityScopeURL = projectURL
         hasProjectSecurityScopeAccess = projectURL.startAccessingSecurityScopedResource()
 
         let projectPath = projectURL.path
@@ -226,6 +228,17 @@ struct PlayerView: View {
 
         // Keep launch behavior aligned with Android: one explicit launch command.
         PlayerBridge.launchGame(withArgs: args)
+    }
+
+    private func releaseProjectSecurityScope() {
+        guard hasProjectSecurityScopeAccess, let scopeURL = projectSecurityScopeURL else {
+            projectSecurityScopeURL = nil
+            return
+        }
+
+        scopeURL.stopAccessingSecurityScopedResource()
+        hasProjectSecurityScopeAccess = false
+        projectSecurityScopeURL = nil
     }
 
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {

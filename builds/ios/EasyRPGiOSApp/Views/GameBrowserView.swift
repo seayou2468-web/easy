@@ -349,6 +349,7 @@ struct GameOptionsSheet: View {
                         Text("パス")
                         Spacer()
                         Text(game.path).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -363,6 +364,7 @@ struct GameOptionsSheet: View {
                         HStack {
                             Image(systemName: "pencil.circle.fill")
                             Text("カスタムタイトルを編集")
+                        }
                         }
                     }
                 }
@@ -402,6 +404,7 @@ struct CustomTitleEditorSheet: View {
                             ConfigManager.shared.setCustomGameTitle("", for: game.path)
                             dismiss()
                         }
+                        }
                     }
                 }
             }
@@ -419,6 +422,9 @@ struct CustomTitleEditorSheet: View {
 }
 
 struct BrowserDrawerSheet: View {
+    private static let websiteURL = URL(string: "https://easyrpg.org")
+    private static let issuesURL = URL(string: "https://github.com/EasyRPG/Player/issues")
+
     @Binding var favoritesOnly: Bool
     let onOpenSettings: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -444,16 +450,20 @@ struct BrowserDrawerSheet: View {
                         }
                     }
                     Toggle("お気に入りのみ表示", isOn: $favoritesOnly)
-                    Link(destination: URL(string: "https://easyrpg.org")!) {
-                        HStack {
-                            Image(systemName: "globe")
-                            Text("公式サイト")
+                    if let websiteURL = Self.websiteURL {
+                        Link(destination: websiteURL) {
+                            HStack {
+                                Image(systemName: "globe")
+                                Text("公式サイト")
+                            }
                         }
                     }
-                    Link(destination: URL(string: "https://github.com/EasyRPG/Player/issues")!) {
-                        HStack {
-                            Image(systemName: "exclamationmark.circle")
-                            Text("バグ報告")
+                    if let issuesURL = Self.issuesURL {
+                        Link(destination: issuesURL) {
+                            HStack {
+                                Image(systemName: "exclamationmark.circle")
+                                Text("バグ報告")
+                            }
                         }
                     }
                 }
