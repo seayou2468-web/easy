@@ -6,7 +6,7 @@ struct FolderPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.folder], asCopy: false)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.folder], asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
@@ -28,7 +28,9 @@ struct FolderPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             AppLogger.log("ENTER documentPicker")
             guard let url = urls.first else { return }
-            onPicked(url)
+            let normalized = url.standardizedFileURL
+            _ = normalized.startAccessingSecurityScopedResource()
+            onPicked(normalized)
         }
     }
 }

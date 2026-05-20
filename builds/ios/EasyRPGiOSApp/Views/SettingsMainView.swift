@@ -579,7 +579,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
         let contentTypes = allowedContentTypes.compactMap { UTType($0) }
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes, asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
@@ -604,7 +604,9 @@ struct DocumentPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
-                onPicked(url)
+                let normalized = url.standardizedFileURL
+                _ = normalized.startAccessingSecurityScopedResource()
+                onPicked(normalized)
             }
         }
     }
@@ -616,7 +618,7 @@ struct FolderPickerView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: true)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
@@ -643,7 +645,9 @@ struct FolderPickerView: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
-                onPicked(url)
+                let normalized = url.standardizedFileURL
+                _ = normalized.startAccessingSecurityScopedResource()
+                onPicked(normalized)
             }
             dismiss()
         }
