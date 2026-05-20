@@ -26,6 +26,9 @@
 
 
 namespace {
+void LogBridgeCall(const char* fn) {
+	Output::Debug("[iOSBridge] %s", fn ? fn : "<null>");
+}
 std::vector<std::function<void()>> ios_fn_queue;
 std::mutex ios_mutex;
 struct VirtualPoint { float x; float y; Input::Keys::InputKey key; };
@@ -352,50 +355,61 @@ bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 
 extern "C" {
 void EasyRPG_iOS_EndGame() {
+	LogBridgeCall("EasyRPG_iOS_EndGame");
 	IOSIntegration::EndGame();
 }
 void EasyRPG_iOS_StartRuntime() {
+	LogBridgeCall("EasyRPG_iOS_StartRuntime");
 	IOSIntegration::StartRuntimeIfNeeded();
 }
 void EasyRPG_iOS_ResetGame() {
+	LogBridgeCall("EasyRPG_iOS_ResetGame");
 	IOSIntegration::ResetGame();
 }
 
 void EasyRPG_iOS_ToggleFps() {
+	LogBridgeCall("EasyRPG_iOS_ToggleFps");
 	IOSIntegration::ToggleFps();
 }
 
 void EasyRPG_iOS_OpenSettings() {
+	LogBridgeCall("EasyRPG_iOS_OpenSettings");
 	IOSIntegration::OpenSettings();
 }
 
 void EasyRPG_iOS_SetButtonMapping(const char* button_id, const char* key_id) {
+	LogBridgeCall("EasyRPG_iOS_SetButtonMapping");
 	IOSIntegration::SetButtonMapping(button_id, key_id);
 }
 
 void EasyRPG_iOS_ResetButtonMappings() {
+	LogBridgeCall("EasyRPG_iOS_ResetButtonMappings");
 	IOSIntegration::ResetButtonMappings();
 }
 
 void EasyRPG_iOS_VirtualTouchDown(float x, float y) {
+	LogBridgeCall("EasyRPG_iOS_VirtualTouchDown");
 	IOSIntegration::VirtualTouchDown(x, y);
 }
 
 void EasyRPG_iOS_VirtualTouchMove(float x, float y) {
+	LogBridgeCall("EasyRPG_iOS_VirtualTouchMove");
 	IOSIntegration::VirtualTouchMove(x, y);
 }
 
 void EasyRPG_iOS_VirtualTouchUp() {
+	LogBridgeCall("EasyRPG_iOS_VirtualTouchUp");
 	IOSIntegration::VirtualTouchUp();
 }
 
 void EasyRPG_iOS_SetVirtualButtonPoint(const char* button_id, float x, float y) {
+	LogBridgeCall("EasyRPG_iOS_SetVirtualButtonPoint");
 	IOSIntegration::SetVirtualButtonPoint(button_id, x, y);
 }
 
-void EasyRPG_iOS_LaunchGame(const char* args) { IOSIntegration::LaunchGame(args); }
-void EasyRPG_iOS_SendKeyDown(const char* button_id) { IOSIntegration::SendKeyDown(button_id); }
-void EasyRPG_iOS_SendKeyUp(const char* button_id) { IOSIntegration::SendKeyUp(button_id); }
+void EasyRPG_iOS_LaunchGame(const char* args) { LogBridgeCall("EasyRPG_iOS_LaunchGame"); IOSIntegration::LaunchGame(args); }
+void EasyRPG_iOS_SendKeyDown(const char* button_id) { LogBridgeCall("EasyRPG_iOS_SendKeyDown"); IOSIntegration::SendKeyDown(button_id); }
+void EasyRPG_iOS_SendKeyUp(const char* button_id) { LogBridgeCall("EasyRPG_iOS_SendKeyUp"); IOSIntegration::SendKeyUp(button_id); }
 void EasyRPG_iOS_SetLayoutTransparency(float) {}
 void EasyRPG_iOS_SetLayoutSize(float) {}
 void EasyRPG_iOS_SetVibrationEnabled(bool) {}

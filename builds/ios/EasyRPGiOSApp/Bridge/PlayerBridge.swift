@@ -4,16 +4,29 @@ import UIKit
 enum PlayerBridge {
     private static let launchArgSeparator = "\u{1F}" // Unit Separator (ASCII 31)
     // MARK: - Game Control
-    static func startRuntime() { AppLogger.log("startRuntime"); EasyRPG_iOS_StartRuntime() }
+    static func startRuntime() {
         AppLogger.log("ENTER startRuntime")
-    static func endGame() { AppLogger.log("endGame"); EasyRPG_iOS_EndGame() }
+        AppLogger.log("startRuntime")
+        EasyRPG_iOS_StartRuntime()
+    }
+    static func endGame() {
         AppLogger.log("ENTER endGame")
-    static func resetGame() { AppLogger.log("resetGame"); EasyRPG_iOS_ResetGame() }
+        AppLogger.log("endGame")
+        EasyRPG_iOS_EndGame()
+    }
+    static func resetGame() {
         AppLogger.log("ENTER resetGame")
-    static func toggleFps() { EasyRPG_iOS_ToggleFps() }
+        AppLogger.log("resetGame")
+        EasyRPG_iOS_ResetGame()
+    }
+    static func toggleFps() {
         AppLogger.log("ENTER toggleFps")
-    static func openSettings() { EasyRPG_iOS_OpenSettings() }
+        EasyRPG_iOS_ToggleFps()
+    }
+    static func openSettings() {
         AppLogger.log("ENTER openSettings")
+        EasyRPG_iOS_OpenSettings()
+    }
 
     // MARK: - Game Launch
     static func launchGame(withArgs args: [String]) {
@@ -34,8 +47,10 @@ enum PlayerBridge {
             }
         }
     }
-    static func resetButtonMappings() { EasyRPG_iOS_ResetButtonMappings() }
+    static func resetButtonMappings() {
         AppLogger.log("ENTER resetButtonMappings")
+        EasyRPG_iOS_ResetButtonMappings()
+    }
 
     // MARK: - Input
     static func sendKeyDown(_ buttonId: String) {
@@ -53,12 +68,18 @@ enum PlayerBridge {
     }
 
     // MARK: - Virtual Controller Touch Events
-    static func virtualTouchDown(x: CGFloat, y: CGFloat) { EasyRPG_iOS_VirtualTouchDown(Float(x), Float(y)) }
+    static func virtualTouchDown(x: CGFloat, y: CGFloat) {
         AppLogger.log("ENTER virtualTouchDown")
-    static func virtualTouchMove(x: CGFloat, y: CGFloat) { EasyRPG_iOS_VirtualTouchMove(Float(x), Float(y)) }
+        EasyRPG_iOS_VirtualTouchDown(Float(x), Float(y))
+    }
+    static func virtualTouchMove(x: CGFloat, y: CGFloat) {
         AppLogger.log("ENTER virtualTouchMove")
-    static func virtualTouchUp() { EasyRPG_iOS_VirtualTouchUp() }
+        EasyRPG_iOS_VirtualTouchMove(Float(x), Float(y))
+    }
+    static func virtualTouchUp() {
         AppLogger.log("ENTER virtualTouchUp")
+        EasyRPG_iOS_VirtualTouchUp()
+    }
 
     // MARK: - Virtual Controller Configuration
     static func setVirtualButtonPoint(buttonId: String, x: CGFloat, y: CGFloat) {
