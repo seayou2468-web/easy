@@ -589,7 +589,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator {
         AppLogger.log("ENTER makeCoordinator")
-        Coordinator(onPicked: onPicked)
+        return Coordinator(onPicked: onPicked)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
@@ -626,7 +626,7 @@ struct FolderPickerView: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator {
         AppLogger.log("ENTER makeCoordinator")
-        Coordinator(onPicked: onPicked, dismiss: dismiss)
+        return Coordinator(onPicked: onPicked, dismiss: dismiss)
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
