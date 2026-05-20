@@ -12,6 +12,7 @@ struct PlayerView: View {
     @State private var showButtonMapping = false
     @State private var showSettings = false
     @State private var showFpsIndicator = false
+    @State private var didSetupPlayer = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -163,6 +164,8 @@ struct PlayerView: View {
             }
         }
         .onAppear {
+            guard !didSetupPlayer else { return }
+            didSetupPlayer = true
             uiVisible = true
             setupPlayerWithGame()
             applySettings()
