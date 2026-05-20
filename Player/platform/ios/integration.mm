@@ -13,6 +13,7 @@
 #include <string>
 #include <dispatch/dispatch.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include "platform/ios/integration.h"
 #include "output.h"
 #include "player.h"
