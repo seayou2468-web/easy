@@ -9,7 +9,6 @@
 #include <cstring>
 #include <cctype>
 #include <vector>
-#include <thread>
 #include <string>
 #include <SDL3/SDL.h>
 #include "platform/ios/integration.h"
@@ -41,7 +40,6 @@ std::vector<VirtualPoint> virtual_points = {
 std::vector<std::string> launch_args;
 bool has_launch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
-bool runtime_started = false;
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -111,20 +109,6 @@ void Invoke() {
 			}
 		}
 	}
-}
-
-
-void StartRuntime() {
-	if (runtime_started) {
-		return;
-	}
-	runtime_started = true;
-	std::thread([]() {
-		std::vector<std::string> args;
-		args.emplace_back("EasyRPGPlayer");
-		Player::Init(std::move(args));
-		Player::Run();
-	}).detach();
 }
 
 void EndGame() {
@@ -348,7 +332,6 @@ bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 }
 
 extern "C" {
-void EasyRPG_iOS_StartPlayerRuntime() { IOSIntegration::StartRuntime(); }
 void EasyRPG_iOS_EndGame() {
 	IOSIntegration::EndGame();
 }
