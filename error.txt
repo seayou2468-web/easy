@@ -1,0 +1,10 @@
+2026-05-20T05:17:13.9818940Z /Users/runner/work/easy/easy/Player/platform/ios/integration.mm:474:25: error: no member named 'speed_modifier_a' in 'Game_ConfigPlayer'
+2026-05-20T05:17:13.9819290Z   474 |                 Player::player_config.speed_modifier_a.Set(static_cast<int>(clamped));
+2026-05-20T05:17:13.9819350Z       |                 ~~~~~~~~~~~~~~~~~~~~~ ^
+2026-05-20T05:17:13.9819680Z /Users/runner/work/easy/easy/Player/platform/ios/integration.mm:481:25: error: no member named 'speed_modifier_b' in 'Game_ConfigPlayer'
+2026-05-20T05:17:13.9819860Z   481 |                 Player::player_config.speed_modifier_b.Set(static_cast<int>(clamped));
+2026-05-20T05:17:13.9819990Z       |                 ~~~~~~~~~~~~~~~~~~~~~ ^
+2026-05-20T05:17:13.9820190Z In file included from /Users/runner/work/easy/easy/Player/platform/ios/integration.mm:16:
+2026-05-20T05:17:13.9820340Z In file included from /Users/runner/work/easy/easy/Player/player.h:26:
+2026-05-20T05:17:13.9820500Z In file included from /Users/runner/work/easy/easy/Player/game_config.h:28:
+2026-05-20T05:17:13.9820880Z
