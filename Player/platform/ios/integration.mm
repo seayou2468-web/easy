@@ -20,6 +20,7 @@
 #include "baseui.h"
 #include "audio.h"
 #include "font.h"
+#include "filefinder.h"
 
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
@@ -233,6 +234,30 @@ void LaunchGame(const char* args) {
 		auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == U' '; });
 		launch_args.insert(launch_args.end(), split.begin(), split.end());
 		has_launch_args = true;
+
+		// Runtime path wiring for custom iOS UI -> Player connection.
+		// This allows launching/switching games after the app is already running.
+		for (size_t i = 0; i + 1 < launch_args.size(); ++i) {
+			if (launch_args[i] == "--project-path") {
+				auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
+				if (gamefs) {
+					FileFinder::SetGameFilesystem(gamefs);
+				}
+				++i;
+				continue;
+			}
+			if (launch_args[i] == "--save-path") {
+				auto savefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
+				if (savefs) {
+					FileFinder::SetSaveFilesystem(savefs);
+				}
+				++i;
+				continue;
+			}
+		}
+
+		// Request a reset so the newly selected game path is picked up.
+		Player::reset_flag = true;
 	});
 }
 
