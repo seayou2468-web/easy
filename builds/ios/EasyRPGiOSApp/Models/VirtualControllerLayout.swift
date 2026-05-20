@@ -11,8 +11,8 @@ struct VirtualButtonLayout: Identifiable, Codable, Hashable {
         .init(id: "down", title: "↓", x: 70, y: 410),
         .init(id: "left", title: "←", x: 25, y: 365),
         .init(id: "right", title: "→", x: 115, y: 365),
-        .init(id: "z", title: "Z", x: 320, y: 350),
-        .init(id: "x", title: "X", x: 380, y: 300),
+        .init(id: "decision", title: "A", x: 320, y: 350),
+        .init(id: "cancel", title: "B", x: 380, y: 300),
         .init(id: "shift", title: "S", x: 300, y: 420),
         .init(id: "fast_forward_a", title: ">>", x: 360, y: 420),
         .init(id: "fast_forward_b", title: "⏩", x: 420, y: 360),
@@ -38,11 +38,11 @@ final class VirtualControllerLayoutStore: ObservableObject {
         guard let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode([VirtualButtonLayout].self, from: data),
               !decoded.isEmpty else {
-            buttons = VirtualButtonLayout.default
+            buttons = Self.clamped(VirtualButtonLayout.default)
             return
         }
         let keyed = Dictionary(uniqueKeysWithValues: decoded.map { ($0.id, $0) })
-        buttons = VirtualButtonLayout.default.map { keyed[$0.id] ?? $0 }
+        buttons = Self.clamped(VirtualButtonLayout.default.map { keyed[$0.id] ?? $0 })
     }
 
     func save() {
@@ -54,7 +54,16 @@ final class VirtualControllerLayoutStore: ObservableObject {
 
     func reset() {
         AppLogger.log("ENTER reset")
-        buttons = VirtualButtonLayout.default
+        buttons = Self.clamped(VirtualButtonLayout.default)
         save()
+    }
+
+    private static func clamped(_ buttons: [VirtualButtonLayout]) -> [VirtualButtonLayout] {
+        buttons.map { b in
+            var m = b
+            m.x = min(max(30, m.x), 450)
+            m.y = min(max(30, m.y), 500)
+            return m
+        }
     }
 }

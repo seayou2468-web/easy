@@ -410,8 +410,8 @@ struct VirtualButtonView: View {
     private func displayTitle() -> String {
         AppLogger.log("ENTER displayTitle")
         if config.showABasZX {
-            if button.id == "z" { return "A" }
-            if button.id == "x" { return "B" }
+            if button.id == "z" || button.id == "decision" { return "A" }
+            if button.id == "x" || button.id == "cancel" { return "B" }
         }
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
             return "⏩"
