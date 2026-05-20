@@ -57,6 +57,20 @@ final class ConfigManager: ObservableObject {
     private let userDefaultsPrefix = "ios.settings."
     private let easyRPGFolderBookmarkKey = "ios.bookmark.easyRPGFolder"
     private let rtpFolderBookmarkKey = "ios.bookmark.rtpFolder"
+    private func defaultEasyRPGDocumentsFolder() -> URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("EasyRPG", isDirectory: true)
+    }
+
+    private func isInsideDocuments(_ url: URL) -> Bool {
+        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return false
+        }
+        let standardizedURL = url.standardizedFileURL.path
+        let standardizedDocuments = documents.standardizedFileURL.path
+        return standardizedURL == standardizedDocuments || standardizedURL.hasPrefix(standardizedDocuments + "/")
+    }
+
     private var configURL: URL? {
         FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
             .appendingPathComponent(configFileName)
@@ -171,8 +185,7 @@ final class ConfigManager: ObservableObject {
             easyRPGFolderURL = URL(string: folderStr)
             if let easyRPGFolderURL { beginSecurityScopedAccessIfNeeded(easyRPGFolderURL) }
         } else {
-            easyRPGFolderURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
-                .appendingPathComponent("EasyRPG")
+            easyRPGFolderURL = defaultEasyRPGDocumentsFolder()
         }
         enableRtpScanning = defaults.bool(forKey: userDefaultsPrefix + "enableRtpScanning") || enableRtpScanning
         if let rtpURL = restoreSecurityScopedURL(from: rtpFolderBookmarkKey) {
@@ -292,9 +305,14 @@ final class ConfigManager: ObservableObject {
     }
 
     func setEasyRPGFolder(_ url: URL) {
-        beginSecurityScopedAccessIfNeeded(url)
-        easyRPGFolderURL = url
-        persistSecurityScopedBookmark(for: url, key: easyRPGFolderBookmarkKey)
+        let normalized = url.standardizedFileURL
+        easyRPGFolderURL = normalized
+        if isInsideDocuments(normalized) {
+            UserDefaults.standard.removeObject(forKey: easyRPGFolderBookmarkKey)
+        } else {
+            beginSecurityScopedAccessIfNeeded(normalized)
+            persistSecurityScopedBookmark(for: normalized, key: easyRPGFolderBookmarkKey)
+        }
         hasCompletedOnboarding = true
         saveSettings()
     }
@@ -307,9 +325,14 @@ final class ConfigManager: ObservableObject {
     }
 
     func setRTPFolder(_ url: URL) {
-        beginSecurityScopedAccessIfNeeded(url)
-        rtpFolderURL = url
-        persistSecurityScopedBookmark(for: url, key: rtpFolderBookmarkKey)
+        let normalized = url.standardizedFileURL
+        rtpFolderURL = normalized
+        if isInsideDocuments(normalized) {
+            UserDefaults.standard.removeObject(forKey: rtpFolderBookmarkKey)
+        } else {
+            beginSecurityScopedAccessIfNeeded(normalized)
+            persistSecurityScopedBookmark(for: normalized, key: rtpFolderBookmarkKey)
+        }
         saveSettings()
     }
 }
