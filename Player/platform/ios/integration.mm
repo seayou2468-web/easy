@@ -471,14 +471,14 @@ void EasyRPG_iOS_SetFont2Size(int32_t size) {
 void EasyRPG_iOS_SetFastForwardSpeedA(int32_t speed) {
 	Schedule([speed]() {
 		const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, speed));
-		Player::player_config.speed_modifier_a.Set(static_cast<int>(clamped));
+		Player::player_config.input.speed_modifier_a.Set(static_cast<int>(clamped));
 	});
 }
 
 void EasyRPG_iOS_SetFastForwardSpeedB(int32_t speed) {
 	Schedule([speed]() {
 		const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, speed));
-		Player::player_config.speed_modifier_b.Set(static_cast<int>(clamped));
+		Player::player_config.input.speed_modifier_b.Set(static_cast<int>(clamped));
 	});
 }
 
