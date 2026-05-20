@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 // Game Control
+void EasyRPG_iOS_StartPlayerRuntime(void);
 void EasyRPG_iOS_EndGame(void);
 void EasyRPG_iOS_ResetGame(void);
 void EasyRPG_iOS_ToggleFps(void);

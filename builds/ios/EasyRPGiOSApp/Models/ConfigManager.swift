@@ -51,9 +51,26 @@ final class ConfigManager: ObservableObject {
     @Published var easyRPGFolderURL: URL? = nil
     @Published var enableRtpScanning = true
     @Published var rtpFolderURL: URL? = nil
+    @Published var hasCompletedOnboarding = false
 
     private let configFileName = "config.ini"
     private let userDefaultsPrefix = "ios.settings."
+    private let easyRPGFolderBookmarkKey = "ios.bookmark.easyRPGFolder"
+    private let rtpFolderBookmarkKey = "ios.bookmark.rtpFolder"
+    private func defaultEasyRPGDocumentsFolder() -> URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("EasyRPG", isDirectory: true)
+    }
+
+    private func isInsideDocuments(_ url: URL) -> Bool {
+        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return false
+        }
+        let standardizedURL = url.standardizedFileURL.path
+        let standardizedDocuments = documents.standardizedFileURL.path
+        return standardizedURL == standardizedDocuments || standardizedURL.hasPrefix(standardizedDocuments + "/")
+    }
+
     private var configURL: URL? {
         FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
             .appendingPathComponent(configFileName)
@@ -112,6 +129,7 @@ final class ConfigManager: ObservableObject {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "easyRPGFolder")
         }
         defaults.set(enableRtpScanning, forKey: userDefaultsPrefix + "enableRtpScanning")
+        defaults.set(hasCompletedOnboarding, forKey: userDefaultsPrefix + "hasCompletedOnboarding")
         if let url = rtpFolderURL {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "rtpFolder")
         }
@@ -161,16 +179,22 @@ final class ConfigManager: ObservableObject {
         font1Size = max(1, defaults.integer(forKey: userDefaultsPrefix + "font1Size") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "font1Size") : 12)
         font2Size = max(1, defaults.integer(forKey: userDefaultsPrefix + "font2Size") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "font2Size") : 12)
 
-        if let folderStr = defaults.string(forKey: userDefaultsPrefix + "easyRPGFolder") {
+        if let folderURL = restoreSecurityScopedURL(from: easyRPGFolderBookmarkKey) {
+            easyRPGFolderURL = folderURL
+        } else if let folderStr = defaults.string(forKey: userDefaultsPrefix + "easyRPGFolder") {
             easyRPGFolderURL = URL(string: folderStr)
+            if let easyRPGFolderURL { beginSecurityScopedAccessIfNeeded(easyRPGFolderURL) }
         } else {
-            easyRPGFolderURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
-                .appendingPathComponent("EasyRPG")
+            easyRPGFolderURL = defaultEasyRPGDocumentsFolder()
         }
         enableRtpScanning = defaults.bool(forKey: userDefaultsPrefix + "enableRtpScanning") || enableRtpScanning
-        if let rtpStr = defaults.string(forKey: userDefaultsPrefix + "rtpFolder") {
+        if let rtpURL = restoreSecurityScopedURL(from: rtpFolderBookmarkKey) {
+            rtpFolderURL = rtpURL
+        } else if let rtpStr = defaults.string(forKey: userDefaultsPrefix + "rtpFolder") {
             rtpFolderURL = URL(string: rtpStr)
+            if let rtpFolderURL { beginSecurityScopedAccessIfNeeded(rtpFolderURL) }
         }
+        hasCompletedOnboarding = defaults.object(forKey: userDefaultsPrefix + "hasCompletedOnboarding") as? Bool ?? false
     }
 
     // MARK: - Custom Game Titles
@@ -240,13 +264,75 @@ final class ConfigManager: ObservableObject {
         }
     }
 
+
+    private func persistSecurityScopedBookmark(for url: URL, key: String) {
+        do {
+            let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+            UserDefaults.standard.set(data, forKey: key)
+        } catch {
+            print("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
+        }
+    }
+
+    private func restoreSecurityScopedURL(from key: String) -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: key) else {
+            return nil
+        }
+
+        do {
+            var isStale = false
+            let url = try URL(
+                resolvingBookmarkData: data,
+                options: [],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+            if url.startAccessingSecurityScopedResource() {
+                if isStale {
+                    persistSecurityScopedBookmark(for: url, key: key)
+                }
+                return url
+            }
+            return url
+        } catch {
+            print("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
+            return nil
+        }
+    }
+
+    private func beginSecurityScopedAccessIfNeeded(_ url: URL) {
+        _ = url.startAccessingSecurityScopedResource()
+    }
+
     func setEasyRPGFolder(_ url: URL) {
-        easyRPGFolderURL = url
+        let normalized = url.standardizedFileURL
+        easyRPGFolderURL = normalized
+        if isInsideDocuments(normalized) {
+            UserDefaults.standard.removeObject(forKey: easyRPGFolderBookmarkKey)
+        } else {
+            beginSecurityScopedAccessIfNeeded(normalized)
+            persistSecurityScopedBookmark(for: normalized, key: easyRPGFolderBookmarkKey)
+        }
+        hasCompletedOnboarding = true
         saveSettings()
     }
 
+    func completeOnboardingIfNeeded() {
+        if !hasCompletedOnboarding {
+            hasCompletedOnboarding = true
+            saveSettings()
+        }
+    }
+
     func setRTPFolder(_ url: URL) {
-        rtpFolderURL = url
+        let normalized = url.standardizedFileURL
+        rtpFolderURL = normalized
+        if isInsideDocuments(normalized) {
+            UserDefaults.standard.removeObject(forKey: rtpFolderBookmarkKey)
+        } else {
+            beginSecurityScopedAccessIfNeeded(normalized)
+            persistSecurityScopedBookmark(for: normalized, key: rtpFolderBookmarkKey)
+        }
         saveSettings()
     }
 }
