@@ -1,0 +1,301 @@
+name: easyrpg-ios
+options:
+  deploymentTarget:
+    iOS: "18.2"
+configs:
+  Release: release
+settings:
+  base:
+    CLANG_CXX_LANGUAGE_STANDARD: "gnu++17"
+    CLANG_CXX_LIBRARY: "libc++"
+    SKIP_INSTALL: "NO"
+    ONLY_ACTIVE_ARCH: "NO"
+
+targets:
+  liblcf:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.2"
+    sources:
+      - path: liblcf
+        includes:
+          - "**/*.c"
+          - "**/*.cc"
+          - "**/*.cpp"
+          - "**/*.cxx"
+          - "**/*.m"
+          - "**/*.mm"
+    settings:
+      base:
+        PRODUCT_NAME: liblcf
+        MACH_O_TYPE: staticlib
+        DEFINES_MODULE: "NO"
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/liblcf"
+          - "$(SRCROOT)/liblcf/generated"
+          - "$(SRCROOT)/Dependencies/include"
+          - "$(SRCROOT)/Dependencies/include/freetype2"
+          - "$(SRCROOT)/Dependencies/include/pixman-1"
+
+  Player:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.2"
+    sources:
+      - path: Player
+        includes:
+          - "**/*.c"
+          - "**/*.cc"
+          - "**/*.cpp"
+          - "**/*.cxx"
+          - "**/*.m"
+          - "**/*.mm"
+        excludes:
+          - "platform/**"
+          - "**/main.cpp"
+      - path: Player/platform/ios
+        includes:
+          - "**/*.mm"
+          - "**/*.m"
+          - "**/*.h"
+    dependencies:
+      - target: liblcf
+    settings:
+      base:
+        PRODUCT_NAME: Player
+        MACH_O_TYPE: staticlib
+        DEFINES_MODULE: "NO"
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - "$(inherited)"
+          - "USE_SDL=3"
+          - "DISABLE_NON_IOS_PLATFORM_CODE=1"
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Player"
+          - "$(SRCROOT)/Player/lcf"
+          - "$(SRCROOT)/liblcf"
+          - "$(SRCROOT)/liblcf/generated"
+          - "$(SRCROOT)/Dependencies/include"
+          - "$(SRCROOT)/Dependencies/include/freetype2"
+          - "$(SRCROOT)/Dependencies/include/pixman-1"
+
+  EasyRPGPlayer-iOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.2"
+    sources:
+      - path: Player
+        includes:
+          - "**/*.c"
+          - "**/*.cc"
+          - "**/*.cpp"
+          - "**/*.cxx"
+          - "**/*.m"
+          - "**/*.mm"
+        excludes:
+          - "platform/**"
+      - path: Player/platform/sdl
+        includes:
+          - "sdl3_*.cpp"
+          - "sdl3_*.h"
+          - "axis.h"
+          - "main.cpp"
+        excludes:
+          - "sdl_ui.cpp"
+          - "sdl_ui.h"
+          - "sdl2_*.cpp"
+          - "sdl2_*.h"
+      - path: Player/platform/ios
+        includes:
+          - "**/*.mm"
+          - "**/*.m"
+          - "**/*.h"
+    dependencies:
+      - target: liblcf
+    settings:
+      base:
+        PRODUCT_NAME: EasyRPGPlayer
+        PRODUCT_BUNDLE_IDENTIFIER: org.easyrpg.player.ios
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: "EasyRPGPlayer"
+        INFOPLIST_KEY_CFBundlePackageType: "APPL"
+        INFOPLIST_KEY_CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        INFOPLIST_KEY_CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Used to detect and support Bluetooth game controllers."
+        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: "Used to detect and support Bluetooth game controllers."
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: "NO"
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - "$(inherited)"
+          - "USE_SDL=3"
+          - "DISABLE_NON_IOS_PLATFORM_CODE=1"
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Player"
+          - "$(SRCROOT)/Player/lcf"
+          - "$(SRCROOT)/liblcf"
+          - "$(SRCROOT)/liblcf/generated"
+          - "$(SRCROOT)/Dependencies/include"
+          - "$(SRCROOT)/Dependencies/include/freetype2"
+          - "$(SRCROOT)/Dependencies/include/pixman-1"
+        LIBRARY_SEARCH_PATHS:
+          - "$(SRCROOT)/Dependencies/lib"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-ObjC"
+          - "-lSDL3"
+          - "-lfmt"
+          - "-linih"
+          - "-lINIReader"
+          - "-lfluidsynth"
+          - "-lsndfile"
+          - "-lmpg123"
+          - "-lvorbisfile"
+          - "-lvorbis"
+          - "-logg"
+          - "-lspeexdsp"
+          - "-lWildMidi"
+          - "-lxmp-lite"
+          - "-lharfbuzz"
+          - "-lfreetype"
+          - "-lpng16"
+          - "-lpixman-1"
+          - "-licui18n"
+          - "-licuuc"
+          - "-licudata"
+          - "-lz"
+          - "-lexpat"
+          - "-llhasa"
+          - "-framework"
+          - "Foundation"
+          - "-framework"
+          - "UIKit"
+          - "-framework"
+          - "CoreGraphics"
+          - "-framework"
+          - "OpenGLES"
+          - "-framework"
+          - "QuartzCore"
+          - "-framework"
+          - "AVFoundation"
+          - "-framework"
+          - "AudioToolbox"
+          - "-framework"
+          - "GameController"
+          - "-framework"
+          - "CoreVideo"
+          - "-framework"
+          - "CoreMedia"
+          - "-framework"
+          - "Metal"
+          - "-framework"
+          - "MetalKit"
+          - "-framework"
+          - "CoreAudio"
+          - "-framework"
+          - "CoreHaptics"
+          - "-framework"
+          - "CoreMotion"
+          - "-framework"
+          - "CoreBluetooth"
+
+  EasyRPGPlayerUI-iOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.2"
+    sources:
+      - path: builds/ios/EasyRPGiOSApp
+        includes:
+          - "**/*.swift"
+          - "**/*.h"
+          - "**/*.xml"
+      - path: Player/platform/ios
+        includes:
+          - "integration.mm"
+          - "integration.h"
+    dependencies:
+      - target: Player
+      - target: liblcf
+    settings:
+      base:
+        PRODUCT_NAME: EasyRPGPlayerUI
+        PRODUCT_BUNDLE_IDENTIFIER: org.easyrpg.player.ios.ui
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: "EasyRPGPlayerUI"
+        INFOPLIST_KEY_CFBundlePackageType: "APPL"
+        INFOPLIST_KEY_CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        INFOPLIST_KEY_CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Used to detect and support Bluetooth game controllers."
+        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: "Used to detect and support Bluetooth game controllers."
+        SWIFT_VERSION: "5.0"
+        SWIFT_OBJC_BRIDGING_HEADER: "builds/ios/EasyRPGiOSApp/Bridge/PlayerBridge.h"
+        CLANG_ENABLE_MODULES: "YES"
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Player"
+          - "$(SRCROOT)/Player/lcf"
+          - "$(SRCROOT)/liblcf"
+          - "$(SRCROOT)/liblcf/generated"
+          - "$(SRCROOT)/Dependencies/include"
+          - "$(SRCROOT)/Dependencies/include/freetype2"
+          - "$(SRCROOT)/Dependencies/include/pixman-1"
+        LIBRARY_SEARCH_PATHS:
+          - "$(SRCROOT)/Dependencies/lib"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-ObjC"
+          - "-lSDL3"
+          - "-lfmt"
+          - "-linih"
+          - "-lINIReader"
+          - "-lfluidsynth"
+          - "-lsndfile"
+          - "-lmpg123"
+          - "-lvorbisfile"
+          - "-lvorbis"
+          - "-logg"
+          - "-lspeexdsp"
+          - "-lWildMidi"
+          - "-lxmp-lite"
+          - "-lharfbuzz"
+          - "-lfreetype"
+          - "-lpng16"
+          - "-lpixman-1"
+          - "-licui18n"
+          - "-licuuc"
+          - "-licudata"
+          - "-lz"
+          - "-lexpat"
+          - "-llhasa"
+          - "-framework"
+          - "Foundation"
+          - "-framework"
+          - "UIKit"
+          - "-framework"
+          - "CoreGraphics"
+          - "-framework"
+          - "OpenGLES"
+          - "-framework"
+          - "QuartzCore"
+          - "-framework"
+          - "AVFoundation"
+          - "-framework"
+          - "AudioToolbox"
+          - "-framework"
+          - "GameController"
+          - "-framework"
+          - "CoreVideo"
+          - "-framework"
+          - "CoreMedia"
+          - "-framework"
+          - "Metal"
+          - "-framework"
+          - "MetalKit"
+          - "-framework"
+          - "CoreAudio"
+          - "-framework"
+          - "CoreHaptics"
+          - "-framework"
+          - "CoreMotion"
+          - "-framework"
+          - "CoreBluetooth"

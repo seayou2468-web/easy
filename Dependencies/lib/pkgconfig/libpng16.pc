@@ -1,0 +1,12 @@
+prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+exec_prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+libdir=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/lib
+includedir=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/include/libpng16
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.6.58
+Requires.private: zlib
+Libs: -L${libdir} -lpng16
+Libs.private: -lz -lm
+Cflags: -I${includedir}

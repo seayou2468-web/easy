@@ -1,0 +1,16 @@
+# Opus codec reference implementation pkg-config file
+
+prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+exec_prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+libdir=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/lib
+includedir=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/include
+
+Name: Opus
+Description: Opus IETF audio codec ( build)
+URL: https://opus-codec.org/
+Version: 1.6.1
+Requires:
+Conflicts:
+Libs: -L/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/lib -lopus
+Libs.private: -lm
+Cflags: -I/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7/include/opus

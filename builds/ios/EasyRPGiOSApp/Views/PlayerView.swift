@@ -1,0 +1,416 @@
+import SwiftUI
+
+struct PlayerView: View {
+    let game: Game
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var showEndConfirm = false
+    @State private var showResetConfirm = false
+    @State private var uiVisible = true
+    @State private var showMenu = false
+    @State private var showLayoutEditor = false
+    @State private var showButtonMapping = false
+    @State private var showSettings = false
+    @State private var showFpsIndicator = false
+    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var config = ConfigManager.shared
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                if uiVisible {
+                    // Header
+                    VStack(spacing: 4) {
+                        Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
+                            .font(.title3)
+                            .bold()
+                            .foregroundStyle(.white)
+
+                        Text("プレイヤー実行中")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(.vertical, 8)
+                }
+
+                Spacer()
+
+                // Virtual Controller Area
+                if uiVisible {
+                    VirtualControllerView(
+                        layoutStore: layoutStore,
+                        config: config,
+                        onDirectionInput: handleDirectionInput,
+                        onButtonInput: handleButtonInput
+                    )
+                }
+
+                Spacer()
+
+                // Control Buttons
+                if uiVisible {
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
+                                Image(systemName: "speedometer")
+                                Text("FPS")
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button(action: { uiVisible = false }) {
+                                Image(systemName: "eye.slash")
+                                Text("UI隠す")
+                            }
+                            .buttonStyle(.bordered)
+
+                            Spacer()
+
+                            Button(action: { showMenu = true }) {
+                                Image(systemName: "line.3.horizontal")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .font(.caption)
+
+                        HStack(spacing: 12) {
+                            Button("リセット", role: .destructive) {
+                                showResetConfirm = true
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("終了", role: .destructive) {
+                                showEndConfirm = true
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .font(.caption)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding(.vertical, 16)
+
+            // Show UI Button (when hidden)
+            if !uiVisible {
+                VStack {
+                    HStack {
+                        Button(action: { uiVisible = true }) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 24))
+                                .foregroundStyle(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .padding(16)
+            }
+        }
+        .toolbar(content: {
+            ToolbarItem(placement: .topBarLeading) {
+                if uiVisible {
+                    Button { showMenu = true } label: {
+                        Image(systemName: "line.3.horizontal")
+                    }
+                }
+            }
+        })
+        .sheet(isPresented: $showMenu) {
+            PlayerMenuSheet(
+                game: game,
+                onEditLayout: { showLayoutEditor = true },
+                onEditButtonMapping: { showButtonMapping = true },
+                onOpenSettings: { showSettings = true },
+                onToggleUI: { uiVisible.toggle() },
+                onReset: { showResetConfirm = true },
+                onEnd: { showEndConfirm = true }
+            )
+        }
+        .sheet(isPresented: $showLayoutEditor) {
+            VirtualControllerEditorView()
+                .onDisappear {
+                    layoutStore.load()
+                }
+        }
+        .sheet(isPresented: $showButtonMapping) {
+            ButtonMappingEditorView()
+        }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                ParitySettingsRootView()
+            }
+        }
+        .alert("ゲームをリセットしますか？", isPresented: $showResetConfirm) {
+            Button("キャンセル", role: .cancel) {}
+            Button("リセット", role: .destructive) {
+                PlayerBridge.resetGame()
+            }
+        }
+        .alert("ゲームを終了してもよろしいですか？", isPresented: $showEndConfirm) {
+            Button("いいえ", role: .cancel) {}
+            Button("はい", role: .destructive) {
+                PlayerBridge.endGame()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    dismiss()
+                }
+            }
+        }
+        .onAppear {
+            setupPlayerWithGame()
+            applySettings()
+        }
+        .onChange(of: layoutStore.buttons) { _, _ in
+            applyVirtualLayoutToPlayer()
+        }
+        .onChange(of: config.layoutTransparency) { _, _ in applySettings() }
+        .onChange(of: config.layoutSize) { _, _ in applySettings() }
+    }
+
+    private func setupPlayerWithGame() {
+        // Launch the game with proper parameters
+        var args: [String] = []
+        
+        args.append("--project-path")
+        args.append(game.path)
+
+        if !game.savePath.isEmpty {
+            args.append("--save-path")
+            args.append(game.savePath)
+        }
+
+        if game.encoding != "auto" {
+            args.append("--encoding")
+            args.append(game.encoding)
+        }
+
+        PlayerBridge.launchGame(withArgs: args)
+    }
+
+    private func applySettings() {
+        PlayerBridge.setLayoutTransparency(Double(config.layoutTransparency))
+        PlayerBridge.setLayoutSize(Double(config.layoutSize))
+        PlayerBridge.setVibrationEnabled(config.enableVibration)
+        PlayerBridge.setVibrateWhenSlidingEnabled(config.vibrateWhenSliding)
+        applyVirtualLayoutToPlayer()
+    }
+
+    private func applyVirtualLayoutToPlayer() {
+        for button in layoutStore.buttons {
+            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
+        }
+    }
+
+    private func handleDirectionInput(direction: String, isPressed: Bool) {
+        let buttonId = ["up": "up", "down": "down", "left": "left", "right": "right"][direction] ?? direction
+        if isPressed {
+            PlayerBridge.sendKeyDown(buttonId)
+        } else {
+            PlayerBridge.sendKeyUp(buttonId)
+        }
+    }
+
+    private func handleButtonInput(buttonId: String, isPressed: Bool) {
+        if isPressed {
+            PlayerBridge.sendKeyDown(buttonId)
+        } else {
+            PlayerBridge.sendKeyUp(buttonId)
+        }
+    }
+}
+
+struct VirtualControllerView: View {
+    @ObservedObject var layoutStore: VirtualControllerLayoutStore
+    @ObservedObject var config: ConfigManager
+    let onDirectionInput: (String, Bool) -> Void
+    let onButtonInput: (String, Bool) -> Void
+
+    @State private var pressedButtons: Set<String> = []
+
+    var body: some View {
+        ZStack {
+            ForEach(layoutStore.buttons) { button in
+                VirtualButtonView(
+                    button: button,
+                    isPressed: pressedButtons.contains(button.id),
+                    opacity: Double(config.layoutTransparency) / 255.0,
+                    size: calculateButtonSize(),
+                    config: config
+                )
+                .position(x: button.x, y: button.y)
+                .gesture(
+                    LongPressGesture(minimumDuration: 0)
+                        .onChanged { _ in
+                            if !pressedButtons.contains(button.id) {
+                                pressedButtons.insert(button.id)
+                                onButtonInput(button.id, true)
+                                if config.enableVibration {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                }
+                            }
+                        }
+                        .onEnded { _ in
+                            pressedButtons.remove(button.id)
+                            onButtonInput(button.id, false)
+                        }
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: 240)
+        .background(Color.black.opacity(0.3))
+        .cornerRadius(8)
+        .padding(.horizontal, 12)
+    }
+
+    private func calculateButtonSize() -> CGFloat {
+        if config.ignoreLayoutSize {
+            return 42
+        }
+        let size = CGFloat(config.layoutSize)
+        return max(32, min(size * 0.35, 96))
+    }
+}
+
+struct VirtualButtonView: View {
+    let button: VirtualButtonLayout
+    let isPressed: Bool
+    let opacity: Double
+    let size: CGFloat
+    @ObservedObject var config: ConfigManager
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(displayTitle())
+                .font(.caption2)
+                .bold()
+                .foregroundStyle(.black)
+        }
+        .frame(width: size, height: size)
+        .background(
+            Circle()
+                .fill(Color.white.opacity(opacity))
+                .overlay(
+                    Circle()
+                        .stroke(Color.black.opacity(0.2), lineWidth: 1)
+                )
+        )
+        .scaleEffect(isPressed ? 0.85 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+    }
+
+    private func displayTitle() -> String {
+        if config.showABasZX {
+            if button.id == "z" { return "A" }
+            if button.id == "x" { return "B" }
+        }
+        if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
+            return "⏩"
+        }
+        return button.title
+    }
+}
+
+struct PlayerMenuSheet: View {
+    let game: Game
+    let onEditLayout: () -> Void
+    let onEditButtonMapping: () -> Void
+    let onOpenSettings: () -> Void
+    let onToggleUI: () -> Void
+    let onReset: () -> Void
+    let onEnd: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section(header: Text("ゲーム情報")) {
+                    HStack {
+                        Text("タイトル")
+                        Spacer()
+                        Text(game.title).font(.caption).foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("フォルダ")
+                        Spacer()
+                        Text(game.gameFolderName).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                Section(header: Text("操作")) {
+                    Button(action: { dismiss(); onToggleUI() }) {
+                        HStack {
+                            Image(systemName: "eye.slash")
+                            Text("UI の表示/非表示")
+                        }
+                    }
+                    Button(action: { dismiss(); onEditLayout() }) {
+                        HStack {
+                            Image(systemName: "square.grid.2x2.fill")
+                            Text("レイアウトエディター")
+                        }
+                    }
+                    Button(action: { dismiss(); onEditButtonMapping() }) {
+                        HStack {
+                            Image(systemName: "gamecontroller.fill")
+                            Text("ボタン設定")
+                        }
+                    }
+                }
+
+                Section(header: Text("設定")) {
+                    Button(action: { dismiss(); onOpenSettings() }) {
+                        HStack {
+                            Image(systemName: "gearshape.fill")
+                            Text("設定を開く")
+                        }
+                    }
+                }
+
+                Section(header: Text("ゲーム操作")) {
+                    Button("FPS表示を切り替え") {
+                        PlayerBridge.toggleFps()
+                        dismiss()
+                    }
+                    Button("ゲームをリセット", role: .destructive) {
+                        dismiss()
+                        onReset()
+                    }
+                    Button("ゲームを終了", role: .destructive) {
+                        dismiss()
+                        onEnd()
+                    }
+                }
+            }
+            .navigationTitle("メニュー")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("閉じる") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+#Preview {
+    PlayerView(game: Game(
+        title: "Test Game",
+        path: "/path/to/game",
+        savePath: "/path/to/saves"
+    ))
+}
+
+                    Button("仮想ボタンの切り替え") { dismiss(); onToggleUI() }
+                    Link("バグ報告", destination: URL(string: "https://github.com/EasyRPG/Player/issues")!)
+                    Button("ゲームをリセット", role: .destructive) { dismiss(); onReset() }
+                    Button("ゲームを終了", role: .destructive) { dismiss(); onEnd() }
+                }
+            }
+            .navigationTitle("Player Menu")
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("閉じる") { dismiss() } } }
+        }
+    }
+}

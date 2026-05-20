@@ -1,0 +1,10 @@
+prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: liblhasa
+Description: LHA (de)compression library
+Version: 0.5.0
+Libs: -L${libdir} -llhasa
+Cflags: -I${includedir}/liblhasa-0.5.0

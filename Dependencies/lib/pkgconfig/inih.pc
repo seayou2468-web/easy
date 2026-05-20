@@ -1,0 +1,9 @@
+prefix=/Users/jenkins/Jenkins/workspace/ios-toolchain/ios/armv7
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: inih
+Description: simple .INI file parser
+Version: 62
+Libs: -L${libdir} -linih
+Cflags: -I${includedir}

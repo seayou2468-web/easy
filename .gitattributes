@@ -1,0 +1,2 @@
+Dependencies/lib/libharfbuzz.a filter=lfs diff=lfs merge=lfs -text
+Dependencies/lib/libicui18n.a filter=lfs diff=lfs merge=lfs -text
