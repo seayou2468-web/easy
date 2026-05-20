@@ -16,6 +16,7 @@
 #include "player.h"
 #include "input.h"
 #include "input_buttons.h"
+#include "utils.h"
 
 namespace {
 std::vector<std::function<void()>> ios_fn_queue;
@@ -32,6 +33,8 @@ std::vector<VirtualPoint> virtual_points = {
 	{360.f, 420.f, Input::Keys::TAB},
 	{420.f, 420.f, Input::Keys::F1},
 };
+std::vector<std::string> launch_args;
+bool has_launch_args = false;
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -210,6 +213,37 @@ void SetVirtualButtonPoint(const char* button_id, float x, float y) {
 		virtual_points.push_back({x, y, key});
 	});
 }
+
+void LaunchGame(const char* args) {
+	Schedule([args_str = std::string(args ? args : "")]() {
+		launch_args.clear();
+		launch_args.emplace_back("EasyRPGPlayer");
+		auto split = Utils::Tokenize(args_str, " ");
+		launch_args.insert(launch_args.end(), split.begin(), split.end());
+		has_launch_args = true;
+	});
+}
+
+void SendKeyDown(const char* button_id) {
+	Schedule([button = std::string(button_id ? button_id : "")]() {
+		if (!Input::source) return;
+		auto key = ResolveVirtualButtonKey(button.c_str());
+		if (key != Input::Keys::NONE) {
+			Input::source->SimulateKeyPress(key);
+		}
+	});
+}
+
+void SendKeyUp(const char*) {}
+
+bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
+	if (!has_launch_args) {
+		return false;
+	}
+	out_args = launch_args;
+	has_launch_args = false;
+	return !out_args.empty();
+}
 }
 
 extern "C" {
@@ -252,6 +286,26 @@ void EasyRPG_iOS_VirtualTouchUp() {
 void EasyRPG_iOS_SetVirtualButtonPoint(const char* button_id, float x, float y) {
 	IOSIntegration::SetVirtualButtonPoint(button_id, x, y);
 }
+
+void EasyRPG_iOS_LaunchGame(const char* args) { IOSIntegration::LaunchGame(args); }
+void EasyRPG_iOS_SendKeyDown(const char* button_id) { IOSIntegration::SendKeyDown(button_id); }
+void EasyRPG_iOS_SendKeyUp(const char* button_id) { IOSIntegration::SendKeyUp(button_id); }
+void EasyRPG_iOS_SetLayoutTransparency(float) {}
+void EasyRPG_iOS_SetLayoutSize(float) {}
+void EasyRPG_iOS_SetVibrationEnabled(bool) {}
+void EasyRPG_iOS_SetVibrateWhenSlidingEnabled(bool) {}
+void EasyRPG_iOS_SetMusicVolume(int32_t) {}
+void EasyRPG_iOS_SetSoundVolume(int32_t) {}
+void EasyRPG_iOS_SetSoundFont(const char*) {}
+void EasyRPG_iOS_SetFullscreen(bool) {}
+void EasyRPG_iOS_SetForcedLandscape(bool) {}
+void EasyRPG_iOS_SetImageScaleMode(int32_t) {}
+void EasyRPG_iOS_SetStretch(bool) {}
+void EasyRPG_iOS_SetGameResolution(int32_t) {}
+void EasyRPG_iOS_SetFont1(const char*) {}
+void EasyRPG_iOS_SetFont2(const char*) {}
+void EasyRPG_iOS_SetFont1Size(int32_t) {}
+void EasyRPG_iOS_SetFont2Size(int32_t) {}
 }
 
 #endif

@@ -1,4 +1,7 @@
 #ifndef EP_PLATFORM_IOS_INTEGRATION_H
+#include <vector>
+#include <string>
+#include <stdint.h>
 #define EP_PLATFORM_IOS_INTEGRATION_H
 
 namespace IOSIntegration {
@@ -14,7 +17,12 @@ namespace IOSIntegration {
 	void VirtualTouchMove(float x, float y);
 	void VirtualTouchUp();
 	void SetVirtualButtonPoint(const char* button_id, float x, float y);
+	void LaunchGame(const char* args);
+	void SendKeyDown(const char* button_id);
+	void SendKeyUp(const char* button_id);
+	bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
 }
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +38,25 @@ void EasyRPG_iOS_VirtualTouchDown(float x, float y);
 void EasyRPG_iOS_VirtualTouchMove(float x, float y);
 void EasyRPG_iOS_VirtualTouchUp(void);
 void EasyRPG_iOS_SetVirtualButtonPoint(const char* button_id, float x, float y);
+void EasyRPG_iOS_LaunchGame(const char* args);
+void EasyRPG_iOS_SendKeyDown(const char* button_id);
+void EasyRPG_iOS_SendKeyUp(const char* button_id);
+void EasyRPG_iOS_SetLayoutTransparency(float alpha);
+void EasyRPG_iOS_SetLayoutSize(float size);
+void EasyRPG_iOS_SetVibrationEnabled(bool enabled);
+void EasyRPG_iOS_SetVibrateWhenSlidingEnabled(bool enabled);
+void EasyRPG_iOS_SetMusicVolume(int32_t volume);
+void EasyRPG_iOS_SetSoundVolume(int32_t volume);
+void EasyRPG_iOS_SetSoundFont(const char* path);
+void EasyRPG_iOS_SetFullscreen(bool enabled);
+void EasyRPG_iOS_SetForcedLandscape(bool enabled);
+void EasyRPG_iOS_SetImageScaleMode(int32_t mode);
+void EasyRPG_iOS_SetStretch(bool enabled);
+void EasyRPG_iOS_SetGameResolution(int32_t resolution);
+void EasyRPG_iOS_SetFont1(const char* font_name);
+void EasyRPG_iOS_SetFont2(const char* font_name);
+void EasyRPG_iOS_SetFont1Size(int32_t size);
+void EasyRPG_iOS_SetFont2Size(int32_t size);
 
 #ifdef __cplusplus
 }
