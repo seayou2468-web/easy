@@ -13,11 +13,14 @@ struct PlayerView: View {
     @State private var showSettings = false
     @State private var showFpsIndicator = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Keep SwiftUI layer transparent so the native EasyRPG render surface stays visible.
+            Color.clear
+                .ignoresSafeArea()
 
             VStack(spacing: 12) {
                 if uiVisible {
@@ -51,8 +54,8 @@ struct PlayerView: View {
 
                 // Control Buttons
                 if uiVisible {
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
+                    VStack(spacing: 8) {
+                        HStack(spacing: 8) {
                             Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
                                 Image(systemName: "speedometer")
                                 Text("FPS")
@@ -65,29 +68,22 @@ struct PlayerView: View {
                             }
                             .buttonStyle(.bordered)
 
-                            Spacer()
-
                             Button(action: { showMenu = true }) {
                                 Image(systemName: "line.3.horizontal")
+                                Text("メニュー")
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.borderedProminent)
                         }
-                        .font(.caption)
+                        .font(.callout)
 
-                        HStack(spacing: 12) {
-                            Button("リセット", role: .destructive) {
-                                showResetConfirm = true
-                            }
-                            .buttonStyle(.bordered)
-
-                            Button("終了", role: .destructive) {
-                                showEndConfirm = true
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .font(.caption)
+                        Text("リセット / 終了 / 配置編集はメニューから")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.65))
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 12)
                 }
             }
             .padding(.vertical, 16)
@@ -110,6 +106,20 @@ struct PlayerView: View {
                 }
                 .padding(16)
             }
+
+            if showFpsIndicator {
+                VStack {
+                    Text("FPS表示を切り替えました")
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .foregroundStyle(.white)
+                    Spacer()
+                }
+                .padding(.top, 20)
+                .transition(.opacity)
+            }
         }
         .toolbar(content: {
             ToolbarItem(placement: .topBarLeading) {
@@ -120,6 +130,7 @@ struct PlayerView: View {
                 }
             }
         })
+        .background(Color.clear)
         .sheet(isPresented: $showMenu) {
             PlayerMenuSheet(
                 game: game,
@@ -163,9 +174,19 @@ struct PlayerView: View {
         .onAppear {
             setupPlayerWithGame()
             applySettings()
+            buttonMappingStore.applyToPlayer()
+        }
+        .onChange(of: showFpsIndicator) { _, isVisible in
+            guard isVisible else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showFpsIndicator = false
+            }
         }
         .onChange(of: layoutStore.buttons) { _, _ in
             applyVirtualLayoutToPlayer()
+        }
+        .onChange(of: buttonMappingStore.mappings) { _, _ in
+            buttonMappingStore.applyToPlayer()
         }
         .onChange(of: config.layoutTransparency) { _, _ in applySettings() }
         .onChange(of: config.layoutSize) { _, _ in applySettings() }

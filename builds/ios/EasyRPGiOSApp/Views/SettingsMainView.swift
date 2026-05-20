@@ -11,30 +11,53 @@ struct ParitySettingsRootView: View {
 
 struct SettingsMainView: View {
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                settingsNavButton("ビデオ", "video.fill", destination: SettingsVideoView())
-                settingsNavButton("オーディオ", "speaker.wave.2.fill", destination: SettingsAudioView())
-                settingsNavButton("入力", "gamecontroller.fill", destination: SettingsInputView())
-                settingsNavButton("フォント", "textformat", destination: SettingsFontView())
-                settingsNavButton("EasyRPG フォルダ", "folder.fill", destination: SettingsGamesFolderView())
+        ZStack {
+            LinearGradient(colors: [Color(.systemBackground), Color(.systemGray6)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("環境設定")
+                        .font(.largeTitle.bold())
+                    Text("表示、音、入力、フォント、フォルダを用途別に調整できます。")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    settingsNavButton("ビデオ", "video.fill", subtitle: "画質・解像度・表示方式", destination: SettingsVideoView())
+                    settingsNavButton("オーディオ", "speaker.wave.2.fill", subtitle: "音量・SoundFont", destination: SettingsAudioView())
+                    settingsNavButton("入力", "gamecontroller.fill", subtitle: "振動・高速化・レイアウト", destination: SettingsInputView())
+                    settingsNavButton("フォント", "textformat", subtitle: "フォントと文字サイズ", destination: SettingsFontView())
+                    settingsNavButton("EasyRPG フォルダ", "folder.fill", subtitle: "ゲームフォルダ/RTPパス", destination: SettingsGamesFolderView())
+                }
+                .padding(14)
             }
         }
-        .navigationTitle("設定")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func settingsNavButton<Destination: View>(_ title: String, _ icon: String, destination: Destination) -> some View {
+    private func settingsNavButton<Destination: View>(_ title: String, _ icon: String, subtitle: String, destination: Destination) -> some View {
         NavigationLink(destination: destination) {
             HStack {
-                Image(systemName: icon).frame(width: 24)
-                Text(title)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon).frame(width: 24)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .fontWeight(.semibold)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
             .contentShape(Rectangle())
             .foregroundStyle(.primary)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
     }

@@ -10,23 +10,40 @@ struct GameBrowserView: View {
     @State private var isGridMode = true
     @State private var favoritesOnly = false
     @State private var showMenu = false
-    @State private var viewModeDialog = false
     @State private var selectedGame: Game? = nil
     @State private var showGameOptions = false
     @State private var showCustomTitleEditor = false
+    @State private var sortMode = 0
+    @State private var showDisplayModeSheet = false
 
     private var filtered: [Game] {
         let source = favoritesOnly ? library.games.filter(\.favorite) : library.games
-        guard !query.isEmpty else { return source }
-        return source.filter {
+        let searched = query.isEmpty ? source : source.filter {
             $0.getDisplayTitle(labelMode: config.gameBrowserLabelMode).localizedCaseInsensitiveContains(query) ||
             $0.path.localizedCaseInsensitiveContains(query)
+        }
+        switch sortMode {
+        case 1:
+            return searched.sorted { $0.getDisplayTitle(labelMode: config.gameBrowserLabelMode) < $1.getDisplayTitle(labelMode: config.gameBrowserLabelMode) }
+        case 2:
+            return searched.sorted { $0.gameFolderName < $1.gameFolderName }
+        default:
+            return searched
         }
     }
 
     var body: some View {
         ZStack {
-            Group {
+            LinearGradient(colors: [Color(.systemBackground), Color(.systemGray6)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+            VStack(spacing: 10) {
+                BrowserHeroBar(
+                    totalCount: library.games.count,
+                    shownCount: filtered.count,
+                    favoritesOnly: favoritesOnly,
+                    showDisplayModeSheet: $showDisplayModeSheet
+                )
+                .padding(.horizontal, 12)
                 if library.isScanning {
                     LoadingPanelView()
                 } else if filtered.isEmpty {
@@ -64,7 +81,6 @@ struct GameBrowserView: View {
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button { library.reloadGames(forceScan: true) } label: { Image(systemName: "arrow.clockwise") }
-                Button { viewModeDialog = true } label: { Image(systemName: isGridMode ? "list.bullet" : "square.grid.2x2") }
                 Button(action: onOpenSettings) { Image(systemName: "gearshape.fill") }
             }
         }
@@ -73,10 +89,6 @@ struct GameBrowserView: View {
                 favoritesOnly: $favoritesOnly,
                 onOpenSettings: onOpenSettings
             )
-        }
-        .confirmationDialog("表示", isPresented: $viewModeDialog, presenting: true) { _ in
-            Button("グリッド表示") { isGridMode = true }
-            Button("リスト表示") { isGridMode = false }
         }
         .sheet(isPresented: $showGameOptions) {
             if let game = selectedGame {
@@ -92,7 +104,44 @@ struct GameBrowserView: View {
                 CustomTitleEditorSheet(game: game)
             }
         }
+        .confirmationDialog("表示設定", isPresented: $showDisplayModeSheet) {
+            Button(favoritesOnly ? "お気に入り表示を解除" : "お気に入りだけ表示") {
+                favoritesOnly.toggle()
+            }
+            Button(isGridMode ? "リスト表示" : "グリッド表示") {
+                isGridMode.toggle()
+            }
+            Button("並び替え: おすすめ") { sortMode = 0 }
+            Button("並び替え: タイトル順") { sortMode = 1 }
+            Button("並び替え: フォルダ順") { sortMode = 2 }
+        }
         .onAppear { library.reloadGames() }
+    }
+}
+
+struct BrowserHeroBar: View {
+    let totalCount: Int
+    let shownCount: Int
+    let favoritesOnly: Bool
+    @Binding var showDisplayModeSheet: Bool
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("ゲームライブラリ")
+                    .font(.headline)
+                Text("\(shownCount) / \(totalCount) 本表示" + (favoritesOnly ? " ・ お気に入りのみ" : ""))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(action: { showDisplayModeSheet = true }) {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(12)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
