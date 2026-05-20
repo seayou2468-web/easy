@@ -12,6 +12,9 @@ struct PlayerView: View {
     @State private var showButtonMapping = false
     @State private var showSettings = false
     @State private var showFpsIndicator = false
+    @State private var hasInitializedPlayer = false
+    @State private var hasProjectSecurityScopeAccess = false
+    @State private var projectSecurityScopeURL: URL?
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -163,10 +166,17 @@ struct PlayerView: View {
             }
         }
         .onAppear {
+            guard !hasInitializedPlayer else { return }
+            hasInitializedPlayer = true
             uiVisible = true
+            AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             applySettings()
             buttonMappingStore.applyToPlayer()
+        }
+        .onDisappear {
+            AppLogger.log("PlayerView onDisappear")
+            releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
             guard isVisible else { return }
@@ -186,15 +196,19 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
-        PlayerBridge.startRuntime()
-
+        AppLogger.log("ENTER setupPlayerWithGame")
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
-        _ = projectURL.startAccessingSecurityScopedResource()
+        projectSecurityScopeURL = projectURL
+        hasProjectSecurityScopeAccess = projectURL.startAccessingSecurityScopedResource()
+
         let projectPath = projectURL.path
         guard FileManager.default.fileExists(atPath: projectPath) else {
-            print("[iOS] Project path does not exist: \(projectPath)")
+            AppLogger.log("Project path does not exist: \(projectPath)")
             return
         }
+
+        AppLogger.log("setupPlayerWithGame projectPath=\(projectPath)")
+        PlayerBridge.startRuntime()
 
         var args: [String] = ["--project-path", projectPath]
 
@@ -220,7 +234,20 @@ struct PlayerView: View {
         PlayerBridge.launchGame(withArgs: args)
     }
 
+    private func releaseProjectSecurityScope() {
+        AppLogger.log("ENTER releaseProjectSecurityScope")
+        guard hasProjectSecurityScopeAccess, let scopeURL = projectSecurityScopeURL else {
+            projectSecurityScopeURL = nil
+            return
+        }
+
+        scopeURL.stopAccessingSecurityScopedResource()
+        hasProjectSecurityScopeAccess = false
+        projectSecurityScopeURL = nil
+    }
+
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {
+        AppLogger.log("ENTER resolveSavePath")
         guard !rawSavePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -236,6 +263,7 @@ struct PlayerView: View {
     }
 
     private func applySettings() {
+        AppLogger.log("ENTER applySettings")
         PlayerBridge.setFullscreen(config.fullscreen)
         PlayerBridge.setForcedLandscape(config.forcedLandscape)
         PlayerBridge.setImageScaleMode(config.scaleMode)
@@ -273,12 +301,14 @@ struct PlayerView: View {
     }
 
     private func applyVirtualLayoutToPlayer() {
+        AppLogger.log("ENTER applyVirtualLayoutToPlayer")
         for button in layoutStore.buttons {
             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
         }
     }
 
     private func handleDirectionInput(direction: String, isPressed: Bool) {
+        AppLogger.log("ENTER handleDirectionInput")
         let buttonId = ["up": "up", "down": "down", "left": "left", "right": "right"][direction] ?? direction
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
@@ -288,6 +318,7 @@ struct PlayerView: View {
     }
 
     private func handleButtonInput(buttonId: String, isPressed: Bool) {
+        AppLogger.log("ENTER handleButtonInput")
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
         } else {
@@ -340,6 +371,7 @@ struct VirtualControllerView: View {
     }
 
     private func calculateButtonSize() -> CGFloat {
+        AppLogger.log("ENTER calculateButtonSize")
         if config.ignoreLayoutSize {
             return 42
         }
@@ -376,9 +408,10 @@ struct VirtualButtonView: View {
     }
 
     private func displayTitle() -> String {
+        AppLogger.log("ENTER displayTitle")
         if config.showABasZX {
-            if button.id == "z" { return "A" }
-            if button.id == "x" { return "B" }
+            if button.id == "z" || button.id == "decision" { return "A" }
+            if button.id == "x" || button.id == "cancel" { return "B" }
         }
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
             return "⏩"

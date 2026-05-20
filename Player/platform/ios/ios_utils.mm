@@ -24,6 +24,8 @@ std::string IOSUtils::GetDocumentsDir() {
 		if (documents == nil) {
 			return GetBundleDir();
 		}
+		// Keep the container-provided path as-is.
+		// LiveContainer setups can intentionally expose nested paths here.
 		const char* fsPath = [documents fileSystemRepresentation];
 		return fsPath ? std::string(fsPath) : GetBundleDir();
 	}
