@@ -76,6 +76,7 @@ final class GameLibrary: ObservableObject {
     private let favoritesKey = "ios.favoriteGames"
 
     func reloadGames(forceScan: Bool = false) {
+        AppLogger.log("reloadGames forceScan=\(forceScan)")
         isScanning = true
 
         let easyRPGFolder = configManager.easyRPGFolderURL

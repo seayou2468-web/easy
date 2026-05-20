@@ -83,6 +83,7 @@ final class ConfigManager: ObservableObject {
     // MARK: - Settings Management
 
     func saveSettings() {
+        AppLogger.log("saveSettings called")
         // Save to UserDefaults for quick access
         let defaults = UserDefaults.standard
         defaults.set(fullscreen, forKey: userDefaultsPrefix + "fullscreen")
@@ -138,6 +139,7 @@ final class ConfigManager: ObservableObject {
     }
 
     private func loadSettings() {
+        AppLogger.log("loadSettings called")
         let defaults = UserDefaults.standard
         fullscreen = defaults.bool(forKey: userDefaultsPrefix + "fullscreen") || fullscreen
         forcedLandscape = defaults.bool(forKey: userDefaultsPrefix + "forcedLandscape")
@@ -305,6 +307,7 @@ final class ConfigManager: ObservableObject {
     }
 
     func setEasyRPGFolder(_ url: URL) {
+        AppLogger.log("setEasyRPGFolder url=\(url.path)")
         let normalized = url.standardizedFileURL
         easyRPGFolderURL = normalized
         if isInsideDocuments(normalized) {

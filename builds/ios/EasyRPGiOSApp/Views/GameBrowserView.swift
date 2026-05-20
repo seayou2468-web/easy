@@ -115,7 +115,7 @@ struct GameBrowserView: View {
             Button("並び替え: タイトル順") { sortMode = 1 }
             Button("並び替え: フォルダ順") { sortMode = 2 }
         }
-        .onAppear { library.reloadGames() }
+        .onAppear { AppLogger.log("GameBrowserView onAppear"); library.reloadGames() }
     }
 }
 

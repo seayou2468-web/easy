@@ -150,6 +150,9 @@ struct InitView: View {
                 config.setEasyRPGFolder(url)
             }
         }
+        .onAppear {
+            AppLogger.log("InitView onAppear")
+        }
     }
 }
 

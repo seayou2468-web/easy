@@ -4,14 +4,15 @@ import UIKit
 enum PlayerBridge {
     private static let launchArgSeparator = "\u{1F}" // Unit Separator (ASCII 31)
     // MARK: - Game Control
-    static func startRuntime() { EasyRPG_iOS_StartRuntime() }
-    static func endGame() { EasyRPG_iOS_EndGame() }
-    static func resetGame() { EasyRPG_iOS_ResetGame() }
+    static func startRuntime() { AppLogger.log("startRuntime"); EasyRPG_iOS_StartRuntime() }
+    static func endGame() { AppLogger.log("endGame"); EasyRPG_iOS_EndGame() }
+    static func resetGame() { AppLogger.log("resetGame"); EasyRPG_iOS_ResetGame() }
     static func toggleFps() { EasyRPG_iOS_ToggleFps() }
     static func openSettings() { EasyRPG_iOS_OpenSettings() }
 
     // MARK: - Game Launch
     static func launchGame(withArgs args: [String]) {
+        AppLogger.log("launchGame args=\(args)")
         let argsStr = args.joined(separator: launchArgSeparator)
         argsStr.withCString { argsCStr in
             EasyRPG_iOS_LaunchGame(argsCStr)

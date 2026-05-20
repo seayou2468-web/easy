@@ -169,11 +169,13 @@ struct PlayerView: View {
             guard !hasInitializedPlayer else { return }
             hasInitializedPlayer = true
             uiVisible = true
+            AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             applySettings()
             buttonMappingStore.applyToPlayer()
         }
         .onDisappear {
+            AppLogger.log("PlayerView onDisappear")
             releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
@@ -200,10 +202,11 @@ struct PlayerView: View {
 
         let projectPath = projectURL.path
         guard FileManager.default.fileExists(atPath: projectPath) else {
-            print("[iOS] Project path does not exist: \(projectPath)")
+            AppLogger.log("Project path does not exist: \(projectPath)")
             return
         }
 
+        AppLogger.log("setupPlayerWithGame projectPath=\(projectPath)")
         PlayerBridge.startRuntime()
 
         var args: [String] = ["--project-path", projectPath]
