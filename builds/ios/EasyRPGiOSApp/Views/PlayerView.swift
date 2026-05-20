@@ -208,6 +208,14 @@ struct PlayerView: View {
         .onChange(of: config.fastForwardMultiplierB) { _, _ in applySettings() }
         .onChange(of: config.settingsInMenu) { _, _ in applySettings() }
         .onChange(of: config.languageSelectOnStart) { _, _ in applySettings() }
+        .onChange(of: config.settingsInTitle) { _, _ in applySettings() }
+        .onChange(of: config.languageInTitle) { _, _ in applySettings() }
+        .onChange(of: config.loggingEnabled) { _, _ in applySettings() }
+        .onChange(of: config.screenshotTimestamp) { _, _ in applySettings() }
+        .onChange(of: config.automaticScreenshots) { _, _ in applySettings() }
+        .onChange(of: config.screenshotScale) { _, _ in applySettings() }
+        .onChange(of: config.automaticScreenshotsInterval) { _, _ in applySettings() }
+        .onChange(of: config.startupLogos) { _, _ in applySettings() }
     }
 
     private func setupPlayerWithGame() {
@@ -256,6 +264,14 @@ struct PlayerView: View {
         PlayerBridge.setFastForwardSpeedB(config.fastForwardMultiplierB)
         PlayerBridge.setSettingsInMenu(config.settingsInMenu)
         PlayerBridge.setLanguageSelectOnStart(config.languageSelectOnStart)
+        PlayerBridge.setConfigBool(section: "Player", key: "SettingsInTitle", value: config.settingsInTitle)
+        PlayerBridge.setConfigBool(section: "Player", key: "LanguageInTitle", value: config.languageInTitle)
+        PlayerBridge.setConfigBool(section: "Player", key: "Logging", value: config.loggingEnabled)
+        PlayerBridge.setConfigBool(section: "Player", key: "ScreenshotTimestamp", value: config.screenshotTimestamp)
+        PlayerBridge.setConfigBool(section: "Player", key: "AutomaticScreenshots", value: config.automaticScreenshots)
+        PlayerBridge.setConfigInt(section: "Player", key: "ScreenshotScale", value: config.screenshotScale)
+        PlayerBridge.setConfigInt(section: "Player", key: "AutomaticScreenshotsInterval", value: config.automaticScreenshotsInterval)
+        PlayerBridge.setConfigInt(section: "Player", key: "StartupLogos", value: config.startupLogos)
         applyVirtualLayoutToPlayer()
     }
 

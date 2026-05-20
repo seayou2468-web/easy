@@ -56,6 +56,8 @@ void EasyRPG_iOS_SetFastForwardSpeedA(int32_t speed);
 void EasyRPG_iOS_SetFastForwardSpeedB(int32_t speed);
 void EasyRPG_iOS_SetSettingsInMenu(bool enabled);
 void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode);
+void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value);
+void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t value);
 
 #ifdef __cplusplus
 }

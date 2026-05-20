@@ -496,6 +496,35 @@ void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode) {
 		Player::player_config.lang_select_on_start.Set(value);
 	});
 }
+
+void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value) {
+	Schedule([section_s = std::string(section ? section : ""),
+	          key_s = std::string(key ? key : ""), value]() {
+		if (section_s == "Player") {
+			if (key_s == "SettingsInTitle") Player::player_config.settings_in_title.Set(value);
+			else if (key_s == "LanguageInTitle") Player::player_config.lang_select_in_title.Set(value);
+			else if (key_s == "Logging") Player::player_config.log_enabled.Set(value);
+			else if (key_s == "ScreenshotTimestamp") Player::player_config.screenshot_timestamp.Set(value);
+			else if (key_s == "AutomaticScreenshots") Player::player_config.automatic_screenshots.Set(value);
+		}
+	});
+}
+
+void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t value) {
+	Schedule([section_s = std::string(section ? section : ""),
+	          key_s = std::string(key ? key : ""), value]() {
+		if (section_s == "Player") {
+			if (key_s == "ScreenshotScale") Player::player_config.screenshot_scale.Set(static_cast<int>(std::max<int32_t>(1, value)));
+			else if (key_s == "AutomaticScreenshotsInterval") Player::player_config.automatic_screenshots_interval.Set(static_cast<int>(std::max<int32_t>(1, value)));
+			else if (key_s == "StartupLogos") {
+				ConfigEnum::StartupLogos logos = ConfigEnum::StartupLogos::Custom;
+				if (value <= 0) logos = ConfigEnum::StartupLogos::None;
+				else if (value >= 2) logos = ConfigEnum::StartupLogos::All;
+				Player::player_config.show_startup_logos.Set(logos);
+			}
+		}
+	});
+}
 }
 
 #endif

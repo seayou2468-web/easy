@@ -339,6 +339,43 @@ struct SettingsInputView: View {
                     }
                     .pickerStyle(.menu)
                     .onChange(of: config.languageSelectOnStart) { _, _ in config.saveSettings() }
+
+                    Toggle("タイトル画面に設定項目を表示", isOn: $config.settingsInTitle)
+                        .onChange(of: config.settingsInTitle) { _, _ in config.saveSettings() }
+                    Toggle("タイトル画面に言語選択を表示", isOn: $config.languageInTitle)
+                        .onChange(of: config.languageInTitle) { _, _ in config.saveSettings() }
+                    Toggle("ログ出力を有効", isOn: $config.loggingEnabled)
+                        .onChange(of: config.loggingEnabled) { _, _ in config.saveSettings() }
+                    Toggle("スクリーンショットに日時付加", isOn: $config.screenshotTimestamp)
+                        .onChange(of: config.screenshotTimestamp) { _, _ in config.saveSettings() }
+                    Toggle("自動スクリーンショット", isOn: $config.automaticScreenshots)
+                        .onChange(of: config.automaticScreenshots) { _, _ in config.saveSettings() }
+
+                    HStack {
+                        Text("スクリーンショット拡大率")
+                        Spacer()
+                        Text("\(config.screenshotScale)x").foregroundStyle(.secondary)
+                    }
+                    Slider(value: .init(get: { Double(config.screenshotScale) }, set: { config.screenshotScale = Int($0) }), in: 1...24, step: 1)
+                        .onChange(of: config.screenshotScale) { _, _ in config.saveSettings() }
+
+                    if config.automaticScreenshots {
+                        HStack {
+                            Text("自動撮影間隔(秒)")
+                            Spacer()
+                            Text("\(config.automaticScreenshotsInterval)").foregroundStyle(.secondary)
+                        }
+                        Slider(value: .init(get: { Double(config.automaticScreenshotsInterval) }, set: { config.automaticScreenshotsInterval = Int($0) }), in: 1...600, step: 1)
+                            .onChange(of: config.automaticScreenshotsInterval) { _, _ in config.saveSettings() }
+                    }
+
+                    Picker("起動ロゴ表示", selection: $config.startupLogos) {
+                        Text("なし").tag(0)
+                        Text("カスタムのみ").tag(1)
+                        Text("すべて").tag(2)
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: config.startupLogos) { _, _ in config.saveSettings() }
                 }
                 .padding(.bottom, 8)
             }

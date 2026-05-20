@@ -140,4 +140,20 @@ enum PlayerBridge {
     static func setLanguageSelectOnStart(_ mode: Int) {
         EasyRPG_iOS_SetLanguageSelectOnStart(Int32(mode))
     }
+
+    static func setConfigBool(section: String, key: String, value: Bool) {
+        section.withCString { s in
+            key.withCString { k in
+                EasyRPG_iOS_SetConfigBool(s, k, value)
+            }
+        }
+    }
+
+    static func setConfigInt(section: String, key: String, value: Int) {
+        section.withCString { s in
+            key.withCString { k in
+                EasyRPG_iOS_SetConfigInt(s, k, Int32(value))
+            }
+        }
+    }
 }

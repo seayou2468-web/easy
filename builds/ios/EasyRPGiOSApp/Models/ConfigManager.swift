@@ -26,6 +26,14 @@ final class ConfigManager: ObservableObject {
     @Published var fastForwardMultiplierB = 10
     @Published var settingsInMenu = false
     @Published var languageSelectOnStart = 0 // 0: never, 1: first startup, 2: always
+    @Published var settingsInTitle = false
+    @Published var languageInTitle = true
+    @Published var loggingEnabled = true
+    @Published var screenshotTimestamp = true
+    @Published var automaticScreenshots = false
+    @Published var screenshotScale = 1
+    @Published var automaticScreenshotsInterval = 30
+    @Published var startupLogos = 1 // 0 none, 1 custom, 2 all
 
     // Layout settings
     @Published var layoutTransparency = 100
@@ -81,6 +89,14 @@ final class ConfigManager: ObservableObject {
         defaults.set(fastForwardMultiplierB, forKey: userDefaultsPrefix + "fastForwardMultiplierB")
         defaults.set(settingsInMenu, forKey: userDefaultsPrefix + "settingsInMenu")
         defaults.set(languageSelectOnStart, forKey: userDefaultsPrefix + "languageSelectOnStart")
+        defaults.set(settingsInTitle, forKey: userDefaultsPrefix + "settingsInTitle")
+        defaults.set(languageInTitle, forKey: userDefaultsPrefix + "languageInTitle")
+        defaults.set(loggingEnabled, forKey: userDefaultsPrefix + "loggingEnabled")
+        defaults.set(screenshotTimestamp, forKey: userDefaultsPrefix + "screenshotTimestamp")
+        defaults.set(automaticScreenshots, forKey: userDefaultsPrefix + "automaticScreenshots")
+        defaults.set(screenshotScale, forKey: userDefaultsPrefix + "screenshotScale")
+        defaults.set(automaticScreenshotsInterval, forKey: userDefaultsPrefix + "automaticScreenshotsInterval")
+        defaults.set(startupLogos, forKey: userDefaultsPrefix + "startupLogos")
 
         defaults.set(layoutTransparency, forKey: userDefaultsPrefix + "layoutTransparency")
         defaults.set(layoutSize, forKey: userDefaultsPrefix + "layoutSize")
@@ -126,6 +142,14 @@ final class ConfigManager: ObservableObject {
         fastForwardMultiplierB = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") : 10)
         settingsInMenu = defaults.bool(forKey: userDefaultsPrefix + "settingsInMenu")
         languageSelectOnStart = defaults.integer(forKey: userDefaultsPrefix + "languageSelectOnStart")
+        settingsInTitle = defaults.bool(forKey: userDefaultsPrefix + "settingsInTitle")
+        languageInTitle = defaults.object(forKey: userDefaultsPrefix + "languageInTitle") as? Bool ?? true
+        loggingEnabled = defaults.object(forKey: userDefaultsPrefix + "loggingEnabled") as? Bool ?? true
+        screenshotTimestamp = defaults.object(forKey: userDefaultsPrefix + "screenshotTimestamp") as? Bool ?? true
+        automaticScreenshots = defaults.bool(forKey: userDefaultsPrefix + "automaticScreenshots")
+        screenshotScale = max(1, defaults.integer(forKey: userDefaultsPrefix + "screenshotScale"))
+        automaticScreenshotsInterval = max(1, defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") : 30)
+        startupLogos = min(2, max(0, defaults.integer(forKey: userDefaultsPrefix + "startupLogos")))
 
         layoutTransparency = defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") : 100
         layoutSize = defaults.integer(forKey: userDefaultsPrefix + "layoutSize") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutSize") : 100
