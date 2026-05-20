@@ -269,7 +269,7 @@ final class ConfigManager: ObservableObject {
         do {
             try iniContent.write(to: configURL, atomically: true, encoding: .utf8)
         } catch {
-            print("Failed to save config.ini: \(error)")
+            AppLogger.log("Failed to save config.ini: \(error)")
         }
     }
 
@@ -280,7 +280,7 @@ final class ConfigManager: ObservableObject {
             let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: key)
         } catch {
-            print("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
+            AppLogger.log("[iOS] Failed to save security-scoped bookmark for \(url): \(error)")
         }
     }
 
@@ -306,7 +306,7 @@ final class ConfigManager: ObservableObject {
             }
             return url
         } catch {
-            print("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
+            AppLogger.log("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
             return nil
         }
     }

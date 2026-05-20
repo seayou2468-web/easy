@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ParitySettingsRootView: View {
     var body: some View {
@@ -577,7 +578,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [])
+        let contentTypes = allowedContentTypes.compactMap { UTType($0) }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
