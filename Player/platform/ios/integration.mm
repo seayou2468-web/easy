@@ -27,7 +27,7 @@
 
 namespace {
 void LogBridgeCall(const char* fn) {
-	Output::Debug("[iOSBridge] %s", fn ? fn : "<null>");
+	Output::Debug("[iOSBridge] {}", fn ? fn : "<null>");
 }
 std::vector<std::function<void()>> ios_fn_queue;
 std::mutex ios_mutex;
