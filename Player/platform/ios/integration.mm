@@ -38,6 +38,7 @@ std::vector<VirtualPoint> virtual_points = {
 };
 std::vector<std::string> launch_args;
 bool has_launch_args = false;
+std::vector<Input::Keys::InputKey> held_keys;
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -99,6 +100,14 @@ void Invoke() {
 	}
 
 	fn();
+
+	if (Input::source) {
+		for (auto key : held_keys) {
+			if (key != Input::Keys::NONE) {
+				Input::source->SimulateKeyPress(key);
+			}
+		}
+	}
 }
 
 void EndGame() {
@@ -230,12 +239,18 @@ void LaunchGame(const char* args) {
 void SendKeyDown(const char* button_id) {
 	Schedule([button = std::string(button_id ? button_id : "")]() {
 		if (!Input::source) return;
+		auto add_held_key = [](Input::Keys::InputKey key) {
+			if (key == Input::Keys::NONE) return;
+			if (std::find(held_keys.begin(), held_keys.end(), key) == held_keys.end()) {
+				held_keys.push_back(key);
+			}
+		};
 		auto btn = ResolveButtonId(button.c_str());
 		if (btn != Input::BUTTON_COUNT) {
 			auto& mappings = Input::source->GetButtonMappings();
 			for (auto it = mappings.LowerBound(btn);
 				 it != mappings.end() && it->first == btn; ++it) {
-				Input::source->SimulateKeyPress(it->second);
+				add_held_key(it->second);
 			}
 			return;
 		}
@@ -248,12 +263,38 @@ void SendKeyDown(const char* button_id) {
 			Input::Keys::kInputKeyNames.etag(key_upper.c_str(), key);
 		}
 		if (key != Input::Keys::NONE) {
-			Input::source->SimulateKeyPress(key);
+			add_held_key(key);
 		}
 	});
 }
 
-void SendKeyUp(const char*) {}
+void SendKeyUp(const char* button_id) {
+	Schedule([button = std::string(button_id ? button_id : "")]() {
+		auto remove_held_key = [](Input::Keys::InputKey key) {
+			if (key == Input::Keys::NONE) return;
+			held_keys.erase(std::remove(held_keys.begin(), held_keys.end(), key), held_keys.end());
+		};
+
+		auto btn = ResolveButtonId(button.c_str());
+		if (btn != Input::BUTTON_COUNT && Input::source) {
+			auto& mappings = Input::source->GetButtonMappings();
+			for (auto it = mappings.LowerBound(btn);
+				 it != mappings.end() && it->first == btn; ++it) {
+				remove_held_key(it->second);
+			}
+			return;
+		}
+
+		auto key = ResolveVirtualButtonKey(button.c_str());
+		if (key == Input::Keys::NONE) {
+			std::string key_upper = button;
+			std::transform(key_upper.begin(), key_upper.end(), key_upper.begin(),
+				[](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+			Input::Keys::kInputKeyNames.etag(key_upper.c_str(), key);
+		}
+		remove_held_key(key);
+	});
+}
 
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 	if (!has_launch_args) {
