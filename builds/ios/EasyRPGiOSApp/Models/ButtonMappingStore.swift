@@ -31,6 +31,7 @@ final class ButtonMappingStore: ObservableObject {
     init() { load() }
 
     func load() {
+        AppLogger.log("ENTER load")
         guard let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode([ButtonMappingItem].self, from: data),
               !decoded.isEmpty else {
@@ -42,17 +43,20 @@ final class ButtonMappingStore: ObservableObject {
     }
 
     func save() {
+        AppLogger.log("ENTER save")
         if let data = try? JSONEncoder().encode(mappings) {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
 
     func reset() {
+        AppLogger.log("ENTER reset")
         mappings = ButtonMappingItem.defaults
         save()
     }
 
     func applyToPlayer() {
+        AppLogger.log("ENTER applyToPlayer")
         for item in mappings {
             PlayerBridge.setButtonMapping(buttonId: item.id, keyId: item.key)
         }

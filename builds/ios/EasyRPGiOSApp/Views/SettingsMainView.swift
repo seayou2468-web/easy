@@ -35,6 +35,7 @@ struct SettingsMainView: View {
     }
 
     private func settingsNavButton<Destination: View>(_ title: String, _ icon: String, subtitle: String, destination: Destination) -> some View {
+        AppLogger.log("ENTER settingsNavButton")
         NavigationLink(destination: destination) {
             HStack {
                 ZStack {
@@ -575,6 +576,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
     let onPicked: (URL) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        AppLogger.log("ENTER makeUIViewController")
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [])
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
@@ -582,8 +584,10 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+        AppLogger.log("ENTER updateUIViewController")
 
     func makeCoordinator() -> Coordinator {
+        AppLogger.log("ENTER makeCoordinator")
         Coordinator(onPicked: onPicked)
     }
 
@@ -595,6 +599,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
                 onPicked(url)
             }
@@ -607,6 +612,7 @@ struct FolderPickerView: UIViewControllerRepresentable {
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        AppLogger.log("ENTER makeUIViewController")
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
@@ -614,8 +620,10 @@ struct FolderPickerView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+        AppLogger.log("ENTER updateUIViewController")
 
     func makeCoordinator() -> Coordinator {
+        AppLogger.log("ENTER makeCoordinator")
         Coordinator(onPicked: onPicked, dismiss: dismiss)
     }
 
@@ -629,6 +637,7 @@ struct FolderPickerView: UIViewControllerRepresentable {
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            AppLogger.log("ENTER documentPicker")
             if let url = urls.first {
                 onPicked(url)
             }

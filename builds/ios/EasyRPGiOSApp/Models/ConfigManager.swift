@@ -58,11 +58,13 @@ final class ConfigManager: ObservableObject {
     private let easyRPGFolderBookmarkKey = "ios.bookmark.easyRPGFolder"
     private let rtpFolderBookmarkKey = "ios.bookmark.rtpFolder"
     private func defaultEasyRPGDocumentsFolder() -> URL? {
+        AppLogger.log("ENTER defaultEasyRPGDocumentsFolder")
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
             .appendingPathComponent("EasyRPG", isDirectory: true)
     }
 
     private func isInsideDocuments(_ url: URL) -> Bool {
+        AppLogger.log("ENTER isInsideDocuments")
         guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             return false
         }
@@ -83,6 +85,7 @@ final class ConfigManager: ObservableObject {
     // MARK: - Settings Management
 
     func saveSettings() {
+        AppLogger.log("ENTER saveSettings")
         AppLogger.log("saveSettings called")
         // Save to UserDefaults for quick access
         let defaults = UserDefaults.standard
@@ -139,6 +142,7 @@ final class ConfigManager: ObservableObject {
     }
 
     private func loadSettings() {
+        AppLogger.log("ENTER loadSettings")
         AppLogger.log("loadSettings called")
         let defaults = UserDefaults.standard
         fullscreen = defaults.bool(forKey: userDefaultsPrefix + "fullscreen") || fullscreen
@@ -204,11 +208,13 @@ final class ConfigManager: ObservableObject {
     private let customTitlesKey = "ios.customGameTitles"
 
     func getCustomGameTitle(for gamePath: String) -> String? {
+        AppLogger.log("ENTER getCustomGameTitle")
         let titles = UserDefaults.standard.dictionary(forKey: customTitlesKey) as? [String: String] ?? [:]
         return titles[gamePath]
     }
 
     func setCustomGameTitle(_ title: String, for gamePath: String) {
+        AppLogger.log("ENTER setCustomGameTitle")
         var titles = UserDefaults.standard.dictionary(forKey: customTitlesKey) as? [String: String] ?? [:]
         if title.isEmpty {
             titles.removeValue(forKey: gamePath)
@@ -221,6 +227,7 @@ final class ConfigManager: ObservableObject {
     // MARK: - Config INI File
 
     private func saveConfigToIni() {
+        AppLogger.log("ENTER saveConfigToIni")
         guard let configURL = configURL else { return }
 
         var iniContent = ""
@@ -268,6 +275,7 @@ final class ConfigManager: ObservableObject {
 
 
     private func persistSecurityScopedBookmark(for url: URL, key: String) {
+        AppLogger.log("ENTER persistSecurityScopedBookmark")
         do {
             let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: key)
@@ -277,6 +285,7 @@ final class ConfigManager: ObservableObject {
     }
 
     private func restoreSecurityScopedURL(from key: String) -> URL? {
+        AppLogger.log("ENTER restoreSecurityScopedURL")
         guard let data = UserDefaults.standard.data(forKey: key) else {
             return nil
         }
@@ -303,10 +312,12 @@ final class ConfigManager: ObservableObject {
     }
 
     private func beginSecurityScopedAccessIfNeeded(_ url: URL) {
+        AppLogger.log("ENTER beginSecurityScopedAccessIfNeeded")
         _ = url.startAccessingSecurityScopedResource()
     }
 
     func setEasyRPGFolder(_ url: URL) {
+        AppLogger.log("ENTER setEasyRPGFolder")
         AppLogger.log("setEasyRPGFolder url=\(url.path)")
         let normalized = url.standardizedFileURL
         easyRPGFolderURL = normalized
@@ -321,6 +332,7 @@ final class ConfigManager: ObservableObject {
     }
 
     func completeOnboardingIfNeeded() {
+        AppLogger.log("ENTER completeOnboardingIfNeeded")
         if !hasCompletedOnboarding {
             hasCompletedOnboarding = true
             saveSettings()
@@ -328,6 +340,7 @@ final class ConfigManager: ObservableObject {
     }
 
     func setRTPFolder(_ url: URL) {
+        AppLogger.log("ENTER setRTPFolder")
         let normalized = url.standardizedFileURL
         rtpFolderURL = normalized
         if isInsideDocuments(normalized) {

@@ -196,6 +196,7 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
+        AppLogger.log("ENTER setupPlayerWithGame")
         let projectURL = URL(fileURLWithPath: game.path).standardizedFileURL
         projectSecurityScopeURL = projectURL
         hasProjectSecurityScopeAccess = projectURL.startAccessingSecurityScopedResource()
@@ -234,6 +235,7 @@ struct PlayerView: View {
     }
 
     private func releaseProjectSecurityScope() {
+        AppLogger.log("ENTER releaseProjectSecurityScope")
         guard hasProjectSecurityScopeAccess, let scopeURL = projectSecurityScopeURL else {
             projectSecurityScopeURL = nil
             return
@@ -245,6 +247,7 @@ struct PlayerView: View {
     }
 
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {
+        AppLogger.log("ENTER resolveSavePath")
         guard !rawSavePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -260,6 +263,7 @@ struct PlayerView: View {
     }
 
     private func applySettings() {
+        AppLogger.log("ENTER applySettings")
         PlayerBridge.setFullscreen(config.fullscreen)
         PlayerBridge.setForcedLandscape(config.forcedLandscape)
         PlayerBridge.setImageScaleMode(config.scaleMode)
@@ -297,12 +301,14 @@ struct PlayerView: View {
     }
 
     private func applyVirtualLayoutToPlayer() {
+        AppLogger.log("ENTER applyVirtualLayoutToPlayer")
         for button in layoutStore.buttons {
             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
         }
     }
 
     private func handleDirectionInput(direction: String, isPressed: Bool) {
+        AppLogger.log("ENTER handleDirectionInput")
         let buttonId = ["up": "up", "down": "down", "left": "left", "right": "right"][direction] ?? direction
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
@@ -312,6 +318,7 @@ struct PlayerView: View {
     }
 
     private func handleButtonInput(buttonId: String, isPressed: Bool) {
+        AppLogger.log("ENTER handleButtonInput")
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
         } else {
@@ -364,6 +371,7 @@ struct VirtualControllerView: View {
     }
 
     private func calculateButtonSize() -> CGFloat {
+        AppLogger.log("ENTER calculateButtonSize")
         if config.ignoreLayoutSize {
             return 42
         }
@@ -400,6 +408,7 @@ struct VirtualButtonView: View {
     }
 
     private func displayTitle() -> String {
+        AppLogger.log("ENTER displayTitle")
         if config.showABasZX {
             if button.id == "z" { return "A" }
             if button.id == "x" { return "B" }

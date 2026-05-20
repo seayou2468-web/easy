@@ -34,6 +34,7 @@ final class VirtualControllerLayoutStore: ObservableObject {
     init() { load() }
 
     func load() {
+        AppLogger.log("ENTER load")
         guard let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode([VirtualButtonLayout].self, from: data),
               !decoded.isEmpty else {
@@ -45,12 +46,14 @@ final class VirtualControllerLayoutStore: ObservableObject {
     }
 
     func save() {
+        AppLogger.log("ENTER save")
         if let data = try? JSONEncoder().encode(buttons) {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
 
     func reset() {
+        AppLogger.log("ENTER reset")
         buttons = VirtualButtonLayout.default
         save()
     }
