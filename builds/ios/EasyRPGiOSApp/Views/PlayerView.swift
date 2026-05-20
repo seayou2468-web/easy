@@ -184,15 +184,18 @@ struct PlayerView: View {
     }
 
     private func setupPlayerWithGame() {
-        // Launch the game with proper parameters
-        var args: [String] = []
-        
-        args.append("--project-path")
-        args.append(game.path)
+        let projectPath = URL(fileURLWithPath: game.path).standardizedFileURL.path
+        guard FileManager.default.fileExists(atPath: projectPath) else {
+            print("[iOS] Project path does not exist: \(projectPath)")
+            return
+        }
 
-        if !game.savePath.isEmpty {
+        var args: [String] = ["--project-path", projectPath]
+
+        let resolvedSavePath = resolveSavePath(projectPath: projectPath, rawSavePath: game.savePath)
+        if let savePath = resolvedSavePath, !savePath.isEmpty {
             args.append("--save-path")
-            args.append(game.savePath)
+            args.append(savePath)
         }
 
         if game.encoding != "auto" {
@@ -200,7 +203,26 @@ struct PlayerView: View {
             args.append(game.encoding)
         }
 
+        // Launch once immediately and once shortly after in case the runtime is still transitioning scenes.
         PlayerBridge.launchGame(withArgs: args)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            PlayerBridge.launchGame(withArgs: args)
+        }
+    }
+
+    private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {
+        guard !rawSavePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        let savePathURL: URL
+        if rawSavePath.hasPrefix("/") {
+            savePathURL = URL(fileURLWithPath: rawSavePath)
+        } else {
+            savePathURL = URL(fileURLWithPath: projectPath).appendingPathComponent(rawSavePath)
+        }
+
+        return savePathURL.standardizedFileURL.path
     }
 
     private func applySettings() {
