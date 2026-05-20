@@ -385,11 +385,12 @@ struct SettingsInputView: View {
             .padding(.vertical, 12)
         }
         .navigationTitle("入力")
-        .sheet(isPresented: $showLayoutEditor) {
-            VirtualControllerEditorView()
+        .fullScreenCover(isPresented: $showLayoutEditor) {
+            NavigationStack { VirtualControllerEditorView() }
+                .interactiveDismissDisabled(true)
         }
-        .sheet(isPresented: $showButtonMapping) {
-            ButtonMappingEditorView()
+        .fullScreenCover(isPresented: $showButtonMapping) {
+            NavigationStack { ButtonMappingEditorView() }
         }
     }
 }

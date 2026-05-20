@@ -145,10 +145,10 @@ struct PlayerView: View {
                 layoutStore.load()
             }
         }
-        .sheet(isPresented: $showButtonMapping) {
-            ButtonMappingEditorView()
+        .fullScreenCover(isPresented: $showButtonMapping) {
+            NavigationStack { ButtonMappingEditorView() }
         }
-        .sheet(isPresented: $showSettings) {
+        .fullScreenCover(isPresented: $showSettings) {
             NavigationStack {
                 ParitySettingsRootView()
             }

@@ -10,8 +10,9 @@ struct InputLayoutManagerView: View {
             Button("レイアウト編集を開く") { showEditor = true }
         }
         .navigationTitle("入力レイアウト管理")
-        .sheet(isPresented: $showEditor) {
+        .fullScreenCover(isPresented: $showEditor) {
             NavigationStack { VirtualControllerEditorView() }
+                .interactiveDismissDisabled(true)
         }
     }
 }
