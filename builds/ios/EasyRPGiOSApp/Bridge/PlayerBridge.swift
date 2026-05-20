@@ -4,6 +4,7 @@ import UIKit
 enum PlayerBridge {
     private static let launchArgSeparator = "\u{1F}" // Unit Separator (ASCII 31)
     // MARK: - Game Control
+    static func startRuntime() { EasyRPG_iOS_StartRuntime() }
     static func endGame() { EasyRPG_iOS_EndGame() }
     static func resetGame() { EasyRPG_iOS_ResetGame() }
     static func toggleFps() { EasyRPG_iOS_ToggleFps() }
