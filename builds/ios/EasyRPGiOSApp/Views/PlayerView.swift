@@ -208,8 +208,6 @@ struct PlayerView: View {
         }
 
         AppLogger.log("setupPlayerWithGame projectPath=\(projectPath)")
-        PlayerBridge.startRuntime()
-
         var args: [String] = ["--project-path", projectPath]
 
         let resolvedSavePath = resolveSavePath(projectPath: projectPath, rawSavePath: game.savePath)
@@ -230,8 +228,10 @@ struct PlayerView: View {
             args.append(game.encoding)
         }
 
-        // Keep launch behavior aligned with Android: one explicit launch command.
+        // Launch args must be registered before runtime starts, otherwise
+        // the core can boot into the generic PC-style menu without project context.
         PlayerBridge.launchGame(withArgs: args)
+        PlayerBridge.startRuntime()
     }
 
     private func releaseProjectSecurityScope() {
@@ -303,7 +303,9 @@ struct PlayerView: View {
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
         for button in layoutStore.buttons {
-            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
+            let mappedX = button.x <= 1.0 ? button.x * 450.0 : button.x
+            let mappedY = button.y <= 1.0 ? button.y * 500.0 : button.y
+            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: mappedX, y: mappedY)
         }
     }
 
@@ -337,6 +339,9 @@ struct VirtualControllerView: View {
 
     var body: some View {
         ZStack {
+            GeometryReader { geo in
+            let geometryWidth = geo.size.width
+            let geometryHeight = geo.size.height
             ForEach(layoutStore.buttons) { button in
                 VirtualButtonView(
                     button: button,
@@ -345,7 +350,10 @@ struct VirtualControllerView: View {
                     size: calculateButtonSize(),
                     config: config
                 )
-                .position(x: button.x, y: button.y)
+                .position(
+                    x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
+                    y: button.y <= 1.0 ? button.y * geometryHeight : button.y
+                )
                 .gesture(
                     LongPressGesture(minimumDuration: 0)
                         .onChanged { _ in
@@ -364,8 +372,8 @@ struct VirtualControllerView: View {
                 )
             }
         }
+        }
         .frame(maxWidth: .infinity, maxHeight: 240)
-        .background(Color.black.opacity(0.3))
         .cornerRadius(8)
         .padding(.horizontal, 12)
     }
@@ -396,15 +404,30 @@ struct VirtualButtonView: View {
         }
         .frame(width: size, height: size)
         .background(
-            Circle()
-                .fill(Color.white.opacity(opacity))
-                .overlay(
+            Group {
+                if isDirectional {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(opacity))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.black.opacity(0.2), lineWidth: 1)
+                        )
+                } else {
                     Circle()
-                        .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                )
+                        .fill(Color.white.opacity(opacity))
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.2), lineWidth: 1)
+                        )
+                }
+            }
         )
         .scaleEffect(isPressed ? 0.85 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
+    }
+
+    private var isDirectional: Bool {
+        ["up", "down", "left", "right"].contains(button.id)
     }
 
     private func displayTitle() -> String {
@@ -416,6 +439,9 @@ struct VirtualButtonView: View {
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
             return "⏩"
         }
+        if button.id == "menu" { return "≡" }
+        if button.id == "debug_menu" { return "M" }
+        if button.id == "debug_through" { return "T" }
         return button.title
     }
 }

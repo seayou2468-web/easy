@@ -257,37 +257,46 @@ void SetVirtualButtonPoint(const char* button_id, float x, float y) {
 }
 
 void LaunchGame(const char* args) {
-	Schedule([args_str = std::string(args ? args : "")]() {
-		launch_args.clear();
-		launch_args.emplace_back("EasyRPGPlayer");
-		auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == 0x1F; });
-		launch_args.insert(launch_args.end(), split.begin(), split.end());
+	const std::string args_str = std::string(args ? args : "");
+	std::vector<std::string> parsed_args;
+	parsed_args.emplace_back("EasyRPGPlayer");
+	auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == 0x1F; });
+	parsed_args.insert(parsed_args.end(), split.begin(), split.end());
+
+	// Android parity: command line is available before SDL/Player bootstrap.
+	{
+		std::lock_guard<std::mutex> lock(ios_mutex);
+		launch_args = parsed_args;
 		has_launch_args = true;
+	}
 
-		// Runtime path wiring for custom iOS UI -> Player connection.
-		// This allows launching/switching games after the app is already running.
-		for (size_t i = 0; i + 1 < launch_args.size(); ++i) {
-			if (launch_args[i] == "--project-path") {
-				auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
-				if (gamefs) {
-					FileFinder::SetGameFilesystem(gamefs);
-				}
-				++i;
-				continue;
+	// Runtime path wiring for custom iOS UI -> Player connection.
+	// This allows launching/switching games after the app is already running.
+	for (size_t i = 0; i + 1 < parsed_args.size(); ++i) {
+		if (parsed_args[i] == "--project-path") {
+			auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(parsed_args[i + 1], 0));
+			if (gamefs) {
+				FileFinder::SetGameFilesystem(gamefs);
 			}
-			if (launch_args[i] == "--save-path") {
-				auto savefs = FileFinder::Root().Create(FileFinder::MakeCanonical(launch_args[i + 1], 0));
-				if (savefs) {
-					FileFinder::SetSaveFilesystem(savefs);
-				}
-				++i;
-				continue;
-			}
+			++i;
+			continue;
 		}
+		if (parsed_args[i] == "--save-path") {
+			auto savefs = FileFinder::Root().Create(FileFinder::MakeCanonical(parsed_args[i + 1], 0));
+			if (savefs) {
+				FileFinder::SetSaveFilesystem(savefs);
+			}
+			++i;
+			continue;
+		}
+	}
 
-		// Request a reset so the newly selected game path is picked up.
-		Player::reset_flag = true;
-	});
+	// When runtime is already running, request reload like Android relaunch behavior.
+	if (runtime_started.load()) {
+		Schedule([]() {
+			Player::reset_flag = true;
+		});
+	}
 }
 
 void SendKeyDown(const char* button_id) {
