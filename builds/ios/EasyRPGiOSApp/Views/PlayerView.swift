@@ -500,6 +500,7 @@ struct PlayerView: View {
         PlayerBridge.setConfigInt(section: "Player", key: "StartupLogos", value: config.startupLogos)
         PlayerBridge.setConfigInt(section: "Player", key: "GameBrowserLabelMode", value: config.gameBrowserLabelMode)
         PlayerBridge.setConfigBool(section: "Player", key: "EnableRtpScanning", value: config.enableRtpScanning)
+        PlayerBridge.setConfigBool(section: "Player", key: "HasCompletedOnboarding", value: config.hasCompletedOnboarding)
         if let easyRPGFolder = config.easyRPGFolderURL {
             PlayerBridge.setConfigString(section: "Player", key: "EasyRPGFolder", value: pathForLaunch(fromAbsolutePath: easyRPGFolder.path))
         } else {
