@@ -779,8 +779,22 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 				Player::game_config.audio.native_midi.Set(value);
 			}
 		}
+		else if (section_s == "Input") {
+			if (!Input::GetInputSource()) return;
+			auto& cfg = Input::GetInputSource()->GetConfig();
+			if (key_s == "GamepadSwapAnalog") {
+				cfg.gamepad_swap_analog.Set(value);
+			}
+			else if (key_s == "GamepadSwapDpad") {
+				cfg.gamepad_swap_dpad_with_buttons.Set(value);
+			}
+			else if (key_s == "GamepadSwapAbxy") {
+				cfg.gamepad_swap_ab_and_xy.Set(value);
+			}
+		}
 		if (section_s == "Player") {
-			if (key_s == "SettingsInTitle") Player::player_config.settings_in_title.Set(value);
+			if (key_s == "SettingsAutosave") Player::player_config.settings_autosave.Set(value);
+			else if (key_s == "SettingsInTitle") Player::player_config.settings_in_title.Set(value);
 			else if (key_s == "SettingsInMenu") Player::player_config.settings_in_menu.Set(value);
 			else if (key_s == "LanguageInTitle") Player::player_config.lang_select_in_title.Set(value);
 			else if (key_s == "Logging") Player::player_config.log_enabled.Set(value);

@@ -31,6 +31,10 @@ final class ConfigManager: ObservableObject {
     @Published var fastForwardMode = 0 // 0: hold, 1: tap
     @Published var fastForwardMultiplier = 3
     @Published var fastForwardMultiplierB = 10
+    @Published var gamepadSwapAnalog = false
+    @Published var gamepadSwapDpad = false
+    @Published var gamepadSwapAbxy = false
+    @Published var settingsAutosave = false
     @Published var settingsInMenu = false
     @Published var languageSelectOnStart = 0 // 0: never, 1: first startup, 2: always
     @Published var settingsInTitle = false
@@ -118,6 +122,10 @@ final class ConfigManager: ObservableObject {
         defaults.set(fastForwardMode, forKey: userDefaultsPrefix + "fastForwardMode")
         defaults.set(fastForwardMultiplier, forKey: userDefaultsPrefix + "fastForwardMultiplier")
         defaults.set(fastForwardMultiplierB, forKey: userDefaultsPrefix + "fastForwardMultiplierB")
+        defaults.set(gamepadSwapAnalog, forKey: userDefaultsPrefix + "gamepadSwapAnalog")
+        defaults.set(gamepadSwapDpad, forKey: userDefaultsPrefix + "gamepadSwapDpad")
+        defaults.set(gamepadSwapAbxy, forKey: userDefaultsPrefix + "gamepadSwapAbxy")
+        defaults.set(settingsAutosave, forKey: userDefaultsPrefix + "settingsAutosave")
         defaults.set(settingsInMenu, forKey: userDefaultsPrefix + "settingsInMenu")
         defaults.set(languageSelectOnStart, forKey: userDefaultsPrefix + "languageSelectOnStart")
         defaults.set(settingsInTitle, forKey: userDefaultsPrefix + "settingsInTitle")
@@ -178,6 +186,10 @@ final class ConfigManager: ObservableObject {
         fastForwardMode = defaults.integer(forKey: userDefaultsPrefix + "fastForwardMode")
         fastForwardMultiplier = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplier"))
         fastForwardMultiplierB = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") : 10)
+        gamepadSwapAnalog = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapAnalog")
+        gamepadSwapDpad = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapDpad")
+        gamepadSwapAbxy = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapAbxy")
+        settingsAutosave = defaults.bool(forKey: userDefaultsPrefix + "settingsAutosave")
         settingsInMenu = defaults.bool(forKey: userDefaultsPrefix + "settingsInMenu")
         languageSelectOnStart = defaults.integer(forKey: userDefaultsPrefix + "languageSelectOnStart")
         settingsInTitle = defaults.bool(forKey: userDefaultsPrefix + "settingsInTitle")
@@ -271,12 +283,16 @@ final class ConfigManager: ObservableObject {
         iniContent += "FastForwardMode=\(fastForwardMode)\n"
         iniContent += "FastForwardMultiplier=\(fastForwardMultiplier)\n"
         iniContent += "FastForwardMultiplierB=\(fastForwardMultiplierB)\n"
+        iniContent += "GamepadSwapAnalog=\(gamepadSwapAnalog ? 1 : 0)\n"
+        iniContent += "GamepadSwapDpad=\(gamepadSwapDpad ? 1 : 0)\n"
+        iniContent += "GamepadSwapAbxy=\(gamepadSwapAbxy ? 1 : 0)\n"
         iniContent += "LayoutTransparency=\(layoutTransparency)\n"
         iniContent += "LayoutSize=\(layoutSize)\n"
         iniContent += "IgnoreLayoutSize=\(ignoreLayoutSize ? 1 : 0)\n"
         iniContent += "\n"
 
         iniContent += "[Engine]\n"
+        iniContent += "SettingsAutosave=\(settingsAutosave ? 1 : 0)\n"
         iniContent += "SettingsInMenu=\(settingsInMenu ? 1 : 0)\n"
         iniContent += "LanguageSelectOnStart=\(languageSelectOnStart)\n"
         iniContent += "Font1Size=\(font1Size)\n"

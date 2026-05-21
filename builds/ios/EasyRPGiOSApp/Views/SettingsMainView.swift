@@ -289,6 +289,18 @@ struct SettingsInputView: View {
 
                 Divider()
 
+                Section(header: Text("ゲームパッド変換").font(.headline)) {
+                    Toggle("左右アナログを入れ替え", isOn: $config.gamepadSwapAnalog)
+                        .onChange(of: config.gamepadSwapAnalog) { _, _ in config.saveSettings() }
+                    Toggle("D-Pad と ABXY を入れ替え", isOn: $config.gamepadSwapDpad)
+                        .onChange(of: config.gamepadSwapDpad) { _, _ in config.saveSettings() }
+                    Toggle("AB と XY を入れ替え", isOn: $config.gamepadSwapAbxy)
+                        .onChange(of: config.gamepadSwapAbxy) { _, _ in config.saveSettings() }
+                }
+                .padding(.bottom, 8)
+
+                Divider()
+
                 Section(header: Text("レイアウト設定").font(.headline)) {
                     HStack {
                         Text("レイアウト透明度")
@@ -372,6 +384,9 @@ struct SettingsInputView: View {
                 Divider()
 
                 Section(header: Text("PC互換設定").font(.headline)) {
+                    Toggle("設定の自動保存", isOn: $config.settingsAutosave)
+                        .onChange(of: config.settingsAutosave) { _, _ in config.saveSettings() }
+
                     Toggle("メニューに設定項目を表示", isOn: $config.settingsInMenu)
                         .onChange(of: config.settingsInMenu) { _, _ in config.saveSettings() }
 
