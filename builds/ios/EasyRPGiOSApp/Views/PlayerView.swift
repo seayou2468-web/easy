@@ -235,8 +235,9 @@ struct PlayerView: View {
 
         // Launch args must be registered before runtime starts, otherwise
         // the core can boot into the generic PC-style menu without project context.
+        // LaunchGame registers args first and starts runtime internally.
+        // This guarantees Player::Init sees --project-path on first boot.
         PlayerBridge.launchGame(withArgs: args)
-        PlayerBridge.startRuntime()
     }
 
     private func releaseProjectSecurityScope() {

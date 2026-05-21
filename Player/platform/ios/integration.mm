@@ -418,6 +418,13 @@ void LaunchGame(const char* args) {
 		has_launch_args = true;
 	}
 
+	// If runtime is not running yet, start it now that launch args are registered.
+	// This enforces the required ordering: LaunchGame(args) -> Player::Init(args).
+	if (!runtime_started.load()) {
+		StartRuntimeIfNeeded();
+		return;
+	}
+
 	// When runtime is already running, request reload like Android relaunch behavior.
 	if (runtime_started.load()) {
 		Schedule([]() {
