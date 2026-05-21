@@ -703,7 +703,7 @@ struct VirtualControllerView: View {
 
     static func visualSize(for button: VirtualButtonLayout, config: ConfigManager) -> CGFloat {
         let screenMin = min(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
-        let androidParityBase = max(36, min(96, screenMin * 0.125))
+        let androidParityBase = max(44, min(104, screenMin * 0.135))
         let manualBase = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
         let base: CGFloat = config.ignoreLayoutSize ? manualBase : androidParityBase
         return max(28, min(160, base * (CGFloat(button.size) / 100.0)))
@@ -803,6 +803,9 @@ private struct DPadCrossView: View {
 
     var body: some View {
         ZStack {
+            Circle()
+                .fill(Color.black.opacity(opacity * 0.35))
+                .frame(width: size, height: size)
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(opacity))
                 .frame(width: size * 0.34, height: size)
@@ -810,7 +813,7 @@ private struct DPadCrossView: View {
                 .fill(Color.white.opacity(opacity))
                 .frame(width: size, height: size * 0.34)
             Text(symbol)
-                .font(.caption2.bold())
+                .font(.system(size: size * 0.17, weight: .black, design: .rounded))
                 .foregroundStyle(.black)
         }
         .frame(width: size, height: size)
@@ -841,8 +844,7 @@ struct VirtualButtonView: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(displayTitle())
-                .font(.caption2)
-                .bold()
+                .font(.system(size: size * 0.26, weight: .black, design: .rounded))
                 .foregroundStyle(.black)
         }
         .frame(width: size, height: size)
@@ -865,6 +867,7 @@ struct VirtualButtonView: View {
                 }
             }
         )
+        .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
         .scaleEffect(isPressed ? 0.85 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
     }
@@ -971,4 +974,3 @@ struct PlayerMenuSheet: View {
         savePath: "/path/to/saves"
     ))
 }
-
