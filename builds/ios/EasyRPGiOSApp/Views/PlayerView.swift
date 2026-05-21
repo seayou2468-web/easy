@@ -487,6 +487,15 @@ struct PlayerView: View {
 
     private func handleButtonInput(buttonId: String, isPressed: Bool) {
         AppLogger.log("ENTER handleButtonInput")
+        // Android parity: the virtual ≡ button opens/closes app menu on release
+        // instead of sending an in-game key event.
+        if buttonId == "menu" {
+            if !isPressed {
+                showMenu = true
+            }
+            return
+        }
+
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
         } else {
