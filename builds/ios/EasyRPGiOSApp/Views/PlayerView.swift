@@ -107,6 +107,8 @@ private final class VirtualControllerOverlayWindowManager {
     }
 
     private func preferredOverlayLevel(in scene: UIWindowScene) -> UIWindow.Level {
+        // `scene.windows` also contains our own overlay window once it is visible.
+        // Exclude it to avoid self-referential level escalation on repeated present().
         let highestSceneLevel = scene.windows
             .map(\.windowLevel)
             .max() ?? .normal
