@@ -592,6 +592,7 @@ struct VirtualControllerView: View {
     let onButtonInput: (String, Bool) -> Void
 
     @State private var pressedButtons: Set<String> = []
+    @State private var activeDirection: String?
     @State private var autoSizeByDevice = true
 
     private var effectiveOpacity: Double {
@@ -604,9 +605,15 @@ struct VirtualControllerView: View {
             let geometryWidth = geo.size.width
             let geometryHeight = geo.size.height
             let isLandscape = geometryWidth > geometryHeight
+            let buttons = layoutStore.buttons(isLandscape: isLandscape)
+            let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }
+            let others = buttons.filter { !["up", "down", "left", "right"].contains($0.id) }
 
             ZStack {
-                ForEach(layoutStore.buttons(isLandscape: isLandscape), id: \.instanceId) { button in
+                if !directional.isEmpty {
+                    runtimeDPadView(directional, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
+                }
+                ForEach(others, id: \.instanceId) { button in
                     runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
@@ -615,6 +622,44 @@ struct VirtualControllerView: View {
         .cornerRadius(8)
         // Do not add runtime-only horizontal offset: editor and runtime must share
         // the same coordinate space for position parity.
+    }
+
+    @ViewBuilder
+    private func runtimeDPadView(_ buttons: [VirtualButtonLayout], geometryWidth: CGFloat, geometryHeight: CGFloat) -> some View {
+        let centerX = buttons.map(\.x).reduce(0, +) / CGFloat(buttons.count)
+        let centerY = buttons.map(\.y).reduce(0, +) / CGFloat(buttons.count)
+        let refSize = buttons.map { sizeFor($0) }.max() ?? 64
+        let dpadSize = refSize * 2.2
+
+        DPadCrossView(opacity: effectiveOpacity, size: dpadSize, activeDirection: activeDirection)
+            .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let direction = resolveDPadDirection(from: value.location, size: dpadSize)
+                        if direction != activeDirection {
+                            if let old = activeDirection { onDirectionInput(old, false) }
+                            activeDirection = direction
+                            if let direction {
+                                onDirectionInput(direction, true)
+                            }
+                        }
+                    }
+                    .onEnded { _ in
+                        if let old = activeDirection { onDirectionInput(old, false) }
+                        activeDirection = nil
+                    }
+            )
+    }
+
+    private func resolveDPadDirection(from point: CGPoint, size: CGFloat) -> String? {
+        let half = size / 2
+        let x = point.x - half
+        let y = point.y - half
+        let deadZone = size * 0.12
+        if abs(x) < deadZone && abs(y) < deadZone { return nil }
+        if abs(x) > abs(y) { return x < 0 ? "left" : "right" }
+        return y < 0 ? "up" : "down"
     }
 
     private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
@@ -685,6 +730,41 @@ struct VirtualControllerView: View {
     private func handleDragEnded(button: VirtualButtonLayout) {
         pressedButtons.remove(button.instanceId)
         sendPress(for: button.id, isPressed: false)
+    }
+}
+
+private struct DPadCrossView: View {
+    let opacity: Double
+    let size: CGFloat
+    let activeDirection: String?
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(opacity))
+                .frame(width: size * 0.34, height: size)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(opacity))
+                .frame(width: size, height: size * 0.34)
+            Text(symbol)
+                .font(.caption2.bold())
+                .foregroundStyle(.black)
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.black.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var symbol: String {
+        switch activeDirection {
+        case "up": return "↑"
+        case "down": return "↓"
+        case "left": return "←"
+        case "right": return "→"
+        default: return "+"
+        }
     }
 }
 

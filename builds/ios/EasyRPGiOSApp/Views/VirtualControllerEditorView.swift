@@ -40,7 +40,6 @@ struct VirtualControllerEditorView: View {
     }
 
     var body: some View {
-        let profileBinding = $store.activeProfileId
         ZStack {
             Color.black.opacity(0.9).ignoresSafeArea()
 
@@ -63,8 +62,12 @@ struct VirtualControllerEditorView: View {
             loadWorkingButtons()
         }
         .onChange(of: isLandscapeEditing) { _, _ in loadWorkingButtons() }
-        .confirmationDialog("編集メニュー", isPresented: $showMenu, actions: menuDialog)
-        .confirmationDialog("追加するボタン", isPresented: $showAddMenu, actions: addButtonDialog)
+        .overlay {
+            if showMenu { editorMenuOverlay }
+        }
+        .overlay {
+            if showAddMenu { addButtonOverlay }
+        }
         .toolbar(content: toolbarContent)
         .fileExporter(isPresented: $showExporter, document: exportDocument(), contentType: .json, defaultFilename: exportURL?.lastPathComponent ?? "layout.json") { _ in }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
@@ -93,66 +96,77 @@ struct VirtualControllerEditorView: View {
         }) ?? devicePresets[0]
     }
 
-    @ViewBuilder
-    private func menuDialog() -> some View {
-        Button(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") {
-            isLandscapeEditing.toggle()
-        }
-        Button(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") {
-            config.ignoreLayoutSize.toggle()
-            config.saveSettings()
-        }
-        Button("全ボタンを少し大きく") {
-            workingButtons = workingButtons.map { b in
-                var m = b
-                m.size = min(180, m.size + 5)
-                return m
+    private var editorMenuOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.55).ignoresSafeArea().onTapGesture { showMenu = false }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("編集メニュー").font(.headline)
+                    menuAction(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") { isLandscapeEditing.toggle() }
+                    menuAction(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") { config.ignoreLayoutSize.toggle(); config.saveSettings() }
+                    menuAction("全ボタンを少し大きく") { adjustAllButtons(by: 5) }
+                    menuAction("全ボタンを少し小さく") { adjustAllButtons(by: -5) }
+                    menuAction("ボタンを追加") { showAddMenu = true }
+                    menuAction("この向きをデフォルトにリセット") { workingButtons = VirtualButtonLayout.default; saveLayout() }
+                    if selectedButton != nil {
+                        menuAction("選択中ボタンを削除", destructive: true) {
+                            guard let id = selectedButtonInstanceId else { return }
+                            workingButtons.removeAll { $0.instanceId == id }
+                            selectedButtonInstanceId = nil
+                            saveLayout()
+                        }
+                    }
+                    menuAction("レイアウトを新規作成") { store.addProfile(name: "Layout \(store.profiles.count + 1)"); loadWorkingButtons() }
+                    menuAction("エクスポート") { exportURL = store.exportActiveProfile(); showExporter = exportURL != nil }
+                    menuAction("インポート") { showImporter = true }
+                    menuAction("保存して閉じる") { saveLayout(); dismiss() }
+                    menuAction("保存せず閉じる", destructive: true) { dismiss() }
+                }
+                .padding(16)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(20)
             }
         }
-        Button("全ボタンを少し小さく") {
-            workingButtons = workingButtons.map { b in
-                var m = b
-                m.size = max(50, m.size - 5)
-                return m
-            }
-        }
-        Button("ボタンを追加") { showAddMenu = true }
-        Button("この向きをデフォルトにリセット") {
-            workingButtons = VirtualButtonLayout.default
-            saveLayout()
-        }
-        if selectedButton != nil {
-            Button("選択中ボタンを削除", role: .destructive) {
-                guard let id = selectedButtonInstanceId else { return }
-                workingButtons.removeAll { $0.instanceId == id }
-                selectedButtonInstanceId = nil
-                saveLayout()
-            }
-        }
-        Button("レイアウトを新規作成") {
-            store.addProfile(name: "Layout \(store.profiles.count + 1)")
-            loadWorkingButtons()
-        }
-        Button("エクスポート") {
-            exportURL = store.exportActiveProfile()
-            showExporter = exportURL != nil
-        }
-        Button("インポート") { showImporter = true }
-        Button("保存して閉じる") {
-            saveLayout()
-            dismiss()
-        }
-        Button("保存せず閉じる", role: .destructive) { dismiss() }
     }
 
-    @ViewBuilder
-    private func addButtonDialog() -> some View {
-        ForEach(VirtualControllerLayoutStore.addableButtons, id: \.instanceId) { item in
-            Button("\(item.title) (\(item.id))") {
-                var copy = item
-                copy.instanceId = UUID().uuidString
-                workingButtons.append(copy)
+    private var addButtonOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45).ignoresSafeArea().onTapGesture { showAddMenu = false }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("追加するボタン").font(.headline)
+                    ForEach(VirtualControllerLayoutStore.addableButtons, id: \.instanceId) { item in
+                        menuAction("\(item.title) (\(item.id))") {
+                            var copy = item
+                            copy.instanceId = UUID().uuidString
+                            workingButtons.append(copy)
+                            showAddMenu = false
+                        }
+                    }
+                }
+                .padding(16)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(20)
             }
+        }
+    }
+
+    private func adjustAllButtons(by delta: Int) {
+        workingButtons = workingButtons.map { b in
+            var m = b
+            m.size = min(180, max(50, m.size + delta))
+            return m
+        }
+    }
+
+    private func menuAction(_ title: String, destructive: Bool = false, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .background(destructive ? Color.red.opacity(0.15) : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .foregroundStyle(destructive ? Color.red : Color.primary)
         }
     }
 
