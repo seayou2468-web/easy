@@ -39,6 +39,13 @@ final class GameImportService: ObservableObject {
     }
 
     private func importZip(sourceURL: URL, destinationGamesDir: URL) throws {
+        let hasScopedAccess = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if hasScopedAccess {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -86,4 +93,3 @@ final class GameImportService: ObservableObject {
         return candidate
     }
 }
-
