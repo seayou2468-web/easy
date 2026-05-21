@@ -528,11 +528,11 @@ struct VirtualControllerView: View {
                         y: button.y <= 1.0 ? button.y * geometryHeight : button.y
                     )
                     .gesture(
-                        LongPressGesture(minimumDuration: 0)
+                        DragGesture(minimumDistance: 0)
                             .onChanged { _ in
                                 if !pressedButtons.contains(button.instanceId) {
                                     pressedButtons.insert(button.instanceId)
-                                    onButtonInput(button.id, true)
+                                    sendPress(for: button.id, isPressed: true)
                                     if config.enableVibration {
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     }
@@ -540,7 +540,7 @@ struct VirtualControllerView: View {
                             }
                             .onEnded { _ in
                                 pressedButtons.remove(button.instanceId)
-                                onButtonInput(button.id, false)
+                                sendPress(for: button.id, isPressed: false)
                             }
                     )
                 }
@@ -558,6 +558,14 @@ struct VirtualControllerView: View {
         }
         let size = CGFloat(config.layoutSize)
         return max(32, min(size * 0.35, 96))
+    }
+
+    private func sendPress(for buttonId: String, isPressed: Bool) {
+        if ["up", "down", "left", "right"].contains(buttonId) {
+            onDirectionInput(buttonId, isPressed)
+        } else {
+            onButtonInput(buttonId, isPressed)
+        }
     }
 }
 
