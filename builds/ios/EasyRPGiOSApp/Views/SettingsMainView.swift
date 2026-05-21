@@ -42,7 +42,8 @@ struct SettingsMainView: View {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Color.accentColor.opacity(0.12))
                         .frame(width: 36, height: 36)
-                    Image(systemName: icon).frame(width: 24)
+                    safeSystemImage(icon)
+                        .frame(width: 24)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -61,6 +62,16 @@ struct SettingsMainView: View {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func safeSystemImage(_ name: String) -> some View {
+        if UIImage(systemName: name) != nil {
+            Image(systemName: name)
+        } else {
+            AppLogger.log("Missing SF Symbol: \(name)")
+            Image(systemName: "questionmark.circle")
+        }
     }
 }
 
