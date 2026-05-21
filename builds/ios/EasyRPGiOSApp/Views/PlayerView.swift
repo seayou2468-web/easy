@@ -13,6 +13,9 @@ private final class TouchPassthroughWindow: UIWindow {
 private final class VirtualControllerOverlayWindowManager {
     static let shared = VirtualControllerOverlayWindowManager()
     private var overlayWindow: TouchPassthroughWindow?
+    private weak var overlayScene: UIWindowScene?
+    private var overlayHost: UIHostingController<AnyView>?
+    private var keepAliveTimer: Timer?
 
     func present(
         layoutStore: VirtualControllerLayoutStore,
@@ -26,37 +29,77 @@ private final class VirtualControllerOverlayWindowManager {
             return
         }
 
-        if overlayWindow == nil {
+        if overlayWindow == nil || overlayScene !== scene {
             let window = TouchPassthroughWindow(windowScene: scene)
             window.backgroundColor = .clear
-            window.windowLevel = .statusBar + 1
-            window.rootViewController = UIHostingController(
-                rootView: AnyView(
-                    VirtualControllerView(
-                        layoutStore: layoutStore,
-                        config: config,
-                        onDirectionInput: onDirectionInput,
-                        onButtonInput: onButtonInput
-                    )
-                    .ignoresSafeArea()
-                    .background(Color.clear)
-                )
-            )
-            window.rootViewController?.view.backgroundColor = .clear
+            window.windowLevel = .alert + 1
+            let host = UIHostingController(rootView: AnyView(EmptyView()))
+            host.view.backgroundColor = .clear
+            window.rootViewController = host
+            overlayHost = host
             overlayWindow = window
+            overlayScene = scene
         }
 
-        if overlayWindow?.windowScene !== scene {
-            overlayWindow?.windowScene = scene
+        overlayHost?.rootView = AnyView(
+            VirtualControllerView(
+                layoutStore: layoutStore,
+                config: config,
+                onDirectionInput: onDirectionInput,
+                onButtonInput: onButtonInput
+            )
+            .ignoresSafeArea()
+            .background(Color.clear)
+        )
+
+        if let rootView = overlayHost?.view {
+            rootView.setNeedsLayout()
+            rootView.layoutIfNeeded()
         }
 
         overlayWindow?.isHidden = false
     }
 
     func dismiss() {
+        stopKeepAlive()
         overlayWindow?.isHidden = true
         overlayWindow?.rootViewController = nil
+        overlayHost = nil
+        overlayScene = nil
         overlayWindow = nil
+    }
+
+    func keepInFrontTemporarily(
+        layoutStore: VirtualControllerLayoutStore,
+        config: ConfigManager,
+        onDirectionInput: @escaping (String, Bool) -> Void,
+        onButtonInput: @escaping (String, Bool) -> Void
+    ) {
+        stopKeepAlive()
+        var tick = 0
+        let maxTick = 30
+        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self else {
+                timer.invalidate()
+                return
+            }
+            self.present(
+                layoutStore: layoutStore,
+                config: config,
+                onDirectionInput: onDirectionInput,
+                onButtonInput: onButtonInput
+            )
+            tick += 1
+            if tick >= maxTick {
+                timer.invalidate()
+                self.keepAliveTimer = nil
+            }
+        }
+    }
+
+    private func stopKeepAlive() {
+        keepAliveTimer?.invalidate()
+        keepAliveTimer = nil
     }
 }
 
@@ -78,7 +121,6 @@ struct PlayerView: View {
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
-    @State private var overlayFrontTask: DispatchWorkItem?
 
     var body: some View {
         ZStack {
@@ -231,8 +273,6 @@ struct PlayerView: View {
         }
         .onDisappear {
             AppLogger.log("PlayerView onDisappear")
-            overlayFrontTask?.cancel()
-            overlayFrontTask = nil
             VirtualControllerOverlayWindowManager.shared.dismiss()
             releaseProjectSecurityScope()
         }
@@ -263,16 +303,12 @@ struct PlayerView: View {
     }
 
     private func keepOverlayInFrontTemporarily() {
-        overlayFrontTask?.cancel()
-        let task = DispatchWorkItem {
-            for step in 0..<30 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * 0.1)) {
-                    presentVirtualControllerOverlayWindow()
-                }
-            }
-        }
-        overlayFrontTask = task
-        DispatchQueue.main.async(execute: task)
+        VirtualControllerOverlayWindowManager.shared.keepInFrontTemporarily(
+            layoutStore: layoutStore,
+            config: config,
+            onDirectionInput: handleDirectionInput,
+            onButtonInput: handleButtonInput
+        )
     }
 
     private func setupPlayerWithGame() {
