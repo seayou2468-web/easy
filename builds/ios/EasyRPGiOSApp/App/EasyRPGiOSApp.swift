@@ -19,7 +19,7 @@ struct EasyRPGiOSApp: App {
                             library: library
                         )
                     } else {
-                        InitView()
+                        InitView(showContinueToBrowserButton: true)
                     }
                 }
                     .onAppear {
@@ -33,7 +33,7 @@ struct EasyRPGiOSApp: App {
                     .navigationDestination(for: AppScreen.self) { screen in
                         switch screen {
                         case .initScreen:
-                            InitView()
+                            InitView(showContinueToBrowserButton: true)
 
                         case .browser:
                             GameBrowserView(

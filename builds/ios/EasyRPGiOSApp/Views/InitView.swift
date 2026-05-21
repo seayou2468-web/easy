@@ -109,6 +109,20 @@ struct InitView: View {
                 Spacer(minLength: 20)
 
                 VStack(spacing: 12) {
+                    if showContinueToBrowserButton {
+                        Button(action: { config.completeOnboardingIfNeeded() }) {
+                            HStack {
+                                Image(systemName: "arrow.right.circle.fill")
+                                Text("ゲームブラウザへ移動")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundStyle(.white)
+                            .cornerRadius(8)
+                        }
+                    }
+
                     if let tutorialURL = Self.tutorialURL {
                         Link(destination: tutorialURL) {
                             HStack {
@@ -159,3 +173,4 @@ struct InitView: View {
 #Preview {
     InitView()
 }
+    var showContinueToBrowserButton = false
