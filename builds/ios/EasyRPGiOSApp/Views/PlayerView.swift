@@ -680,7 +680,7 @@ struct VirtualControllerView: View {
         let refSize = buttons.map { sizeFor($0) }.max() ?? 64
         let dpadSize = refSize * 2.2
 
-        DPadCrossView(opacity: effectiveOpacity, size: dpadSize, activeDirection: activeDirection)
+        DPadCrossView(opacity: effectiveOpacity, size: dpadSize)
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -823,32 +823,15 @@ struct VirtualControllerView: View {
 private struct DPadCrossView: View {
     let opacity: Double
     let size: CGFloat
-    let activeDirection: String?
 
     var body: some View {
         ZStack {
             AndroidDPadShape()
                 .fill(Color.white.opacity(opacity))
-            Text(symbol)
-                .font(.system(size: size * 0.17, weight: .bold, design: .default))
-                .foregroundStyle(.black)
         }
         .frame(width: size, height: size)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.2), lineWidth: 1)
-        )
     }
 
-    private var symbol: String {
-        switch activeDirection {
-        case "up": return "↑"
-        case "down": return "↓"
-        case "left": return "←"
-        case "right": return "→"
-        default: return "+"
-        }
-    }
 }
 
 private struct AndroidDPadShape: Shape {
@@ -922,9 +905,6 @@ struct VirtualButtonView: View {
                 }
             }
         )
-        .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
-        .scaleEffect(isPressed ? 0.85 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
     }
 
     private var isDirectional: Bool {

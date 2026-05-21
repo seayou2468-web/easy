@@ -183,17 +183,25 @@ void LogProjectProbe(const FilesystemView& fs, const char* label) {
 		Output::Debug("[iOSBridge] {} probe listdir entries={}", label, files->size());
 	}
 }
+std::string NormalizeButtonToken(const char* id) {
+	if (!id) return {};
+	std::string v = Utils::LowerCase(id);
+	v.erase(std::remove_if(v.begin(), v.end(), [](unsigned char c) { return std::isspace(c) != 0; }), v.end());
+	return v;
+}
+
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
-	if (!id) return Input::Keys::NONE;
-	if (strcmp(id, "up") == 0) return Input::Keys::UP;
-	if (strcmp(id, "down") == 0) return Input::Keys::DOWN;
-	if (strcmp(id, "left") == 0) return Input::Keys::LEFT;
-	if (strcmp(id, "right") == 0) return Input::Keys::RIGHT;
-	if (strcmp(id, "z") == 0 || strcmp(id, "decision") == 0) return Input::Keys::Z;
-	if (strcmp(id, "x") == 0 || strcmp(id, "cancel") == 0) return Input::Keys::X;
-	if (strcmp(id, "shift") == 0) return Input::Keys::SHIFT;
-	if (strcmp(id, "fast_forward_a") == 0) return Input::Keys::TAB;
-	if (strcmp(id, "settings_menu") == 0 || strcmp(id, "menu") == 0) return Input::Keys::F1;
+	auto token = NormalizeButtonToken(id);
+	if (token.empty()) return Input::Keys::NONE;
+	if (token == "up") return Input::Keys::UP;
+	if (token == "down") return Input::Keys::DOWN;
+	if (token == "left") return Input::Keys::LEFT;
+	if (token == "right") return Input::Keys::RIGHT;
+	if (token == "z" || token == "decision") return Input::Keys::Z;
+	if (token == "x" || token == "cancel") return Input::Keys::X;
+	if (token == "shift") return Input::Keys::SHIFT;
+	if (token == "fast_forward_a") return Input::Keys::TAB;
+	if (token == "settings_menu" || token == "menu") return Input::Keys::F1;
 	return Input::Keys::NONE;
 }
 
@@ -275,18 +283,18 @@ void StartRuntimeIfNeeded() {
 }
 
 void Invoke() {
-	std::function<void()> fn;
+	std::vector<std::function<void()>> pending;
 	{
 		std::lock_guard<std::mutex> lock(ios_mutex);
 		if (ios_fn_queue.empty()) {
 			return;
 		}
-
-		fn = std::move(ios_fn_queue.front());
-		ios_fn_queue.erase(ios_fn_queue.begin());
+		pending.swap(ios_fn_queue);
 	}
 
-	fn();
+	for (auto& fn : pending) {
+		fn();
+	}
 
 	if (Input::source) {
 		for (auto key : held_keys) {
@@ -338,23 +346,24 @@ void OpenSettings() {
 }
 
 Input::InputButton ResolveButtonId(const char* id) {
-	if (!id) {
+	auto token = NormalizeButtonToken(id);
+	if (token.empty()) {
 		return Input::BUTTON_COUNT;
 	}
-	if (strcmp(id, "decision") == 0) return Input::DECISION;
-	if (strcmp(id, "cancel") == 0) return Input::CANCEL;
-	if (strcmp(id, "up") == 0) return Input::UP;
-	if (strcmp(id, "down") == 0) return Input::DOWN;
-	if (strcmp(id, "left") == 0) return Input::LEFT;
-	if (strcmp(id, "right") == 0) return Input::RIGHT;
-	if (strcmp(id, "shift") == 0) return Input::SHIFT;
-	if (strcmp(id, "fast_forward_a") == 0) return Input::FAST_FORWARD_A;
-	if (strcmp(id, "fast_forward_b") == 0) return Input::FAST_FORWARD_B;
-	if (strcmp(id, "page_up") == 0) return Input::PAGE_UP;
-	if (strcmp(id, "page_down") == 0) return Input::PAGE_DOWN;
-	if (strcmp(id, "settings_menu") == 0) return Input::SETTINGS_MENU;
-	if (strcmp(id, "toggle_fps") == 0) return Input::TOGGLE_FPS;
-	if (strcmp(id, "reset") == 0) return Input::RESET;
+	if (token == "decision") return Input::DECISION;
+	if (token == "cancel") return Input::CANCEL;
+	if (token == "up") return Input::UP;
+	if (token == "down") return Input::DOWN;
+	if (token == "left") return Input::LEFT;
+	if (token == "right") return Input::RIGHT;
+	if (token == "shift") return Input::SHIFT;
+	if (token == "fast_forward_a") return Input::FAST_FORWARD_A;
+	if (token == "fast_forward_b") return Input::FAST_FORWARD_B;
+	if (token == "page_up") return Input::PAGE_UP;
+	if (token == "page_down") return Input::PAGE_DOWN;
+	if (token == "settings_menu") return Input::SETTINGS_MENU;
+	if (token == "toggle_fps") return Input::TOGGLE_FPS;
+	if (token == "reset") return Input::RESET;
 	return Input::BUTTON_COUNT;
 }
 
