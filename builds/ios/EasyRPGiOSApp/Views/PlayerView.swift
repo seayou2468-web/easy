@@ -125,7 +125,8 @@ struct PlayerView: View {
 
     @State private var showEndConfirm = false
     @State private var showResetConfirm = false
-        @State private var showMenu = false
+    @State private var showMenu = false
+    @State private var showHud = true
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false
     @State private var showSettings = false
@@ -143,15 +144,25 @@ struct PlayerView: View {
             Color.clear
                 .ignoresSafeArea()
 
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showHud.toggle()
+                    }
+                }
+
             VStack {
                 HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                        Text("プレイヤー実行中")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.75))
+                    if showHud {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text("タップでHUDを表示/非表示")
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
                     }
 
                     Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
@@ -159,12 +170,16 @@ struct PlayerView: View {
                             .font(.system(size: 18, weight: .semibold))
                     }
                     .buttonStyle(.borderedProminent)
+                    .opacity(showHud ? 1.0 : 0.0)
+                    .allowsHitTesting(showHud)
 
                     Button(action: { showMenu = true }) {
                         Image(systemName: "line.3.horizontal")
                             .font(.system(size: 18, weight: .semibold))
                     }
                     .buttonStyle(.borderedProminent)
+                    .opacity(showHud ? 1.0 : 0.0)
+                    .allowsHitTesting(showHud)
 
                     Spacer()
                 }
@@ -175,6 +190,25 @@ struct PlayerView: View {
                 LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
                     .allowsHitTesting(false)
             )
+            .opacity(showHud ? 1.0 : 0.0)
+            .animation(.easeInOut(duration: 0.2), value: showHud)
+
+            if !showHud {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Text("HUD")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .foregroundStyle(.white)
+                    }
+                    Spacer()
+                }
+                .padding(16)
+                .allowsHitTesting(false)
+            }
 
             if showFpsIndicator {
                 VStack {
