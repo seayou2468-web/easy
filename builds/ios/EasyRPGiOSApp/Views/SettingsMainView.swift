@@ -217,6 +217,18 @@ struct SettingsAudioView: View {
                                 .lineLimit(1)
                         }
                         .font(.caption)
+
+                        Button(role: .destructive, action: {
+                            config.selectedSoundFont = nil
+                            config.saveSettings()
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("SoundFont を解除")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
                 .padding(.bottom, 8)
@@ -589,6 +601,18 @@ struct SettingsGamesFolderView: View {
                             }
                         }
                     }
+                }
+                .padding(.bottom, 8)
+
+                Divider()
+
+                Section(header: Text("アプリ状態").font(.headline)) {
+                    Toggle("初回セットアップ完了フラグ", isOn: $config.hasCompletedOnboarding)
+                        .onChange(of: config.hasCompletedOnboarding) { _, _ in config.saveSettings() }
+
+                    Text("初期設定ガイドを再表示したい場合はオフにできます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.bottom, 8)
 
