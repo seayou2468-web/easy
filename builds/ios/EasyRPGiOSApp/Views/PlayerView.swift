@@ -593,6 +593,7 @@ struct VirtualControllerView: View {
 
     @State private var pressedButtons: Set<String> = []
     @State private var activeDirection: String?
+    @State private var buttonTouchAnchors: [String: CGPoint] = [:]
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
@@ -710,26 +711,37 @@ struct VirtualControllerView: View {
     }
 
     private func handleDragChanged(value: DragGesture.Value, button: VirtualButtonLayout, buttonSize: CGFloat) {
-        let maxCancelDistance = buttonSize * 0.9
-        let dragDistance = hypot(value.translation.width, value.translation.height)
-
-        if dragDistance > maxCancelDistance {
-            if pressedButtons.contains(button.instanceId) {
-                pressedButtons.remove(button.instanceId)
-                sendPress(for: button.id, isPressed: false)
-            }
-            return
+        // Android-like touch lifecycle:
+        // - anchor at initial touch-down
+        // - slide keeps press while within tolerance zone
+        // - release when out; re-press if finger returns into zone
+        if buttonTouchAnchors[button.instanceId] == nil {
+            buttonTouchAnchors[button.instanceId] = value.startLocation
         }
-        if !pressedButtons.contains(button.instanceId) {
+
+        let anchor = buttonTouchAnchors[button.instanceId] ?? value.startLocation
+        let translatedPoint = CGPoint(x: anchor.x + value.translation.width, y: anchor.y + value.translation.height)
+        let slop = buttonSize * 0.22
+        let minX = -slop
+        let maxX = buttonSize + slop
+        let minY = -slop
+        let maxY = buttonSize + slop
+        let isInside = translatedPoint.x >= minX && translatedPoint.x <= maxX && translatedPoint.y >= minY && translatedPoint.y <= maxY
+
+        if isInside && !pressedButtons.contains(button.instanceId) {
             pressedButtons.insert(button.instanceId)
             sendPress(for: button.id, isPressed: true)
             if config.enableVibration {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
+        } else if !isInside && pressedButtons.contains(button.instanceId) {
+            pressedButtons.remove(button.instanceId)
+            sendPress(for: button.id, isPressed: false)
         }
     }
 
     private func handleDragEnded(button: VirtualButtonLayout) {
+        buttonTouchAnchors.removeValue(forKey: button.instanceId)
         pressedButtons.remove(button.instanceId)
         sendPress(for: button.id, isPressed: false)
     }
@@ -748,6 +760,7 @@ struct VirtualControllerView: View {
             }
             pressedButtons.removeAll()
         }
+        buttonTouchAnchors.removeAll()
     }
 }
 
