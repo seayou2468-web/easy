@@ -257,18 +257,10 @@ struct PlayerView: View {
     }
 
     private func pathForLaunch(fromAbsolutePath absolutePath: String) -> String {
-        let standardized = URL(fileURLWithPath: absolutePath).standardizedFileURL.path
-
-        let homePath = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL.path
-        if standardized == homePath {
-            return "."
-        }
-
-        if standardized.hasPrefix(homePath + "/") {
-            return String(standardized.dropFirst(homePath.count + 1))
-        }
-
-        return standardized
+        // iOS launcher must pass absolute filesystem paths.
+        // Home-relative paths can make EasyRPG resolve the project against
+        // an unexpected working directory and boot into the generic menu.
+        URL(fileURLWithPath: absolutePath).standardizedFileURL.path
     }
 
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {

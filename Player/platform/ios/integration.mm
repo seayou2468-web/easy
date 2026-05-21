@@ -262,12 +262,16 @@ void SetVirtualButtonPoint(const char* button_id, float x, float y) {
 
 void LaunchGame(const char* args) {
 	const std::string args_str = std::string(args ? args : "");
+	Output::Debug("[iOSBridge] LaunchGame raw args string='{}'", args_str);
 	std::vector<std::string> parsed_args;
 	parsed_args.emplace_back("EasyRPGPlayer");
 	auto split = Utils::Tokenize(args_str, [](char32_t c) {
 		return c == 0x1F || c == U'\n';
 	});
 	parsed_args.insert(parsed_args.end(), split.begin(), split.end());
+	for (size_t i = 0; i < parsed_args.size(); ++i) {
+		Output::Debug("[iOSBridge] LaunchGame argv[{}]='{}'", i, parsed_args[i]);
+	}
 
 	// Android parity: command line is available before SDL/Player bootstrap.
 	{
@@ -280,17 +284,27 @@ void LaunchGame(const char* args) {
 	// This allows launching/switching games after the app is already running.
 	for (size_t i = 0; i + 1 < parsed_args.size(); ++i) {
 		if (parsed_args[i] == "--project-path") {
-			auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(parsed_args[i + 1], 0));
+			auto canonical_project = FileFinder::MakeCanonical(parsed_args[i + 1], 0);
+			Output::Debug("[iOSBridge] --project-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_project);
+			auto gamefs = FileFinder::Root().Create(canonical_project);
 			if (gamefs) {
 				FileFinder::SetGameFilesystem(gamefs);
+				Output::Debug("[iOSBridge] Game filesystem set to '{}'", gamefs.GetFullPath());
+			} else {
+				Output::Warning("[iOSBridge] Failed to create game filesystem from '{}'", canonical_project);
 			}
 			++i;
 			continue;
 		}
 		if (parsed_args[i] == "--save-path") {
-			auto savefs = FileFinder::Root().Create(FileFinder::MakeCanonical(parsed_args[i + 1], 0));
+			auto canonical_save = FileFinder::MakeCanonical(parsed_args[i + 1], 0);
+			Output::Debug("[iOSBridge] --save-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_save);
+			auto savefs = FileFinder::Root().Create(canonical_save);
 			if (savefs) {
 				FileFinder::SetSaveFilesystem(savefs);
+				Output::Debug("[iOSBridge] Save filesystem set to '{}'", savefs.GetFullPath());
+			} else {
+				Output::Warning("[iOSBridge] Failed to create save filesystem from '{}'", canonical_save);
 			}
 			++i;
 			continue;
