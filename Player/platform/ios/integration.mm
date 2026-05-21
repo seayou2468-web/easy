@@ -26,6 +26,7 @@
 #include "font.h"
 #include "filefinder.h"
 #include "main_data.h"
+#include "platform/ios/ios_utils.h"
 
 
 namespace {
@@ -56,20 +57,38 @@ bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
 
 std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
 	auto canonical = FileFinder::MakeCanonical(raw_path, 0);
-
-	// Match fallback menu behavior: when a relative path is provided,
-	// resolve it under the default project root first (typically Documents/Games on iOS).
 	const bool has_namespace = canonical.find("://") != std::string::npos;
 	const bool is_absolute = !canonical.empty() && canonical.front() == '/';
-	if (!has_namespace && !is_absolute) {
-		auto default_root = Main_Data::GetDefaultProjectPath();
-		if (!default_root.empty()) {
-			auto rooted = FileFinder::MakeCanonical(FileFinder::MakePath(default_root, canonical), 0);
-			auto rooted_fs = FileFinder::Root().Create(rooted);
-			if (rooted_fs) {
-				Output::Debug("[iOSBridge] Relative path '{}' resolved via default root '{}' -> '{}'", canonical, default_root, rooted);
-				return rooted;
-			}
+	if (has_namespace || is_absolute) {
+		return canonical;
+	}
+
+	std::vector<std::pair<std::string, std::string>> candidates;
+	candidates.emplace_back("as-is", canonical);
+
+	auto docs_root = IOSUtils::GetDocumentsDir();
+	if (!docs_root.empty()) {
+		auto docs_path = FileFinder::MakeCanonical(FileFinder::MakePath(docs_root, canonical), 0);
+		candidates.emplace_back("documents", docs_path);
+	}
+
+	auto default_root = Main_Data::GetDefaultProjectPath();
+	if (!default_root.empty()) {
+		auto default_path = FileFinder::MakeCanonical(FileFinder::MakePath(default_root, canonical), 0);
+		candidates.emplace_back("default-root", default_path);
+	}
+
+	for (const auto& candidate : candidates) {
+		auto fs = FileFinder::Root().Create(candidate.second);
+		if (!fs) {
+			continue;
+		}
+		const bool is_project = FileFinder::IsValidProject(fs);
+		auto entries = fs.ListDirectory();
+		if (is_project || entries) {
+			Output::Debug("[iOSBridge] Relative path '{}' resolved via {} -> '{}' (project={} listdir={})",
+				canonical, candidate.first, candidate.second, is_project, entries ? 1 : 0);
+			return candidate.second;
 		}
 	}
 
