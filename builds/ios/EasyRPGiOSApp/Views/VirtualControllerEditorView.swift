@@ -9,6 +9,26 @@ struct VirtualControllerEditorView: View {
     @State private var showAddMenu = false
 
     var body: some View {
+        editorContent
+            .navigationTitle("レイアウト編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .background(Color.black.ignoresSafeArea())
+            .onAppear { workingButtons = store.buttons }
+            .confirmationDialog("編集メニュー", isPresented: $showMenu) {
+                Button("ボタンを追加") { showAddMenu = true }
+                Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
+                Button("保存して閉じる") { store.buttons = workingButtons; store.save(); dismiss() }
+                Button("保存せず閉じる", role: .destructive) { dismiss() }
+            }
+            .confirmationDialog("追加するボタン", isPresented: $showAddMenu) {
+                ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
+                    Button("\(item.title) (\(item.id))") { workingButtons.append(item) }
+                }
+            }
+            .toolbar { editorToolbar }
+    }
+
+    private var editorContent: some View {
         VStack(spacing: 10) {
             Text("Android同等: ドラッグで配置、メニューから追加/リセット/保存")
                 .font(.caption)
@@ -45,32 +65,19 @@ struct VirtualControllerEditorView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .navigationTitle("レイアウト編集")
-        .navigationBarTitleDisplayMode(.inline)
-        .background(Color.black.ignoresSafeArea())
-        .onAppear { workingButtons = store.buttons }
-        .confirmationDialog("編集メニュー", isPresented: $showMenu) {
-            Button("ボタンを追加") { showAddMenu = true }
-            Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
-            Button("保存して閉じる") { store.buttons = workingButtons; store.save(); dismiss() }
-            Button("保存せず閉じる", role: .destructive) { dismiss() }
-        }
-        .confirmationDialog("追加するボタン", isPresented: $showAddMenu) {
-            ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
-                Button("\(item.title) (\(item.id))") { workingButtons.append(item) }
+    }
+
+    @ToolbarContentBuilder
+    private var editorToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                showMenu = true
+            } label: {
+                Label("メニュー", systemImage: "line.3.horizontal")
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showMenu = true
-                } label: {
-                    Label("メニュー", systemImage: "line.3.horizontal")
-                }
-            }
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("保存") { store.buttons = workingButtons; store.save() }
-            }
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("保存") { store.buttons = workingButtons; store.save() }
         }
     }
 }
