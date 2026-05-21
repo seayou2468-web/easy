@@ -103,9 +103,9 @@ void Scene_Logo::vUpdate() {
 			}
 
 #if defined(__APPLE__) && TARGET_OS_IOS
-			// On iOS prefer the game browser UI first so users can pick/import games.
-			// Auto-booting a detected project can skip the expected mobile launcher flow.
-			if (Player::load_game_id <= 0) {
+			// On iOS open game browser only when no project was detected.
+			// When launch args already resolved a valid project, continue to title/map.
+			if (!detected_game && Player::load_game_id <= 0) {
 				Scene::Push(std::make_shared<Scene_GameBrowser>(), true);
 				return;
 			}
