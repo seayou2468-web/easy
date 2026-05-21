@@ -1,5 +1,9 @@
 import Foundation
 
+extension Notification.Name {
+    static let configManagerDidSaveSettings = Notification.Name("ConfigManagerDidSaveSettings")
+}
+
 @MainActor
 final class ConfigManager: ObservableObject {
     static let shared = ConfigManager()
@@ -139,6 +143,7 @@ final class ConfigManager: ObservableObject {
         }
 
         saveConfigToIni()
+        NotificationCenter.default.post(name: .configManagerDidSaveSettings, object: nil)
     }
 
     private func loadSettings() {

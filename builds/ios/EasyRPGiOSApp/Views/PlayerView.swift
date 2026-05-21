@@ -309,7 +309,7 @@ struct PlayerView: View {
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
         }
-        .onReceive(config.objectWillChange) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .configManagerDidSaveSettings)) { _ in
             applySettings()
         }
     }

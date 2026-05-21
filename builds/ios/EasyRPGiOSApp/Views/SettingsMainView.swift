@@ -229,6 +229,8 @@ struct SettingsAudioView: View {
 
 struct SettingsInputView: View {
     @StateObject private var config = ConfigManager.shared
+    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var mappingStore = ButtonMappingStore()
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false
 
@@ -330,6 +332,29 @@ struct SettingsInputView: View {
                         HStack {
                             Image(systemName: "gamecontroller.fill")
                             Text("ボタン設定を開く")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(role: .destructive, action: {
+                        layoutStore.reset()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise.circle")
+                            Text("レイアウトを初期化")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(role: .destructive, action: {
+                        mappingStore.reset()
+                        mappingStore.applyToPlayer()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise.circle")
+                            Text("ボタン設定を初期化")
                         }
                         .frame(maxWidth: .infinity)
                     }
