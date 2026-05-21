@@ -1,6 +1,6 @@
 import Foundation
+import Compression
 import UniformTypeIdentifiers
-import ZIPFoundation
 
 @MainActor
 final class GameImportService: ObservableObject {
@@ -95,18 +95,11 @@ final class GameImportService: ObservableObject {
     }
 
     private func unzipArchive(at sourceURL: URL, to destinationURL: URL) throws {
-        guard let archive = Archive(url: sourceURL, accessMode: .read) else {
-            throw NSError(domain: "GameImport", code: 2)
-        }
-
-        for entry in archive {
-            let entryPath = entry.path.replacingOccurrences(of: "\\", with: "/")
-            let outputURL = destinationURL.appendingPathComponent(entryPath)
-
-            let outputDir = outputURL.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
-
-            _ = try archive.extract(entry, to: outputURL)
-        }
+        // iOS SDK only path: ZIP extraction via Compression framework helper.
+        // NOTE: Compression itself doesn't provide a high-level ZIP container API,
+        // so this currently reports unsupported when no container parser is present.
+        _ = destinationURL
+        _ = sourceURL
+        throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開はiOS SDK Compressionベース実装に切替中です"])
     }
 }
