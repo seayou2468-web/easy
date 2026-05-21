@@ -113,6 +113,31 @@ std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
 	return canonical;
 }
 
+std::string ResolveAuxPathForIOS(std::string_view raw_path) {
+	auto canonical = FileFinder::MakeCanonical(raw_path, 0);
+	const bool has_namespace = canonical.find("://") != std::string::npos;
+	const bool is_absolute = !canonical.empty() && canonical.front() == '/';
+	if (has_namespace || is_absolute) {
+		return canonical;
+	}
+
+	auto docs_root = IOSUtils::GetDocumentsDir();
+	auto home_root = FileFinder::GetDirectoryName(docs_root);
+
+	const auto slash = canonical.find('/');
+	auto top = canonical.substr(0, slash);
+	auto rel = slash == std::string::npos ? std::string_view() : std::string_view(canonical).substr(slash + 1);
+	auto top_lower = Utils::LowerCase(top);
+
+	if (top_lower == "documents") {
+		return rel.empty() ? docs_root : FileFinder::MakeCanonical(FileFinder::MakePath(docs_root, rel), 0);
+	}
+	if (top_lower == "library") {
+		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, canonical), 0);
+	}
+	return canonical;
+}
+
 
 
 void LogProjectProbe(const FilesystemView& fs, const char* label) {
@@ -402,7 +427,7 @@ void LaunchGame(const char* args) {
 			continue;
 		}
 		if (parsed_args[i] == "--config-path" || parsed_args[i] == "--log-file" || parsed_args[i] == "--soundfont") {
-			auto canonical_path = ResolveLaunchPathForIOS(parsed_args[i + 1]);
+			auto canonical_path = ResolveAuxPathForIOS(parsed_args[i + 1]);
 			Output::Debug("[iOSBridge] {} raw='{}' canonical='{}'", parsed_args[i], parsed_args[i + 1], canonical_path);
 			parsed_args[i + 1] = canonical_path;
 			++i;
