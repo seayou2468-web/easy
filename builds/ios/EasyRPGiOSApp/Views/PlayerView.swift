@@ -32,13 +32,17 @@ private final class VirtualControllerOverlayWindowManager {
         if overlayWindow == nil || overlayScene !== scene {
             let window = TouchPassthroughWindow(windowScene: scene)
             window.backgroundColor = .clear
-            window.windowLevel = .alert + 1
+            window.windowLevel = preferredOverlayLevel(in: scene)
             let host = UIHostingController(rootView: AnyView(EmptyView()))
             host.view.backgroundColor = .clear
             window.rootViewController = host
             overlayHost = host
             overlayWindow = window
             overlayScene = scene
+        }
+
+        if let window = overlayWindow {
+            window.windowLevel = preferredOverlayLevel(in: scene)
         }
 
         overlayHost?.rootView = AnyView(
@@ -100,6 +104,14 @@ private final class VirtualControllerOverlayWindowManager {
     private func stopKeepAlive() {
         keepAliveTimer?.invalidate()
         keepAliveTimer = nil
+    }
+
+    private func preferredOverlayLevel(in scene: UIWindowScene) -> UIWindow.Level {
+        let highestSceneLevel = scene.windows
+            .map(\.windowLevel)
+            .max() ?? .normal
+        let minimumOverlayLevel = UIWindow.Level.alert + 1
+        return max(minimumOverlayLevel, highestSceneLevel + 1)
     }
 }
 
