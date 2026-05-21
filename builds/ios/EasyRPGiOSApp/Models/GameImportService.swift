@@ -1,5 +1,6 @@
 import Foundation
 import UniformTypeIdentifiers
+import ZIPFoundation
 
 @MainActor
 final class GameImportService: ObservableObject {
@@ -50,7 +51,7 @@ final class GameImportService: ObservableObject {
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        try FileManager.default.unzipItem(at: sourceURL, to: tempDir)
+        try unzipArchive(at: sourceURL, to: tempDir)
 
         let extractedGameRoots = discoverGameFolders(in: tempDir)
         if extractedGameRoots.isEmpty {
@@ -91,5 +92,21 @@ final class GameImportService: ObservableObject {
             candidate = parent.appendingPathComponent("\(baseName)-\(suffix)", isDirectory: true)
         }
         return candidate
+    }
+
+    private func unzipArchive(at sourceURL: URL, to destinationURL: URL) throws {
+        guard let archive = Archive(url: sourceURL, accessMode: .read) else {
+            throw NSError(domain: "GameImport", code: 2)
+        }
+
+        for entry in archive {
+            let entryPath = entry.path.replacingOccurrences(of: "\\", with: "/")
+            let outputURL = destinationURL.appendingPathComponent(entryPath)
+
+            let outputDir = outputURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+            _ = try archive.extract(entry, to: outputURL)
+        }
     }
 }
