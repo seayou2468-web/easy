@@ -18,6 +18,7 @@ struct PlayerView: View {
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
+    @State private var overlayFrontTask: DispatchWorkItem?
 
     var body: some View {
         ZStack {
@@ -174,11 +175,14 @@ struct PlayerView: View {
             uiVisible = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
+            keepOverlayInFrontTemporarily()
             applySettings()
             buttonMappingStore.applyToPlayer()
         }
         .onDisappear {
             AppLogger.log("PlayerView onDisappear")
+            overlayFrontTask?.cancel()
+            overlayFrontTask = nil
             releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
@@ -196,6 +200,24 @@ struct PlayerView: View {
         .onReceive(config.objectWillChange) { _ in
             applySettings()
         }
+    }
+
+    private func keepOverlayInFrontTemporarily() {
+        overlayFrontTask?.cancel()
+        let task = DispatchWorkItem {
+            for step in 0..<30 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * 0.1)) {
+                    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                          let window = scene.windows.first(where: { $0.isKeyWindow }),
+                          let rootView = window.rootViewController?.view else {
+                        return
+                    }
+                    window.bringSubviewToFront(rootView)
+                }
+            }
+        }
+        overlayFrontTask = task
+        DispatchQueue.main.async(execute: task)
     }
 
     private func setupPlayerWithGame() {
