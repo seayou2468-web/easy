@@ -756,6 +756,23 @@ void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode) {
 void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value) {
 	Schedule([section_s = std::string(section ? section : ""),
 	          key_s = std::string(key ? key : ""), value]() {
+		if (section_s == "Video") {
+			if (key_s == "Fullscreen") {
+				if (DisplayUi && DisplayUi->GetConfig().fullscreen.Get() != value) {
+					DisplayUi->ToggleFullscreen();
+				}
+			}
+			else if (key_s == "Stretch") {
+				if (DisplayUi && DisplayUi->GetConfig().stretch.Get() != value) {
+					DisplayUi->ToggleStretch();
+				}
+			}
+		}
+		else if (section_s == "Audio") {
+			if (key_s == "Fluidsynth") {
+				Player::game_config.audio.fluidsynth_midi.Set(value);
+			}
+		}
 		if (section_s == "Player") {
 			if (key_s == "SettingsInTitle") Player::player_config.settings_in_title.Set(value);
 			else if (key_s == "SettingsInMenu") Player::player_config.settings_in_menu.Set(value);
@@ -770,7 +787,46 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t value) {
 	Schedule([section_s = std::string(section ? section : ""),
 	          key_s = std::string(key ? key : ""), value]() {
-		if (section_s == "Player") {
+		if (section_s == "Video") {
+			if (!DisplayUi) return;
+			if (key_s == "ScalingMode") {
+				ConfigEnum::ScalingMode sm = ConfigEnum::ScalingMode::Nearest;
+				if (value == 1) sm = ConfigEnum::ScalingMode::Integer;
+				else if (value >= 2) sm = ConfigEnum::ScalingMode::Bilinear;
+				DisplayUi->SetScalingMode(sm);
+			}
+			else if (key_s == "GameResolution") {
+				ConfigEnum::GameResolution gr = ConfigEnum::GameResolution::Original;
+				if (value == 1) gr = ConfigEnum::GameResolution::Widescreen;
+				else if (value >= 2) gr = ConfigEnum::GameResolution::Ultrawide;
+				DisplayUi->SetGameResolution(gr);
+			}
+		}
+		else if (section_s == "Audio") {
+			if (key_s == "MusicVolume") {
+				const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, value));
+				Audio().BGM_SetGlobalVolume(static_cast<int>(clamped));
+			}
+			else if (key_s == "SoundVolume") {
+				const auto clamped = std::max<int32_t>(0, std::min<int32_t>(100, value));
+				Audio().SE_SetGlobalVolume(static_cast<int>(clamped));
+			}
+		}
+		else if (section_s == "Input") {
+			if (key_s == "SpeedModifierA") {
+				const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, value));
+				if (auto* source = Input::GetInputSource()) {
+					source->GetConfig().speed_modifier_a.Set(static_cast<int>(clamped));
+				}
+			}
+			else if (key_s == "SpeedModifierB") {
+				const auto clamped = std::max<int32_t>(2, std::min<int32_t>(100, value));
+				if (auto* source = Input::GetInputSource()) {
+					source->GetConfig().speed_modifier_b.Set(static_cast<int>(clamped));
+				}
+			}
+		}
+		else if (section_s == "Player") {
 			if (key_s == "Font1Size") Player::player_config.font1_size.Set(static_cast<int>(std::max<int32_t>(6, value)));
 			else if (key_s == "Font2Size") Player::player_config.font2_size.Set(static_cast<int>(std::max<int32_t>(6, value)));
 			else if (key_s == "LanguageSelectOnStart") {
