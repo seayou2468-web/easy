@@ -8,6 +8,10 @@ struct InitView: View {
     @State private var useAutomaticPath = true
     @StateObject private var config = ConfigManager.shared
 
+    init(showContinueToBrowserButton: Bool = false) {
+        self.showContinueToBrowserButton = showContinueToBrowserButton
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
