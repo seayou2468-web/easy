@@ -571,6 +571,18 @@ struct SettingsGamesFolderView: View {
                                 .lineLimit(2)
                                 .foregroundStyle(.primary)
                         }
+
+                        Button(role: .destructive, action: {
+                            config.easyRPGFolderURL = nil
+                            config.saveSettings()
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("EasyRPG フォルダを解除")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
                 .padding(.bottom, 8)
@@ -599,6 +611,18 @@ struct SettingsGamesFolderView: View {
                                     .lineLimit(2)
                                     .foregroundStyle(.primary)
                             }
+
+                            Button(role: .destructive, action: {
+                                config.rtpFolderURL = nil
+                                config.saveSettings()
+                            }) {
+                                HStack {
+                                    Image(systemName: "trash")
+                                    Text("RTP フォルダを解除")
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
                         }
                     }
                 }
