@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import UniformTypeIdentifiers
 
 struct GameBrowserView: View {
     let onOpenSettings: () -> Void
@@ -15,6 +17,9 @@ struct GameBrowserView: View {
     @State private var showCustomTitleEditor = false
     @State private var sortMode = 0
     @State private var showDisplayModeSheet = false
+    @State private var showImportPicker = false
+    @State private var showImportResult = false
+    @StateObject private var importService = GameImportService()
 
     private var filtered: [Game] {
         let source = favoritesOnly ? library.games.filter(\.favorite) : library.games
@@ -80,6 +85,7 @@ struct GameBrowserView: View {
                 Button { showMenu = true } label: { Image(systemName: "line.3.horizontal") }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { showImportPicker = true } label: { Image(systemName: "square.and.arrow.down") }
                 Button { library.reloadGames(forceScan: true) } label: { Image(systemName: "arrow.clockwise") }
                 Button(action: onOpenSettings) { Image(systemName: "gearshape.fill") }
             }
@@ -116,6 +122,18 @@ struct GameBrowserView: View {
             Button("並び替え: フォルダ順") { sortMode = 2 }
         }
         .onAppear { AppLogger.log("GameBrowserView onAppear"); library.reloadGames() }
+        .sheet(isPresented: $showImportPicker) {
+            GameArchivePicker { urls in
+                importService.importArchives(urls: urls, into: config.easyRPGFolderURL)
+                library.reloadGames(forceScan: true)
+                showImportResult = true
+            }
+        }
+        .alert("インポート結果", isPresented: $showImportResult) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importService.lastResultMessage ?? "完了")
+        }
     }
 }
 
@@ -513,5 +531,31 @@ struct LoadingPanelView: View {
 extension Optional where Wrapped == String {
     var isNilOrEmpty: Bool {
         self?.isEmpty ?? true
+    }
+}
+
+
+struct GameArchivePicker: UIViewControllerRepresentable {
+    let onPick: ([URL]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.zip, UTType(filenameExtension: "7z") ?? .data], asCopy: true)
+        picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = true
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: ([URL]) -> Void
+        init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            let normalized = urls.map { $0.standardizedFileURL }
+            onPick(normalized)
+        }
     }
 }
