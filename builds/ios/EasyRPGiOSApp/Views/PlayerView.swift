@@ -487,9 +487,11 @@ struct PlayerView: View {
             return scene.interfaceOrientation.isLandscape
         }()
         for button in layoutStore.buttons(isLandscape: isLandscape) {
-            let mappedX = button.x <= 1.0 ? button.x * 450.0 : button.x
-            let mappedY = button.y <= 1.0 ? button.y * 500.0 : button.y
-            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: mappedX, y: mappedY)
+            // Keep bridge coordinates aligned with editor/runtime normalized layout.
+            // Legacy fixed canvas mapping (450x500) caused large position drift.
+            let normalizedX = min(max(0.0, button.x), 1.0)
+            let normalizedY = min(max(0.0, button.y), 1.0)
+            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: normalizedX, y: normalizedY)
         }
     }
 
@@ -585,7 +587,8 @@ struct VirtualControllerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
-        .padding(.horizontal, 12)
+        // Do not add runtime-only horizontal offset: editor and runtime must share
+        // the same coordinate space for position parity.
     }
 
     private func calculateButtonSize() -> CGFloat {
