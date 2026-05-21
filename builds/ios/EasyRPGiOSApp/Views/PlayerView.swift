@@ -545,43 +545,7 @@ struct VirtualControllerView: View {
 
             ZStack {
                 ForEach(layoutStore.buttons(isLandscape: isLandscape), id: \.instanceId) { button in
-                    VirtualButtonView(
-                        button: button,
-                        isPressed: pressedButtons.contains(button.instanceId),
-                        opacity: effectiveOpacity,
-                        size: sizeFor(button),
-                        config: config
-                    )
-                    .position(
-                        x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
-                        y: button.y <= 1.0 ? button.y * geometryHeight : button.y
-                    )
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                let size = sizeFor(button)
-                                let isInside = value.location.x >= 0 && value.location.x <= size.width &&
-                                    value.location.y >= 0 && value.location.y <= size.height
-                                if !isInside {
-                                    if pressedButtons.contains(button.instanceId) {
-                                        pressedButtons.remove(button.instanceId)
-                                        sendPress(for: button.id, isPressed: false)
-                                    }
-                                    return
-                                }
-                                if !pressedButtons.contains(button.instanceId) {
-                                    pressedButtons.insert(button.instanceId)
-                                    sendPress(for: button.id, isPressed: true)
-                                    if config.enableVibration {
-                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    }
-                                }
-                            }
-                            .onEnded { _ in
-                                pressedButtons.remove(button.instanceId)
-                                sendPress(for: button.id, isPressed: false)
-                            }
-                    )
+                    runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
         }
@@ -611,6 +575,55 @@ struct VirtualControllerView: View {
         } else {
             onButtonInput(buttonId, isPressed)
         }
+    }
+
+    @ViewBuilder
+    private func runtimeButtonView(_ button: VirtualButtonLayout, geometryWidth: CGFloat, geometryHeight: CGFloat) -> some View {
+        let buttonSize = sizeFor(button)
+        VirtualButtonView(
+            button: button,
+            isPressed: pressedButtons.contains(button.instanceId),
+            opacity: effectiveOpacity,
+            size: buttonSize,
+            config: config
+        )
+        .position(
+            x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
+            y: button.y <= 1.0 ? button.y * geometryHeight : button.y
+        )
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    handleDragChanged(value: value, button: button, buttonSize: buttonSize)
+                }
+                .onEnded { _ in
+                    handleDragEnded(button: button)
+                }
+        )
+    }
+
+    private func handleDragChanged(value: DragGesture.Value, button: VirtualButtonLayout, buttonSize: CGFloat) {
+        let isInside = value.location.x >= 0 && value.location.x <= buttonSize &&
+            value.location.y >= 0 && value.location.y <= buttonSize
+        if !isInside {
+            if pressedButtons.contains(button.instanceId) {
+                pressedButtons.remove(button.instanceId)
+                sendPress(for: button.id, isPressed: false)
+            }
+            return
+        }
+        if !pressedButtons.contains(button.instanceId) {
+            pressedButtons.insert(button.instanceId)
+            sendPress(for: button.id, isPressed: true)
+            if config.enableVibration {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+    }
+
+    private func handleDragEnded(button: VirtualButtonLayout) {
+        pressedButtons.remove(button.instanceId)
+        sendPress(for: button.id, isPressed: false)
     }
 }
 
