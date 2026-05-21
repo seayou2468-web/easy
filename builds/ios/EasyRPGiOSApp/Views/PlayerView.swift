@@ -643,7 +643,7 @@ struct VirtualControllerView: View {
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
-        max(0.25, min(1.0, Double(config.layoutTransparency) / 255.0))
+        max(0.0, min(1.0, Double(255 - config.layoutTransparency) / 255.0))
     }
 
     var body: some View {
@@ -827,7 +827,7 @@ private struct DPadCrossView: View {
     var body: some View {
         ZStack {
             AndroidDPadShape()
-                .fill(Color.white.opacity(opacity))
+                .stroke(Color.white.opacity(opacity), lineWidth: 3)
         }
         .frame(width: size, height: size)
     }
@@ -873,34 +873,24 @@ struct VirtualButtonView: View {
         VStack(spacing: 2) {
             Text(displayTitle())
                 .font(.system(size: size * 0.26, weight: .bold, design: .default))
-                .foregroundStyle(.black)
+                .foregroundStyle(Color.white.opacity(opacity))
         }
         .frame(width: size, height: size)
         .background(
             Group {
                 if isDirectional {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.white.opacity(opacity))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                        )
+                    Circle()
+                        .stroke(Color.white.opacity(opacity), lineWidth: 3)
                 } else {
                     if button.id == "menu" {
                         MenuGlyphButtonShape()
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(MenuGlyphButtonShape().stroke(Color.black.opacity(0.2), lineWidth: 1))
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else if button.id == "fast_forward_a" {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).stroke(Color.black.opacity(0.2), lineWidth: 1))
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else {
                         Circle()
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                            )
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     }
                 }
             }
@@ -913,8 +903,8 @@ struct VirtualButtonView: View {
 
     private func displayTitle() -> String {
         if config.showABasZX {
-            if button.id == "z" || button.id == "decision" { return "A" }
-            if button.id == "x" || button.id == "cancel" { return "B" }
+            if button.id == "z" || button.id == "decision" { return "Z" }
+            if button.id == "x" || button.id == "cancel" { return "X" }
         }
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
             return "»"
