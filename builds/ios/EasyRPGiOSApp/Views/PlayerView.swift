@@ -433,11 +433,19 @@ struct PlayerView: View {
         PlayerBridge.setImageScaleMode(config.scaleMode)
         PlayerBridge.setStretch(config.stretch)
         PlayerBridge.setGameResolution(config.gameResolution)
+        PlayerBridge.setConfigBool(section: "Video", key: "Fullscreen", value: config.fullscreen)
+        PlayerBridge.setConfigBool(section: "Video", key: "Stretch", value: config.stretch)
+        PlayerBridge.setConfigInt(section: "Video", key: "ScalingMode", value: config.scaleMode)
+        PlayerBridge.setConfigInt(section: "Video", key: "GameResolution", value: config.gameResolution)
 
         PlayerBridge.setMusicVolume(config.musicVolume)
         PlayerBridge.setSoundVolume(config.soundVolume)
+        PlayerBridge.setConfigInt(section: "Audio", key: "MusicVolume", value: config.musicVolume)
+        PlayerBridge.setConfigInt(section: "Audio", key: "SoundVolume", value: config.soundVolume)
+        PlayerBridge.setConfigBool(section: "Audio", key: "Fluidsynth", value: true)
         if let soundFont = config.selectedSoundFont {
             PlayerBridge.setSoundFont(pathForLaunch(fromAbsolutePath: soundFont.path))
+            PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: pathForLaunch(fromAbsolutePath: soundFont.path))
         }
 
         PlayerBridge.setLayoutTransparency(Double(config.layoutTransparency))
@@ -453,6 +461,8 @@ struct PlayerView: View {
         PlayerBridge.setFont2Size(config.font2Size)
         PlayerBridge.setFastForwardSpeedA(config.fastForwardMultiplier)
         PlayerBridge.setFastForwardSpeedB(config.fastForwardMultiplierB)
+        PlayerBridge.setConfigInt(section: "Input", key: "SpeedModifierA", value: config.fastForwardMultiplier)
+        PlayerBridge.setConfigInt(section: "Input", key: "SpeedModifierB", value: config.fastForwardMultiplierB)
         PlayerBridge.setSettingsInMenu(config.settingsInMenu)
         PlayerBridge.setLanguageSelectOnStart(config.languageSelectOnStart)
         PlayerBridge.setConfigBool(section: "Player", key: "SettingsInTitle", value: config.settingsInTitle)

@@ -762,6 +762,11 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 			else if (key_s == "Logging") Player::player_config.log_enabled.Set(value);
 			else if (key_s == "ScreenshotTimestamp") Player::player_config.screenshot_timestamp.Set(value);
 			else if (key_s == "AutomaticScreenshots") Player::player_config.automatic_screenshots.Set(value);
+		} else if (section_s == "Video") {
+			if (key_s == "Fullscreen") Player::player_config.fullscreen.Set(value);
+			else if (key_s == "Stretch") Player::player_config.stretch.Set(value);
+		} else if (section_s == "Audio") {
+			if (key_s == "Fluidsynth") Player::player_config.fluidsynth_midi.Set(value);
 		}
 	});
 }
@@ -778,6 +783,27 @@ void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t valu
 				else if (value >= 2) logos = ConfigEnum::StartupLogos::All;
 				Player::player_config.show_startup_logos.Set(logos);
 			}
+		} else if (section_s == "Input") {
+			if (key_s == "SpeedModifierA") {
+				Player::player_config.speed_modifier_a.Set(static_cast<int>(std::clamp<int32_t>(value, 2, 100)));
+			} else if (key_s == "SpeedModifierB") {
+				Player::player_config.speed_modifier_b.Set(static_cast<int>(std::clamp<int32_t>(value, 2, 100)));
+			}
+		} else if (section_s == "Video") {
+			if (key_s == "ScalingMode") {
+				ConfigEnum::ScalingMode sm = ConfigEnum::ScalingMode::Nearest;
+				if (value == 1) sm = ConfigEnum::ScalingMode::Integer;
+				else if (value == 2) sm = ConfigEnum::ScalingMode::Bilinear;
+				Player::player_config.scaling_mode.Set(sm);
+			} else if (key_s == "GameResolution") {
+				ConfigEnum::GameResolution gr = ConfigEnum::GameResolution::Original;
+				if (value == 1) gr = ConfigEnum::GameResolution::Widescreen;
+				else if (value == 2) gr = ConfigEnum::GameResolution::Ultrawide;
+				Player::player_config.game_resolution.Set(gr);
+			}
+		} else if (section_s == "Audio") {
+			if (key_s == "MusicVolume") Player::player_config.music_volume.Set(static_cast<int>(std::clamp<int32_t>(value, 0, 100)));
+			else if (key_s == "SoundVolume") Player::player_config.sound_volume.Set(static_cast<int>(std::clamp<int32_t>(value, 0, 100)));
 		}
 	});
 }
@@ -789,6 +815,8 @@ void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const cha
 		if (section_s == "Player") {
 			if (key_s == "Font1") Player::player_config.font1.Set(value_s);
 			else if (key_s == "Font2") Player::player_config.font2.Set(value_s);
+		} else if (section_s == "Audio") {
+			if (key_s == "Soundfont") Player::player_config.soundfont.Set(value_s);
 		}
 	});
 }
