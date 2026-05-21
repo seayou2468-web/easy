@@ -44,14 +44,13 @@ struct PlayerView: View {
                 Spacer()
 
                 // Virtual Controller Area
-                if uiVisible {
-                    VirtualControllerView(
-                        layoutStore: layoutStore,
-                        config: config,
-                        onDirectionInput: handleDirectionInput,
-                        onButtonInput: handleButtonInput
-                    )
-                }
+                VirtualControllerView(
+                    layoutStore: layoutStore,
+                    config: config,
+                    onDirectionInput: handleDirectionInput,
+                    onButtonInput: handleButtonInput
+                )
+                .zIndex(1000)
 
                 Spacer()
 
@@ -125,6 +124,7 @@ struct PlayerView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .background(Color.clear)
+        .zIndex(1000)
         .sheet(isPresented: $showMenu) {
             PlayerMenuSheet(
                 game: game,
