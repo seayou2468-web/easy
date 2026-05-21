@@ -294,7 +294,8 @@ struct PlayerView: View {
         PlayerBridge.setLanguageSelectOnStart(config.languageSelectOnStart)
         PlayerBridge.setConfigBool(section: "Player", key: "SettingsInTitle", value: config.settingsInTitle)
         PlayerBridge.setConfigBool(section: "Player", key: "LanguageInTitle", value: config.languageInTitle)
-        PlayerBridge.setConfigBool(section: "Player", key: "Logging", value: config.loggingEnabled)
+        // Force highest diagnostics during current iOS troubleshooting.
+        PlayerBridge.setConfigBool(section: "Player", key: "Logging", value: true)
         PlayerBridge.setConfigBool(section: "Player", key: "ScreenshotTimestamp", value: config.screenshotTimestamp)
         PlayerBridge.setConfigBool(section: "Player", key: "AutomaticScreenshots", value: config.automaticScreenshots)
         PlayerBridge.setConfigInt(section: "Player", key: "ScreenshotScale", value: config.screenshotScale)
