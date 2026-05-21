@@ -259,11 +259,7 @@ struct PlayerView: View {
     private func pathForLaunch(fromAbsolutePath absolutePath: String) -> String {
         let standardized = URL(fileURLWithPath: absolutePath).standardizedFileURL.path
 
-        guard let homeURL = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL as URL? else {
-            return standardized
-        }
-
-        let homePath = homeURL.path
+        let homePath = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL.path
         if standardized == homePath {
             return "."
         }
