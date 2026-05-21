@@ -2,7 +2,9 @@ import Foundation
 import UIKit
 
 enum PlayerBridge {
-    private static let launchArgSeparator = "\u{1F}" // Unit Separator (ASCII 31)
+    // Use newline separator for robust cross-language tokenization.
+    // (Control characters may be normalized by some layers.)
+    private static let launchArgSeparator = "\n"
     // MARK: - Game Control
     static func startRuntime() {
         AppLogger.log("ENTER startRuntime")

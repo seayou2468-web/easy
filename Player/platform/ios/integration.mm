@@ -264,7 +264,9 @@ void LaunchGame(const char* args) {
 	const std::string args_str = std::string(args ? args : "");
 	std::vector<std::string> parsed_args;
 	parsed_args.emplace_back("EasyRPGPlayer");
-	auto split = Utils::Tokenize(args_str, [](char32_t c) { return c == 0x1F; });
+	auto split = Utils::Tokenize(args_str, [](char32_t c) {
+		return c == 0x1F || c == U'\n';
+	});
 	parsed_args.insert(parsed_args.end(), split.begin(), split.end());
 
 	// Android parity: command line is available before SDL/Player bootstrap.
