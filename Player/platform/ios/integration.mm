@@ -139,7 +139,24 @@ std::string ResolveAuxPathForIOS(std::string_view raw_path) {
 	if (top_lower == "library") {
 		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, canonical), 0);
 	}
-	return canonical;
+	if (top_lower == "tmp" || top_lower == "temporary") {
+		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, "tmp"), 0);
+	}
+	if (top_lower == "caches") {
+		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, "Library/Caches"), 0);
+	}
+	if (top_lower == "preferences") {
+		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, "Library/Preferences"), 0);
+	}
+	if (top_lower == "application support" || top_lower == "appsupport") {
+		return FileFinder::MakeCanonical(FileFinder::MakePath(home_root, "Library/Application Support"), 0);
+	}
+
+	// Fallback for unknown relative aux paths: anchor in Library to avoid
+	// process working-directory dependent behavior in containerized runtimes.
+	auto fallback = FileFinder::MakeCanonical(FileFinder::MakePath(home_root, FileFinder::MakePath("Library", canonical)), 0);
+	Output::Warning("[iOSBridge] Unrecognized aux relative path '{}', fallback to '{}'", canonical, fallback);
+	return fallback;
 }
 
 
