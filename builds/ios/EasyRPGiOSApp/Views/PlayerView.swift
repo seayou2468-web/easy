@@ -3,7 +3,10 @@ import SwiftUI
 private final class TouchPassthroughWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hitView = super.hitTest(point, with: event)
-        if hitView === rootViewController?.view {
+        // Passing through when the hosting root view is hit can swallow valid
+        // SwiftUI control interactions (the root view is often the resolved hit).
+        // Only pass through when nothing in this window was hit.
+        if hitView === self {
             return nil
         }
         return hitView
