@@ -249,7 +249,7 @@ struct PlayerView: View {
             NavigationStack {
                 VirtualControllerEditorView()
             }
-            .interactiveDismissDisabled(true)
+            
             .onDisappear {
                 layoutStore.load()
             }
@@ -299,7 +299,11 @@ struct PlayerView: View {
                 showFpsIndicator = false
             }
         }
-        .onChange(of: layoutStore.buttons) { _, _ in
+        .onReceive(layoutStore.$profiles) { _ in
+            applyVirtualLayoutToPlayer()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            presentVirtualControllerOverlayWindow()
             applyVirtualLayoutToPlayer()
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
@@ -463,7 +467,8 @@ struct PlayerView: View {
 
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
-        for button in layoutStore.buttons {
+        let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+        for button in layoutStore.buttons(isLandscape: isLandscape) {
             let mappedX = button.x <= 1.0 ? button.x * 450.0 : button.x
             let mappedY = button.y <= 1.0 ? button.y * 500.0 : button.y
             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: mappedX, y: mappedY)
@@ -507,12 +512,13 @@ struct VirtualControllerView: View {
         GeometryReader { geo in
             let geometryWidth = geo.size.width
             let geometryHeight = geo.size.height
+            let isLandscape = geometryWidth > geometryHeight
 
             ZStack {
-                ForEach(layoutStore.buttons) { button in
+                ForEach(layoutStore.buttons(isLandscape: isLandscape)) { button in
                     VirtualButtonView(
                         button: button,
-                        isPressed: pressedButtons.contains(button.id),
+                        isPressed: pressedButtons.contains(button.instanceId),
                         opacity: effectiveOpacity,
                         size: calculateButtonSize(),
                         config: config
@@ -524,8 +530,8 @@ struct VirtualControllerView: View {
                     .gesture(
                         LongPressGesture(minimumDuration: 0)
                             .onChanged { _ in
-                                if !pressedButtons.contains(button.id) {
-                                    pressedButtons.insert(button.id)
+                                if !pressedButtons.contains(button.instanceId) {
+                                    pressedButtons.insert(button.instanceId)
                                     onButtonInput(button.id, true)
                                     if config.enableVibration {
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -533,7 +539,7 @@ struct VirtualControllerView: View {
                                 }
                             }
                             .onEnded { _ in
-                                pressedButtons.remove(button.id)
+                                pressedButtons.remove(button.instanceId)
                                 onButtonInput(button.id, false)
                             }
                     )

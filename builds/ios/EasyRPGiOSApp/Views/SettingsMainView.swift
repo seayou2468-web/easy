@@ -396,7 +396,7 @@ struct SettingsInputView: View {
         .navigationTitle("入力")
         .fullScreenCover(isPresented: $showLayoutEditor) {
             NavigationStack { VirtualControllerEditorView() }
-                .interactiveDismissDisabled(true)
+                
         }
         .fullScreenCover(isPresented: $showButtonMapping) {
             NavigationStack { ButtonMappingEditorView() }

@@ -12,7 +12,7 @@ struct InputLayoutManagerView: View {
         .navigationTitle("入力レイアウト管理")
         .fullScreenCover(isPresented: $showEditor) {
             NavigationStack { VirtualControllerEditorView() }
-                .interactiveDismissDisabled(true)
+                
         }
     }
 }
