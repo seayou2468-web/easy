@@ -477,6 +477,8 @@ struct PlayerView: View {
         PlayerBridge.setConfigBool(section: "Player", key: "PreferExternalFonts", value: config.preferExternalFonts)
         PlayerBridge.setFastForwardSpeedA(config.fastForwardMultiplier)
         PlayerBridge.setFastForwardSpeedB(config.fastForwardMultiplierB)
+        PlayerBridge.setConfigInt(section: "Input", key: "FastForwardMultiplier", value: config.fastForwardMultiplier)
+        PlayerBridge.setConfigInt(section: "Input", key: "FastForwardMultiplierB", value: config.fastForwardMultiplierB)
         PlayerBridge.setConfigInt(section: "Input", key: "SpeedModifierA", value: config.fastForwardMultiplier)
         PlayerBridge.setConfigInt(section: "Input", key: "SpeedModifierB", value: config.fastForwardMultiplierB)
         PlayerBridge.setSettingsInMenu(config.settingsInMenu)
