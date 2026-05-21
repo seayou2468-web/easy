@@ -295,8 +295,33 @@ final class ConfigManager: ObservableObject {
         iniContent += "SettingsAutosave=\(settingsAutosave ? 1 : 0)\n"
         iniContent += "SettingsInMenu=\(settingsInMenu ? 1 : 0)\n"
         iniContent += "LanguageSelectOnStart=\(languageSelectOnStart)\n"
+        iniContent += "SettingsInTitle=\(settingsInTitle ? 1 : 0)\n"
+        iniContent += "LanguageInTitle=\(languageInTitle ? 1 : 0)\n"
+        iniContent += "Logging=\(loggingEnabled ? 1 : 0)\n"
+        iniContent += "ScreenshotTimestamp=\(screenshotTimestamp ? 1 : 0)\n"
+        iniContent += "AutomaticScreenshots=\(automaticScreenshots ? 1 : 0)\n"
+        iniContent += "ScreenshotScale=\(screenshotScale)\n"
+        iniContent += "AutomaticScreenshotsInterval=\(automaticScreenshotsInterval)\n"
+        iniContent += "StartupLogos=\(startupLogos)\n"
+        iniContent += "GameBrowserLabelMode=\(gameBrowserLabelMode)\n"
+        iniContent += "\n"
+
+        iniContent += "[Font]\n"
+        iniContent += "PreferExternalFonts=\(preferExternalFonts ? 1 : 0)\n"
+        iniContent += "Font1=\(font1Name ?? "")\n"
+        iniContent += "Font2=\(font2Name ?? "")\n"
         iniContent += "Font1Size=\(font1Size)\n"
         iniContent += "Font2Size=\(font2Size)\n"
+        iniContent += "\n"
+
+        iniContent += "[Folders]\n"
+        iniContent += "EnableRtpScanning=\(enableRtpScanning ? 1 : 0)\n"
+        if let folder = easyRPGFolderURL {
+            iniContent += "EasyRPGFolder=\(folder.path)\n"
+        }
+        if let rtpFolder = rtpFolderURL {
+            iniContent += "RTPFolder=\(rtpFolder.path)\n"
+        }
         iniContent += "\n"
 
         do {

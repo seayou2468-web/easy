@@ -464,6 +464,7 @@ struct PlayerView: View {
         PlayerBridge.setConfigInt(section: "Input", key: "FastForwardMode", value: config.fastForwardMode)
         PlayerBridge.setConfigInt(section: "Input", key: "LayoutTransparency", value: config.layoutTransparency)
         PlayerBridge.setConfigInt(section: "Input", key: "LayoutSize", value: config.layoutSize)
+        PlayerBridge.setConfigBool(section: "Input", key: "IgnoreLayoutSize", value: config.ignoreLayoutSize)
 
         PlayerBridge.setFont1(config.font1Name ?? "")
         PlayerBridge.setFont2(config.font2Name ?? "")
@@ -473,6 +474,7 @@ struct PlayerView: View {
         PlayerBridge.setFont2Size(config.font2Size)
         PlayerBridge.setConfigInt(section: "Player", key: "Font1Size", value: config.font1Size)
         PlayerBridge.setConfigInt(section: "Player", key: "Font2Size", value: config.font2Size)
+        PlayerBridge.setConfigBool(section: "Player", key: "PreferExternalFonts", value: config.preferExternalFonts)
         PlayerBridge.setFastForwardSpeedA(config.fastForwardMultiplier)
         PlayerBridge.setFastForwardSpeedB(config.fastForwardMultiplierB)
         PlayerBridge.setConfigInt(section: "Input", key: "SpeedModifierA", value: config.fastForwardMultiplier)
@@ -490,6 +492,14 @@ struct PlayerView: View {
         PlayerBridge.setConfigInt(section: "Player", key: "ScreenshotScale", value: config.screenshotScale)
         PlayerBridge.setConfigInt(section: "Player", key: "AutomaticScreenshotsInterval", value: config.automaticScreenshotsInterval)
         PlayerBridge.setConfigInt(section: "Player", key: "StartupLogos", value: config.startupLogos)
+        PlayerBridge.setConfigInt(section: "Player", key: "GameBrowserLabelMode", value: config.gameBrowserLabelMode)
+        PlayerBridge.setConfigBool(section: "Player", key: "EnableRtpScanning", value: config.enableRtpScanning)
+        if let easyRPGFolder = config.easyRPGFolderURL {
+            PlayerBridge.setConfigString(section: "Player", key: "EasyRPGFolder", value: pathForLaunch(fromAbsolutePath: easyRPGFolder.path))
+        }
+        if let rtpFolder = config.rtpFolderURL {
+            PlayerBridge.setConfigString(section: "Player", key: "RTPFolder", value: pathForLaunch(fromAbsolutePath: rtpFolder.path))
+        }
         applyVirtualLayoutToPlayer()
     }
 
