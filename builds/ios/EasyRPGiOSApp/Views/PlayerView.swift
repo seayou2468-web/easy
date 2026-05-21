@@ -515,7 +515,7 @@ struct VirtualControllerView: View {
             let isLandscape = geometryWidth > geometryHeight
 
             ZStack {
-                ForEach(layoutStore.buttons(isLandscape: isLandscape)) { button in
+                ForEach(layoutStore.buttons(isLandscape: isLandscape), id: \.instanceId) { button in
                     VirtualButtonView(
                         button: button,
                         isPressed: pressedButtons.contains(button.instanceId),

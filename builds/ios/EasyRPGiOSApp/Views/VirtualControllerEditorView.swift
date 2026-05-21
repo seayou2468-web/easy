@@ -42,7 +42,7 @@ struct VirtualControllerEditorView: View {
             GeometryReader { geo in
                 ZStack {
                     Color.black.opacity(0.9).ignoresSafeArea()
-                    ForEach($workingButtons) { $button in
+                    ForEach($workingButtons, id: \.instanceId) { $button in
                         EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: geo.size)
                     }
                 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct VirtualButtonLayout: Identifiable, Codable, Hashable {
+struct VirtualButtonLayout: Codable, Hashable {
     var id: String
     var title: String
     var x: CGFloat
