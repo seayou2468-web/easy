@@ -49,8 +49,10 @@ std::vector<VirtualPoint> virtual_points = {
 };
 std::vector<std::string> launch_args;
 bool has_launch_args = false;
+bool has_pending_relaunch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
 std::atomic<bool> runtime_started{false};
+std::atomic<bool> restart_requested{false};
 
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
 
@@ -231,6 +233,7 @@ void InitPlatformFeatures() {
 void StartRuntimeIfNeeded() {
 	bool expected = false;
 	if (!runtime_started.compare_exchange_strong(expected, true)) {
+		Output::Debug("[iOSBridge] StartRuntimeIfNeeded ignored: runtime already started");
 		return;
 	}
 
@@ -256,9 +259,18 @@ void StartRuntimeIfNeeded() {
 		if (!ConsumeLaunchArgs(args) || args.empty()) {
 			args.emplace_back("EasyRPGPlayer");
 		}
+		Output::Debug("[iOSBridge] StartRuntimeIfNeeded booting Player::Init with {} args", args.size());
+		for (size_t i = 0; i < args.size(); ++i) {
+			Output::Debug("[iOSBridge] Player::Init argv[{}]='{}'", i, args[i]);
+		}
 		Player::Init(std::move(args));
 		Player::Run();
 		runtime_started = false;
+		Output::Debug("[iOSBridge] Player::Run returned; runtime_started=false");
+		if (restart_requested.exchange(false)) {
+			Output::Debug("[iOSBridge] restart_requested=true -> reboot runtime with pending args");
+			StartRuntimeIfNeeded();
+		}
 	});
 }
 
@@ -462,6 +474,8 @@ void LaunchGame(const char* args) {
 		std::lock_guard<std::mutex> lock(ios_mutex);
 		launch_args = parsed_args;
 		has_launch_args = true;
+		has_pending_relaunch_args = true;
+		Output::Debug("[iOSBridge] launch_args registered count={} has_pending_relaunch_args=1", launch_args.size());
 	}
 
 	// If runtime is not running yet, start it now that launch args are registered.
@@ -473,8 +487,12 @@ void LaunchGame(const char* args) {
 
 	// When runtime is already running, request reload like Android relaunch behavior.
 	if (runtime_started.load()) {
+		Output::Debug("[iOSBridge] runtime already running; requesting full restart to re-parse argv");
+		restart_requested = true;
 		Schedule([]() {
-			Player::reset_flag = true;
+			// Root fix: reset does not re-parse argv.
+			// Request full shutdown; runtime thread will auto-restart with latest launch_args.
+			Player::exit_flag = true;
 		});
 	}
 }
@@ -541,10 +559,13 @@ void SendKeyUp(const char* button_id) {
 
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 	if (!has_launch_args) {
+		Output::Debug("[iOSBridge] ConsumeLaunchArgs: no args available");
 		return false;
 	}
 	out_args = launch_args;
 	has_launch_args = false;
+	has_pending_relaunch_args = false;
+	Output::Debug("[iOSBridge] ConsumeLaunchArgs: consumed {} args", out_args.size());
 	return !out_args.empty();
 }
 }
