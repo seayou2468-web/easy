@@ -449,6 +449,9 @@ struct PlayerView: View {
         if let soundFont = config.selectedSoundFont {
             PlayerBridge.setSoundFont(pathForLaunch(fromAbsolutePath: soundFont.path))
             PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: pathForLaunch(fromAbsolutePath: soundFont.path))
+        } else {
+            PlayerBridge.setSoundFont("")
+            PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: "")
         }
 
         PlayerBridge.setLayoutTransparency(Double(config.layoutTransparency))
@@ -498,9 +501,13 @@ struct PlayerView: View {
         PlayerBridge.setConfigBool(section: "Player", key: "EnableRtpScanning", value: config.enableRtpScanning)
         if let easyRPGFolder = config.easyRPGFolderURL {
             PlayerBridge.setConfigString(section: "Player", key: "EasyRPGFolder", value: pathForLaunch(fromAbsolutePath: easyRPGFolder.path))
+        } else {
+            PlayerBridge.setConfigString(section: "Player", key: "EasyRPGFolder", value: "")
         }
         if let rtpFolder = config.rtpFolderURL {
             PlayerBridge.setConfigString(section: "Player", key: "RTPFolder", value: pathForLaunch(fromAbsolutePath: rtpFolder.path))
+        } else {
+            PlayerBridge.setConfigString(section: "Player", key: "RTPFolder", value: "")
         }
         applyVirtualLayoutToPlayer()
     }
