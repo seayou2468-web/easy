@@ -21,7 +21,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include <memory>
 
 #ifdef _WIN32
@@ -153,8 +152,6 @@ namespace {
 
 	// Overwritten by --encoding
 	std::string forced_encoding;
-	std::string lcf_log_file_path;
-    std::ofstream lcf_log_file;
 
 	FileRequestBinding system_request_id;
 	FileRequestBinding save_request_id;
@@ -164,9 +161,6 @@ namespace {
 void Player::Init(std::vector<std::string> args) {
 	lcf::LogHandler::SetHandler([](lcf::LogHandler::Level level, std::string_view message, lcf::LogHandler::UserData) {
 		Output::Debug("lcf ({}): {}", lcf::LogHandler::kLevelTags.tag(level), message);
-		if (lcf_log_file.is_open()) {
-			lcf_log_file << "lcf (" << lcf::LogHandler::kLevelTags.tag(level) << "): " << message << std::endl;
-		}
 	});
 
 	frames = 0;
@@ -181,9 +175,6 @@ void Player::Init(std::vector<std::string> args) {
 	// First parse command line arguments
 	arguments = args;
 	auto cfg = ParseCommandLine();
-	if (!lcf_log_file_path.empty()) {
-		lcf_log_file.open(lcf_log_file_path, std::ios::out | std::ios::trunc);
-	}
 
 	// Display a nice version string
 	auto header = GetFullVersionString() + " started";
@@ -649,12 +640,6 @@ Game_Config Player::ParseCommandLine() {
 		if (cp.ParseNext(arg, 1, "--encoding")) {
 			if (arg.NumValues() > 0) {
 				forced_encoding = arg.Value(0);
-			}
-			continue;
-		}
-		if (cp.ParseNext(arg, 1, "--lcf-log-file")) {
-			if (arg.NumValues() > 0) {
-				lcf_log_file_path = arg.Value(0);
 			}
 			continue;
 		}

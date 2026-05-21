@@ -224,8 +224,6 @@ struct PlayerView: View {
             args.append(configPath)
             args.append("--log-file")
             args.append("\(configPath)/easyrpg-player.log")
-            args.append("--lcf-log-file")
-            args.append("\(configPath)/easyrpg-liblcf.log")
         }
 
         if game.encoding != "auto" {
