@@ -25,6 +25,7 @@
 #include "audio.h"
 #include "font.h"
 #include "filefinder.h"
+#include "main_data.h"
 
 
 namespace {
@@ -51,6 +52,29 @@ std::vector<Input::Keys::InputKey> held_keys;
 std::atomic<bool> runtime_started{false};
 
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
+
+
+std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
+	auto canonical = FileFinder::MakeCanonical(raw_path, 0);
+
+	// Match fallback menu behavior: when a relative path is provided,
+	// resolve it under the default project root first (typically Documents/Games on iOS).
+	const bool has_namespace = canonical.find("://") != std::string::npos;
+	const bool is_absolute = !canonical.empty() && canonical.front() == '/';
+	if (!has_namespace && !is_absolute) {
+		auto default_root = Main_Data::GetDefaultProjectPath();
+		if (!default_root.empty()) {
+			auto rooted = FileFinder::MakeCanonical(FileFinder::MakePath(default_root, canonical), 0);
+			auto rooted_fs = FileFinder::Root().Create(rooted);
+			if (rooted_fs) {
+				Output::Debug("[iOSBridge] Relative path '{}' resolved via default root '{}' -> '{}'", canonical, default_root, rooted);
+				return rooted;
+			}
+		}
+	}
+
+	return canonical;
+}
 
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
@@ -284,7 +308,7 @@ void LaunchGame(const char* args) {
 	// This allows launching/switching games after the app is already running.
 	for (size_t i = 0; i + 1 < parsed_args.size(); ++i) {
 		if (parsed_args[i] == "--project-path") {
-			auto canonical_project = FileFinder::MakeCanonical(parsed_args[i + 1], 0);
+			auto canonical_project = ResolveLaunchPathForIOS(parsed_args[i + 1]);
 			Output::Debug("[iOSBridge] --project-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_project);
 			auto gamefs = FileFinder::Root().Create(canonical_project);
 			if (gamefs) {
@@ -297,7 +321,7 @@ void LaunchGame(const char* args) {
 			continue;
 		}
 		if (parsed_args[i] == "--save-path") {
-			auto canonical_save = FileFinder::MakeCanonical(parsed_args[i + 1], 0);
+			auto canonical_save = ResolveLaunchPathForIOS(parsed_args[i + 1]);
 			Output::Debug("[iOSBridge] --save-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_save);
 			auto savefs = FileFinder::Root().Create(canonical_save);
 			if (savefs) {
