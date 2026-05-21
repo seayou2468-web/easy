@@ -44,71 +44,16 @@ struct VirtualControllerEditorView: View {
         ZStack {
             Color.black.opacity(0.9).ignoresSafeArea()
 
-            VStack(spacing: 14) {
-                Picker("対象", selection: $isLandscapeEditing) {
-                    Text("縦").tag(false)
-                    Text("横").tag(true)
-                }
-                .pickerStyle(.segmented)
-
-                Text("編集デバイス: \(activePreset.name)（自動判別）")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Toggle("ボタンサイズを自動調整（Android比率）", isOn: Binding(
-                    get: { !config.ignoreLayoutSize },
-                    set: {
-                        config.ignoreLayoutSize = !$0
-                        config.saveSettings()
-                    }
-                ))
-
-                Picker("レイアウト", selection: profileBinding) {
-                    ForEach(store.profiles) { profile in
-                        Text(profile.name).tag(profile.id)
-                    }
-                }
-                .onChange(of: store.activeProfileId) { _, newId in
-                    store.setActiveProfile(newId)
-                    loadWorkingButtons()
-                }
-
-                if let selected = selectedButton {
-                    HStack {
-                        Text("選択中: \(selected.title)")
-                        Spacer()
-                        Text(selected.id)
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack {
-                        Text("サイズ")
-                        Slider(
-                            value: Binding(
-                                get: { Double(selected.size) },
-                                set: { newValue in
-                                    guard let idx = workingButtons.firstIndex(where: { $0.instanceId == selected.instanceId }) else { return }
-                                    workingButtons[idx].size = Int(newValue.rounded())
-                                }
-                            ),
-                            in: 50...180,
-                            step: 1
-                        )
-                        Text("\(selected.size)%")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            VStack(spacing: 8) {
                 DeviceFrameEditorCanvas(
                     preset: activePreset,
                     workingButtons: $workingButtons,
                     selectedButtonInstanceId: $selectedButtonInstanceId
                 )
-                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
         }
         .navigationTitle("レイアウト編集")
         .navigationBarTitleDisplayMode(.inline)
@@ -150,6 +95,27 @@ struct VirtualControllerEditorView: View {
 
     @ViewBuilder
     private func menuDialog() -> some View {
+        Button(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") {
+            isLandscapeEditing.toggle()
+        }
+        Button(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") {
+            config.ignoreLayoutSize.toggle()
+            config.saveSettings()
+        }
+        Button("全ボタンを少し大きく") {
+            workingButtons = workingButtons.map { b in
+                var m = b
+                m.size = min(180, m.size + 5)
+                return m
+            }
+        }
+        Button("全ボタンを少し小さく") {
+            workingButtons = workingButtons.map { b in
+                var m = b
+                m.size = max(50, m.size - 5)
+                return m
+            }
+        }
         Button("ボタンを追加") { showAddMenu = true }
         Button("この向きをデフォルトにリセット") {
             workingButtons = VirtualButtonLayout.default
@@ -194,9 +160,6 @@ struct VirtualControllerEditorView: View {
     private func toolbarContent() -> some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button { showMenu = true } label: { Label("メニュー", systemImage: "line.3.horizontal") }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button("保存") { saveLayout() }
         }
     }
 
@@ -267,6 +230,14 @@ private struct DeviceFrameEditorCanvas: View {
                             .stroke(Color.white.opacity(0.18), lineWidth: 1)
                     )
 
+                VStack {
+                    Capsule()
+                        .fill(Color.black.opacity(0.75))
+                        .frame(width: frameWidth * 0.28, height: 22)
+                        .padding(.top, 12)
+                    Spacer()
+                }
+
                 ZStack {
                     Color.black
                     ForEach($workingButtons, id: \.instanceId) { $button in
@@ -295,8 +266,20 @@ private struct LayoutExportDocument: FileDocument {
 @ViewBuilder
 private func buttonBackground(for button: VirtualButtonLayout) -> some View {
     if ["up", "down", "left", "right"].contains(button.id) {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(.ultraThinMaterial)
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.ultraThinMaterial)
+            if button.id == "up" || button.id == "down" {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 16, height: 30)
+            }
+            if button.id == "left" || button.id == "right" {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 30, height: 16)
+            }
+        }
     } else {
         Circle().fill(.ultraThinMaterial)
     }
