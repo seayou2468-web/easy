@@ -204,26 +204,28 @@ struct PlayerView: View {
         projectSecurityScopeURL = projectURL
         hasProjectSecurityScopeAccess = projectURL.startAccessingSecurityScopedResource()
 
-        let projectPath = projectURL.path
-        guard FileManager.default.fileExists(atPath: projectPath) else {
-            AppLogger.log("Project path does not exist: \(projectPath)")
+        let absoluteProjectPath = projectURL.path
+        guard FileManager.default.fileExists(atPath: absoluteProjectPath) else {
+            AppLogger.log("Project path does not exist: \(absoluteProjectPath)")
             return
         }
+
+        let projectPath = normalizedPathForLaunch(projectURL)
 
         AppLogger.log("setupPlayerWithGame projectPath=\(projectPath)")
         var args: [String] = ["--project-path", projectPath]
 
-        let resolvedSavePath = resolveSavePath(projectPath: projectPath, rawSavePath: game.savePath)
+        let resolvedSavePath = resolveSavePath(projectPath: absoluteProjectPath, rawSavePath: game.savePath)
         if let savePath = resolvedSavePath, !savePath.isEmpty {
             args.append("--save-path")
-            args.append(savePath)
+            args.append(pathForLaunch(fromAbsolutePath: savePath))
         }
 
         if let configPath = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?.path {
             args.append("--config-path")
-            args.append(configPath)
+            args.append(pathForLaunch(fromAbsolutePath: configPath))
             args.append("--log-file")
-            args.append("\(configPath)/easyrpg-player.log")
+            args.append(pathForLaunch(fromAbsolutePath: "\(configPath)/easyrpg-player.log"))
         }
 
         if game.encoding != "auto" {
@@ -247,6 +249,30 @@ struct PlayerView: View {
         scopeURL.stopAccessingSecurityScopedResource()
         hasProjectSecurityScopeAccess = false
         projectSecurityScopeURL = nil
+    }
+
+
+    private func normalizedPathForLaunch(_ url: URL) -> String {
+        pathForLaunch(fromAbsolutePath: url.standardizedFileURL.path)
+    }
+
+    private func pathForLaunch(fromAbsolutePath absolutePath: String) -> String {
+        let standardized = URL(fileURLWithPath: absolutePath).standardizedFileURL.path
+
+        guard let homeURL = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL as URL? else {
+            return standardized
+        }
+
+        let homePath = homeURL.path
+        if standardized == homePath {
+            return "."
+        }
+
+        if standardized.hasPrefix(homePath + "/") {
+            return String(standardized.dropFirst(homePath.count + 1))
+        }
+
+        return standardized
     }
 
     private func resolveSavePath(projectPath: String, rawSavePath: String) -> String? {
@@ -276,7 +302,7 @@ struct PlayerView: View {
         PlayerBridge.setMusicVolume(config.musicVolume)
         PlayerBridge.setSoundVolume(config.soundVolume)
         if let soundFont = config.selectedSoundFont {
-            PlayerBridge.setSoundFont(soundFont.path)
+            PlayerBridge.setSoundFont(pathForLaunch(fromAbsolutePath: soundFont.path))
         }
 
         PlayerBridge.setLayoutTransparency(Double(config.layoutTransparency))
