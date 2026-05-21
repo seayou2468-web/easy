@@ -7,6 +7,7 @@ struct InitView: View {
     @State private var showFolderPicker = false
     @State private var useAutomaticPath = true
     @StateObject private var config = ConfigManager.shared
+    var showContinueToBrowserButton = false
 
     init(showContinueToBrowserButton: Bool = false) {
         self.showContinueToBrowserButton = showContinueToBrowserButton
@@ -177,4 +178,3 @@ struct InitView: View {
 #Preview {
     InitView()
 }
-    var showContinueToBrowserButton = false
