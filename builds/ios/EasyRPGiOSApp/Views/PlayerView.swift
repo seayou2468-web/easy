@@ -643,7 +643,7 @@ struct VirtualControllerView: View {
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
-        max(0.25, min(1.0, Double(config.layoutTransparency) / 255.0))
+        max(0.0, min(1.0, Double(255 - config.layoutTransparency) / 255.0))
     }
 
     var body: some View {
@@ -680,7 +680,7 @@ struct VirtualControllerView: View {
         let refSize = buttons.map { sizeFor($0) }.max() ?? 64
         let dpadSize = refSize * 2.2
 
-        DPadCrossView(opacity: effectiveOpacity, size: dpadSize, activeDirection: activeDirection)
+        DPadCrossView(opacity: effectiveOpacity, size: dpadSize)
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -823,43 +823,27 @@ struct VirtualControllerView: View {
 private struct DPadCrossView: View {
     let opacity: Double
     let size: CGFloat
-    let activeDirection: String?
 
     var body: some View {
         ZStack {
             AndroidDPadShape()
-                .fill(Color.white.opacity(opacity))
-            Text(symbol)
-                .font(.system(size: size * 0.17, weight: .bold, design: .default))
-                .foregroundStyle(.black)
+                .stroke(Color.white.opacity(opacity), lineWidth: 3)
         }
         .frame(width: size, height: size)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.2), lineWidth: 1)
-        )
     }
 
-    private var symbol: String {
-        switch activeDirection {
-        case "up": return "↑"
-        case "down": return "↓"
-        case "left": return "←"
-        case "right": return "→"
-        default: return "+"
-        }
-    }
 }
 
 private struct AndroidDPadShape: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width, rect.height)
-        let oneThird = s * 0.33
+        let oneThird = floor(s * 0.33)
         let twoThird = oneThird * 2
-        let minX = rect.minX + s * 0.03
-        let minY = rect.minY + s * 0.03
-        let maxX = rect.maxX - s * 0.03
-        let maxY = rect.maxY - s * 0.03
+        let border: CGFloat = 5
+        let minX = rect.minX + border
+        let minY = rect.minY + border
+        let maxX = rect.maxX - border
+        let maxY = rect.maxY - border
 
         var p = Path()
         p.move(to: CGPoint(x: rect.minX + oneThird, y: minY))
@@ -887,44 +871,29 @@ struct VirtualButtonView: View {
     @ObservedObject var config: ConfigManager
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text(displayTitle())
-                .font(.system(size: size * 0.26, weight: .bold, design: .default))
-                .foregroundStyle(.black)
+        ZStack {
+            AndroidStrokeText(text: displayTitle(), size: size * (25.0 / 60.0), opacity: opacity)
         }
         .frame(width: size, height: size)
         .background(
             Group {
                 if isDirectional {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.white.opacity(opacity))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                        )
+                    AndroidInsetCircleShape()
+                        .stroke(Color.white.opacity(opacity), lineWidth: 3)
                 } else {
                     if button.id == "menu" {
                         MenuGlyphButtonShape()
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(MenuGlyphButtonShape().stroke(Color.black.opacity(0.2), lineWidth: 1))
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else if button.id == "fast_forward_a" {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).stroke(Color.black.opacity(0.2), lineWidth: 1))
+                        AndroidInsetRectShape()
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else {
-                        Circle()
-                            .fill(Color.white.opacity(opacity))
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                            )
+                        AndroidInsetCircleShape()
+                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     }
                 }
             }
         )
-        .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
-        .scaleEffect(isPressed ? 0.85 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
     }
 
     private var isDirectional: Bool {
@@ -933,8 +902,8 @@ struct VirtualButtonView: View {
 
     private func displayTitle() -> String {
         if config.showABasZX {
-            if button.id == "z" || button.id == "decision" { return "A" }
-            if button.id == "x" || button.id == "cancel" { return "B" }
+            if button.id == "z" || button.id == "decision" { return "Z" }
+            if button.id == "x" || button.id == "cancel" { return "X" }
         }
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
             return "»"
@@ -942,6 +911,61 @@ struct VirtualButtonView: View {
         if button.id == "debug_menu" { return "M" }
         if button.id == "debug_through" { return "T" }
         return button.title
+    }
+}
+
+
+private struct AndroidStrokeText: UIViewRepresentable {
+    let text: String
+    let size: CGFloat
+    let opacity: Double
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.textAlignment = .center
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.1
+        label.numberOfLines = 1
+        label.backgroundColor = .clear
+        return label
+    }
+
+    func updateUIView(_ label: UILabel, context: Context) {
+        let color = UIColor.white.withAlphaComponent(max(0.0, min(1.0, opacity)))
+        let font = UIFont.boldSystemFont(ofSize: size)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+
+        // Android uses Paint.Style.STROKE with width ~3 and white color.
+        // Using negative strokeWidth draws fill+stroke with the same color,
+        // giving the same "double/outlined" appearance seen on Android.
+        let attr = NSAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: color,
+            .strokeColor: color,
+            .strokeWidth: -3.0,
+            .paragraphStyle: paragraph
+        ])
+        label.attributedText = attr
+    }
+}
+
+
+private struct AndroidInsetCircleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let inset: CGFloat = 5
+        let r = rect.insetBy(dx: inset, dy: inset)
+        return Path(ellipseIn: r)
+    }
+}
+
+private struct AndroidInsetRectShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let inset: CGFloat = 5
+        let r = rect.insetBy(dx: inset, dy: inset)
+        var p = Path()
+        p.addRect(r)
+        return p
     }
 }
 
