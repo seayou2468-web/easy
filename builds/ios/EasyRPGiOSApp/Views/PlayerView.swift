@@ -837,12 +837,13 @@ private struct DPadCrossView: View {
 private struct AndroidDPadShape: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width, rect.height)
-        let oneThird = s * 0.33
+        let oneThird = floor(s * 0.33)
         let twoThird = oneThird * 2
-        let minX = rect.minX + s * 0.03
-        let minY = rect.minY + s * 0.03
-        let maxX = rect.maxX - s * 0.03
-        let maxY = rect.maxY - s * 0.03
+        let border: CGFloat = 5
+        let minX = rect.minX + border
+        let minY = rect.minY + border
+        let maxX = rect.maxX - border
+        let maxY = rect.maxY - border
 
         var p = Path()
         p.move(to: CGPoint(x: rect.minX + oneThird, y: minY))
@@ -870,10 +871,8 @@ struct VirtualButtonView: View {
     @ObservedObject var config: ConfigManager
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text(displayTitle())
-                .font(.system(size: size * 0.26, weight: .bold, design: .default))
-                .foregroundStyle(Color.white.opacity(opacity))
+        ZStack {
+            AndroidStrokeText(text: displayTitle(), size: size * 0.26, color: Color.white.opacity(opacity))
         }
         .frame(width: size, height: size)
         .background(
@@ -912,6 +911,29 @@ struct VirtualButtonView: View {
         if button.id == "debug_menu" { return "M" }
         if button.id == "debug_through" { return "T" }
         return button.title
+    }
+}
+
+
+private struct AndroidStrokeText: View {
+    let text: String
+    let size: CGFloat
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            ForEach(strokeOffsets, id: \.self) { off in
+                Text(text)
+                    .font(.system(size: size, weight: .bold, design: .default))
+                    .foregroundStyle(color)
+                    .offset(x: off.width, y: off.height)
+            }
+        }
+    }
+
+    private var strokeOffsets: [CGSize] {
+        [CGSize(width: -1, height: 0), CGSize(width: 1, height: 0), CGSize(width: 0, height: -1), CGSize(width: 0, height: 1),
+         CGSize(width: -1, height: -1), CGSize(width: 1, height: -1), CGSize(width: -1, height: 1), CGSize(width: 1, height: 1)]
     }
 }
 
