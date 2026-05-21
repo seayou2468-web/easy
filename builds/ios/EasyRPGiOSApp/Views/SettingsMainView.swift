@@ -141,6 +141,33 @@ struct SettingsVideoView: View {
                     }
                 }
                 .padding(.bottom, 8)
+
+                Divider()
+
+                Section(header: Text("クイックプリセット").font(.headline)) {
+                    Button("標準に戻す") {
+                        config.fullscreen = true
+                        config.forcedLandscape = false
+                        config.scaleMode = 0
+                        config.stretch = false
+                        config.gameResolution = 0
+                        config.gameBrowserLabelMode = 0
+                        config.saveSettings()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("ワイド重視プリセット") {
+                        config.fullscreen = true
+                        config.forcedLandscape = true
+                        config.scaleMode = 2
+                        config.stretch = true
+                        config.gameResolution = 1
+                        config.gameBrowserLabelMode = 1
+                        config.saveSettings()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(.bottom, 8)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -183,6 +210,31 @@ struct SettingsAudioView: View {
                         ), in: 0...100, step: 1)
                             .onChange(of: config.soundVolume) { _, _ in config.saveSettings() }
                     }
+                }
+                .padding(.bottom, 8)
+                Divider()
+
+                Section(header: Text("オーディオプリセット").font(.headline)) {
+                    Button("バランス (100/100)") {
+                        config.musicVolume = 100
+                        config.soundVolume = 100
+                        config.saveSettings()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("夜間 (30/20)") {
+                        config.musicVolume = 30
+                        config.soundVolume = 20
+                        config.saveSettings()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("ミュート") {
+                        config.musicVolume = 0
+                        config.soundVolume = 0
+                        config.saveSettings()
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
                 .padding(.bottom, 8)
 
