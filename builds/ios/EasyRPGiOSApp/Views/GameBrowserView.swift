@@ -265,6 +265,11 @@ struct BrowserGameCard: View {
                     .fontWeight(.semibold)
                     .lineLimit(2)
 
+                Text(game.author)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
                 HStack(spacing: 8) {
                     Button(action: onPlay) {
                         Image(systemName: "play.circle.fill")
@@ -318,6 +323,10 @@ struct BrowserGameListRow: View {
 
                 Text(game.gameFolderName)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(game.author)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 

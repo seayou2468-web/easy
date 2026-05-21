@@ -1,6 +1,11 @@
 import Foundation
 import UIKit
 
+private struct EasyRPGManifest: Decodable {
+    let title: String?
+    let author: String?
+}
+
 enum ProjectType: Int {
     case unknown = 0
     case supported = 1
@@ -150,7 +155,19 @@ final class GameLibrary: ObservableObject {
         var savePath = ""
         let projectType = ProjectType.supported
         var encoding = "auto"
+        var author = "Unknown"
         var titleImage: UIImage? = nil
+
+        if let manifestPath = findFile(in: url, named: "easyrpg-player-manifest.json", fileManager: fileManager),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: manifestPath)),
+           let manifest = try? JSONDecoder().decode(EasyRPGManifest.self, from: data) {
+            if let manifestTitle = manifest.title, !manifestTitle.isEmpty {
+                title = manifestTitle
+            }
+            if let manifestAuthor = manifest.author, !manifestAuthor.isEmpty {
+                author = manifestAuthor
+            }
+        }
 
         // Load from RPG_RT.ini
         if let iniPath = findFile(in: url, named: "RPG_RT.ini", fileManager: fileManager),
@@ -158,19 +175,17 @@ final class GameLibrary: ObservableObject {
             title = parseIniValue(iniContent, key: "Title") ?? title
             savePath = parseIniValue(iniContent, key: "SavePath") ?? ""
             encoding = parseIniValue(iniContent, key: "Encoding") ?? "auto"
+            author = parseIniValue(iniContent, key: "Author") ?? author
         }
 
-        // Try to load title image
-        if let titlePath = findFile(in: url, named: "Title", fileManager: fileManager),
-           let image = UIImage(contentsOfFile: titlePath) {
-            titleImage = image
-        }
+        titleImage = loadTitleImage(in: url, fileManager: fileManager)
 
         return Game(
             title: title,
             path: url.path,
             savePath: savePath,
             gameFolderName: folderName,
+            author: author,
             favorite: isFavorite,
             projectType: projectType,
             titleImage: titleImage,
@@ -218,6 +233,28 @@ final class GameLibrary: ObservableObject {
         if fileManager.fileExists(atPath: path) {
             return path
         }
+        return nil
+    }
+
+    nonisolated private static func loadTitleImage(in directory: URL, fileManager: FileManager) -> UIImage? {
+        let titleDir = directory.appendingPathComponent("Title")
+        let exts = ["png", "bmp", "xyz", "jpg", "jpeg", "webp"]
+
+        for ext in exts {
+            let path = titleDir.appendingPathComponent("Title.\(ext)").path
+            if fileManager.fileExists(atPath: path), let img = UIImage(contentsOfFile: path) {
+                return img
+            }
+        }
+
+        if let files = try? fileManager.contentsOfDirectory(at: titleDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+            for file in files {
+                if let img = UIImage(contentsOfFile: file.path) {
+                    return img
+                }
+            }
+        }
+
         return nil
     }
 
