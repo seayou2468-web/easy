@@ -189,11 +189,11 @@ Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (strcmp(id, "down") == 0) return Input::Keys::DOWN;
 	if (strcmp(id, "left") == 0) return Input::Keys::LEFT;
 	if (strcmp(id, "right") == 0) return Input::Keys::RIGHT;
-	if (strcmp(id, "z") == 0) return Input::Keys::Z;
-	if (strcmp(id, "x") == 0) return Input::Keys::X;
+	if (strcmp(id, "z") == 0 || strcmp(id, "decision") == 0) return Input::Keys::Z;
+	if (strcmp(id, "x") == 0 || strcmp(id, "cancel") == 0) return Input::Keys::X;
 	if (strcmp(id, "shift") == 0) return Input::Keys::SHIFT;
 	if (strcmp(id, "fast_forward_a") == 0) return Input::Keys::TAB;
-	if (strcmp(id, "settings_menu") == 0) return Input::Keys::F1;
+	if (strcmp(id, "settings_menu") == 0 || strcmp(id, "menu") == 0) return Input::Keys::F1;
 	return Input::Keys::NONE;
 }
 
