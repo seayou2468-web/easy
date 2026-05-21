@@ -207,12 +207,36 @@ struct PlayerView: View {
         let task = DispatchWorkItem {
             for step in 0..<30 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * 0.1)) {
-                    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                          let window = scene.windows.first(where: { $0.isKeyWindow }),
-                          let rootView = window.rootViewController?.view else {
+                    guard let scene = UIApplication.shared.connectedScenes
+                        .compactMap({ $0 as? UIWindowScene })
+                        .first(where: { $0.activationState == .foregroundActive }) else {
                         return
                     }
-                    window.bringSubviewToFront(rootView)
+
+                    // SDL can temporarily promote its own window/view to the front
+                    // when the runtime boots. Keep the SwiftUI window above it so
+                    // the virtual controller remains visible and interactive.
+                    let windows = scene.windows
+                    guard !windows.isEmpty else { return }
+
+                    let overlayWindow =
+                        windows.first(where: { window in
+                            guard let root = window.rootViewController else { return false }
+                            return String(describing: type(of: root)).contains("UIHostingController")
+                        })
+                        ?? windows.first(where: { $0.rootViewController != nil && !$0.isHidden && $0.alpha > 0.0 })
+                        ?? windows.first
+
+                    guard let overlayWindow else { return }
+                    overlayWindow.windowLevel = .normal + 1
+                    overlayWindow.makeKey()
+                    overlayWindow.isHidden = false
+
+                    if let rootView = overlayWindow.rootViewController?.view {
+                        overlayWindow.bringSubviewToFront(rootView)
+                        rootView.setNeedsLayout()
+                        rootView.layoutIfNeeded()
+                    }
                 }
             }
         }
