@@ -872,23 +872,23 @@ struct VirtualButtonView: View {
 
     var body: some View {
         ZStack {
-            AndroidStrokeText(text: displayTitle(), size: size * 0.26, opacity: opacity)
+            AndroidStrokeText(text: displayTitle(), size: size * (25.0 / 60.0), opacity: opacity)
         }
         .frame(width: size, height: size)
         .background(
             Group {
                 if isDirectional {
-                    Circle()
+                    AndroidInsetCircleShape()
                         .stroke(Color.white.opacity(opacity), lineWidth: 3)
                 } else {
                     if button.id == "menu" {
                         MenuGlyphButtonShape()
                             .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else if button.id == "fast_forward_a" {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        AndroidInsetRectShape()
                             .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     } else {
-                        Circle()
+                        AndroidInsetCircleShape()
                             .stroke(Color.white.opacity(opacity), lineWidth: 3)
                     }
                 }
@@ -947,6 +947,25 @@ private struct AndroidStrokeText: UIViewRepresentable {
             .paragraphStyle: paragraph
         ])
         label.attributedText = attr
+    }
+}
+
+
+private struct AndroidInsetCircleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let inset: CGFloat = 5
+        let r = rect.insetBy(dx: inset, dy: inset)
+        return Path(ellipseIn: r)
+    }
+}
+
+private struct AndroidInsetRectShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let inset: CGFloat = 5
+        let r = rect.insetBy(dx: inset, dy: inset)
+        var p = Path()
+        p.addRect(r)
+        return p
     }
 }
 
