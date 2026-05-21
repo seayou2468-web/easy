@@ -758,6 +758,7 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 	          key_s = std::string(key ? key : ""), value]() {
 		if (section_s == "Player") {
 			if (key_s == "SettingsInTitle") Player::player_config.settings_in_title.Set(value);
+			else if (key_s == "SettingsInMenu") Player::player_config.settings_in_menu.Set(value);
 			else if (key_s == "LanguageInTitle") Player::player_config.lang_select_in_title.Set(value);
 			else if (key_s == "Logging") Player::player_config.log_enabled.Set(value);
 			else if (key_s == "ScreenshotTimestamp") Player::player_config.screenshot_timestamp.Set(value);
@@ -770,6 +771,14 @@ void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t valu
 	Schedule([section_s = std::string(section ? section : ""),
 	          key_s = std::string(key ? key : ""), value]() {
 		if (section_s == "Player") {
+			if (key_s == "Font1Size") Player::player_config.font1_size.Set(static_cast<int>(std::max<int32_t>(6, value)));
+			else if (key_s == "Font2Size") Player::player_config.font2_size.Set(static_cast<int>(std::max<int32_t>(6, value)));
+			else if (key_s == "LanguageSelectOnStart") {
+				ConfigEnum::StartupLangSelect startup_lang = ConfigEnum::StartupLangSelect::Never;
+				if (value == 1) startup_lang = ConfigEnum::StartupLangSelect::FirstStartup;
+				else if (value >= 2) startup_lang = ConfigEnum::StartupLangSelect::Always;
+				Player::player_config.lang_select_on_start.Set(startup_lang);
+			}
 			if (key_s == "ScreenshotScale") Player::player_config.screenshot_scale.Set(static_cast<int>(std::max<int32_t>(1, value)));
 			else if (key_s == "AutomaticScreenshotsInterval") Player::player_config.automatic_screenshots_interval.Set(static_cast<int>(std::max<int32_t>(1, value)));
 			else if (key_s == "StartupLogos") {
