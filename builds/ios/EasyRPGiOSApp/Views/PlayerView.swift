@@ -593,7 +593,6 @@ struct VirtualControllerView: View {
 
     @State private var pressedButtons: Set<String> = []
     @State private var activeDirection: String?
-    @State private var autoSizeByDevice = true
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
@@ -620,6 +619,9 @@ struct VirtualControllerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
+        .onDisappear {
+            releaseAllVirtualInputs()
+        }
         // Do not add runtime-only horizontal offset: editor and runtime must share
         // the same coordinate space for position parity.
     }
@@ -730,6 +732,22 @@ struct VirtualControllerView: View {
     private func handleDragEnded(button: VirtualButtonLayout) {
         pressedButtons.remove(button.instanceId)
         sendPress(for: button.id, isPressed: false)
+    }
+
+    private func releaseAllVirtualInputs() {
+        if let dir = activeDirection {
+            onDirectionInput(dir, false)
+            activeDirection = nil
+        }
+
+        if !pressedButtons.isEmpty {
+            let buttons = layoutStore.buttons(isLandscape: UIScreen.main.bounds.width > UIScreen.main.bounds.height)
+            let pressedIds = Set(pressedButtons)
+            for button in buttons where pressedIds.contains(button.instanceId) {
+                sendPress(for: button.id, isPressed: false)
+            }
+            pressedButtons.removeAll()
+        }
     }
 }
 
