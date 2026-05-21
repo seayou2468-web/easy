@@ -50,6 +50,8 @@ bool has_launch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
 std::atomic<bool> runtime_started{false};
 
+bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
+
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
 	if (strcmp(id, "up") == 0) return Input::Keys::UP;
@@ -110,7 +112,9 @@ void StartRuntimeIfNeeded() {
 		SDL_SetMainReady();
 
 		std::vector<std::string> args;
-		args.emplace_back("EasyRPGPlayer");
+		if (!ConsumeLaunchArgs(args) || args.empty()) {
+			args.emplace_back("EasyRPGPlayer");
+		}
 		Player::Init(std::move(args));
 		Player::Run();
 		runtime_started = false;
