@@ -137,6 +137,7 @@ struct PlayerView: View {
     @State private var orientationSettleTask: DispatchWorkItem?
     @State private var hasProjectSecurityScopeAccess = false
     @State private var projectSecurityScopeURL: URL?
+    @State private var fastForwardAToggleActive = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -609,6 +610,19 @@ struct PlayerView: View {
             return
         }
 
+        if buttonId == "fast_forward_a" && config.fastForwardMode == 1 {
+            if !isPressed {
+                if fastForwardAToggleActive {
+                    PlayerBridge.sendKeyUp(buttonId)
+                    fastForwardAToggleActive = false
+                } else {
+                    PlayerBridge.sendKeyDown(buttonId)
+                    fastForwardAToggleActive = true
+                }
+            }
+            return
+        }
+
         if isPressed {
             PlayerBridge.sendKeyDown(buttonId)
         } else {
@@ -677,6 +691,9 @@ struct VirtualControllerView: View {
                             activeDirection = direction
                             if let direction {
                                 onDirectionInput(direction, true)
+                                if config.enableVibration && (config.vibrateWhenSliding || activeDirection == nil) {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                }
                             }
                         }
                     }
@@ -688,13 +705,20 @@ struct VirtualControllerView: View {
     }
 
     private func resolveDPadDirection(from point: CGPoint, size: CGFloat) -> String? {
-        let half = size / 2
-        let x = point.x - half
-        let y = point.y - half
-        let deadZone = size * 0.12
-        if abs(x) < deadZone && abs(y) < deadZone { return nil }
-        if abs(x) > abs(y) { return x < 0 ? "left" : "right" }
-        return y < 0 ? "up" : "down"
+        let third = size * 0.33
+        let pad = size * 0.20
+        let x = point.x
+        let y = point.y
+        let leftRect = CGRect(x: -pad, y: third, width: third + pad, height: third + pad)
+        let rightRect = CGRect(x: third * 2, y: third, width: third + pad, height: third + pad)
+        let upRect = CGRect(x: third, y: -pad, width: third, height: third + pad)
+        let downRect = CGRect(x: third, y: third * 2, width: third, height: third + pad)
+
+        if leftRect.contains(CGPoint(x: x, y: y)) { return "left" }
+        if rightRect.contains(CGPoint(x: x, y: y)) { return "right" }
+        if upRect.contains(CGPoint(x: x, y: y)) { return "up" }
+        if downRect.contains(CGPoint(x: x, y: y)) { return "down" }
+        return nil
     }
 
     private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
@@ -803,15 +827,8 @@ private struct DPadCrossView: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.black.opacity(opacity * 0.35))
-                .frame(width: size, height: size)
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            AndroidDPadShape()
                 .fill(Color.white.opacity(opacity))
-                .frame(width: size * 0.34, height: size)
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(opacity))
-                .frame(width: size, height: size * 0.34)
             Text(symbol)
                 .font(.system(size: size * 0.17, weight: .bold, design: .default))
                 .foregroundStyle(.black)
@@ -834,6 +851,34 @@ private struct DPadCrossView: View {
     }
 }
 
+private struct AndroidDPadShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height)
+        let oneThird = s * 0.33
+        let twoThird = oneThird * 2
+        let minX = rect.minX + s * 0.03
+        let minY = rect.minY + s * 0.03
+        let maxX = rect.maxX - s * 0.03
+        let maxY = rect.maxY - s * 0.03
+
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX + oneThird, y: minY))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: minY))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: maxX, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: maxX, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: maxY))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: maxY))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: minX, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: minX, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: rect.minY + oneThird))
+        p.closeSubpath()
+        return p
+    }
+}
+
 struct VirtualButtonView: View {
     let button: VirtualButtonLayout
     let isPressed: Bool
@@ -851,19 +896,29 @@ struct VirtualButtonView: View {
         .background(
             Group {
                 if isDirectional {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.white.opacity(opacity))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .stroke(Color.black.opacity(0.2), lineWidth: 1)
                         )
                 } else {
-                    Circle()
-                        .fill(Color.white.opacity(opacity))
-                        .overlay(
-                            Circle()
-                                .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                        )
+                    if button.id == "menu" {
+                        MenuGlyphButtonShape()
+                            .fill(Color.white.opacity(opacity))
+                            .overlay(MenuGlyphButtonShape().stroke(Color.black.opacity(0.2), lineWidth: 1))
+                    } else if button.id == "fast_forward_a" {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.white.opacity(opacity))
+                            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).stroke(Color.black.opacity(0.2), lineWidth: 1))
+                    } else {
+                        Circle()
+                            .fill(Color.white.opacity(opacity))
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black.opacity(0.2), lineWidth: 1)
+                            )
+                    }
                 }
             }
         )
@@ -887,6 +942,18 @@ struct VirtualButtonView: View {
         if button.id == "debug_menu" { return "M" }
         if button.id == "debug_through" { return "T" }
         return button.title
+    }
+}
+
+private struct MenuGlyphButtonShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let h = rect.height / 7
+        for i in 0..<7 where i % 2 == 1 {
+            let y = CGFloat(i) * h
+            p.addRect(CGRect(x: rect.width / 6, y: y, width: rect.width * 4 / 6, height: h))
+        }
+        return p
     }
 }
 
