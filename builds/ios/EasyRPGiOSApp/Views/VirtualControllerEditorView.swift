@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct VirtualControllerEditorView: View {
-    private struct DevicePreset: Identifiable, Hashable {
+    struct DevicePreset: Identifiable, Hashable {
         let id: String
         let name: String
         let points: CGSize
@@ -40,6 +40,7 @@ struct VirtualControllerEditorView: View {
     }
 
     var body: some View {
+        let profileBinding = $store.activeProfileId
         ZStack {
             Color.black.opacity(0.9).ignoresSafeArea()
 
@@ -62,7 +63,7 @@ struct VirtualControllerEditorView: View {
                     }
                 ))
 
-                Picker("レイアウト", selection: $store.activeProfileId) {
+                Picker("レイアウト", selection: profileBinding) {
                     ForEach(store.profiles) { profile in
                         Text(profile.name).tag(profile.id)
                     }
