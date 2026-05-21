@@ -125,8 +125,7 @@ struct PlayerView: View {
 
     @State private var showEndConfirm = false
     @State private var showResetConfirm = false
-    @State private var uiVisible = false
-    @State private var showMenu = false
+        @State private var showMenu = false
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false
     @State private var showSettings = false
@@ -144,50 +143,17 @@ struct PlayerView: View {
             Color.clear
                 .ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                if uiVisible {
-                    // Header
-                    VStack(spacing: 4) {
-                        Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
-                            .font(.title3)
-                            .bold()
-                            .foregroundStyle(.white)
-
-                        Text("プレイヤー実行中")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    .padding(.vertical, 8)
-                }
-
-                Spacer()
-
-                Spacer()
-            }
-            .padding(.vertical, 16)
-
-            // Show UI Button (when hidden)
-            if !uiVisible {
-                VStack {
-                    HStack {
-                        Button(action: { uiVisible = true }) {
-                            Image(systemName: "eye")
-                                .font(.system(size: 24))
-                                .foregroundStyle(.white)
-                                .padding(8)
-                                .background(Color.black.opacity(0.6))
-                                .clipShape(Circle())
-                        }
-                        Spacer()
-                    }
-                    Spacer()
-                }
-                .padding(16)
-            }
-
-
             VStack {
                 HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("プレイヤー実行中")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+
                     Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
                         Image(systemName: "speedometer")
                             .font(.system(size: 18, weight: .semibold))
@@ -205,6 +171,10 @@ struct PlayerView: View {
                 Spacer()
             }
             .padding(16)
+            .background(
+                LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
+                    .allowsHitTesting(false)
+            )
 
             if showFpsIndicator {
                 VStack {
@@ -220,15 +190,6 @@ struct PlayerView: View {
                 .transition(.opacity)
             }
         }
-        .toolbar(content: {
-            ToolbarItem(placement: .topBarLeading) {
-                if uiVisible {
-                    Button { showMenu = true } label: {
-                        Image(systemName: "line.3.horizontal")
-                    }
-                }
-            }
-        })
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .background(Color.clear)
@@ -239,7 +200,6 @@ struct PlayerView: View {
                 onEditLayout: { showLayoutEditor = true },
                 onEditButtonMapping: { showButtonMapping = true },
                 onOpenSettings: { showSettings = true },
-                onToggleUI: { uiVisible.toggle() },
                 onReset: { showResetConfirm = true },
                 onEnd: { showEndConfirm = true }
             )
@@ -279,7 +239,6 @@ struct PlayerView: View {
         .onAppear {
             guard !hasInitializedPlayer else { return }
             hasInitializedPlayer = true
-            uiVisible = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             presentVirtualControllerOverlayWindow()
@@ -726,7 +685,6 @@ struct PlayerMenuSheet: View {
     let onEditLayout: () -> Void
     let onEditButtonMapping: () -> Void
     let onOpenSettings: () -> Void
-    let onToggleUI: () -> Void
     let onReset: () -> Void
     let onEnd: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -748,12 +706,6 @@ struct PlayerMenuSheet: View {
                 }
 
                 Section(header: Text("操作")) {
-                    Button(action: { dismiss(); onToggleUI() }) {
-                        HStack {
-                            Image(systemName: "eye.slash")
-                            Text("UI の表示/非表示")
-                        }
-                    }
                     Button(action: { dismiss(); onEditLayout() }) {
                         HStack {
                             Image(systemName: "square.grid.2x2.fill")
