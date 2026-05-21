@@ -282,6 +282,8 @@ final class ConfigManager: ObservableObject {
         iniContent += "NativeMidi=\(nativeMidi ? 1 : 0)\n"
         if let url = selectedSoundFont {
             iniContent += "SoundFont=\(url.path)\n"
+        } else {
+            iniContent += "SoundFont=\n"
         }
         iniContent += "\n"
 
@@ -327,6 +329,7 @@ final class ConfigManager: ObservableObject {
 
         iniContent += "[Folders]\n"
         iniContent += "EnableRtpScanning=\(enableRtpScanning ? 1 : 0)\n"
+        iniContent += "HasCompletedOnboarding=\(hasCompletedOnboarding ? 1 : 0)\n"
         if let folder = easyRPGFolderURL {
             iniContent += "EasyRPGFolder=\(folder.path)\n"
         }
@@ -343,6 +346,7 @@ final class ConfigManager: ObservableObject {
         iniContent += "GameResolution=\(gameResolution)\n"
         iniContent += "MusicVolume=\(musicVolume)\n"
         iniContent += "SoundVolume=\(soundVolume)\n"
+        iniContent += "SoundFont=\(selectedSoundFont?.path ?? "")\n"
         iniContent += "EnableVibration=\(enableVibration ? 1 : 0)\n"
         iniContent += "VibrateWhenSliding=\(vibrateWhenSliding ? 1 : 0)\n"
         iniContent += "ShowABasZX=\(showABasZX ? 1 : 0)\n"
@@ -375,6 +379,7 @@ final class ConfigManager: ObservableObject {
         iniContent += "Font1Size=\(font1Size)\n"
         iniContent += "Font2Size=\(font2Size)\n"
         iniContent += "EnableRtpScanning=\(enableRtpScanning ? 1 : 0)\n"
+        iniContent += "HasCompletedOnboarding=\(hasCompletedOnboarding ? 1 : 0)\n"
         if let folder = easyRPGFolderURL {
             iniContent += "EasyRPGFolder=\(folder.path)\n"
         }

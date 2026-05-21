@@ -449,9 +449,11 @@ struct PlayerView: View {
         PlayerBridge.setConfigBool(section: "Audio", key: "NativeMidi", value: config.nativeMidi)
         if let soundFont = config.selectedSoundFont {
             PlayerBridge.setSoundFont(pathForLaunch(fromAbsolutePath: soundFont.path))
+            PlayerBridge.setConfigString(section: "Audio", key: "SoundFont", value: pathForLaunch(fromAbsolutePath: soundFont.path))
             PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: pathForLaunch(fromAbsolutePath: soundFont.path))
         } else {
             PlayerBridge.setSoundFont("")
+            PlayerBridge.setConfigString(section: "Audio", key: "SoundFont", value: "")
             PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: "")
         }
 
