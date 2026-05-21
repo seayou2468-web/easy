@@ -160,7 +160,7 @@ namespace {
 
 void Player::Init(std::vector<std::string> args) {
 	// Increase diagnostics verbosity for iOS troubleshooting.
-	Output::SetLogLevel(Output::LogLevel::Debug);
+	Output::SetLogLevel(LogLevel::Debug);
 	lcf::LogHandler::SetLevel(lcf::LogHandler::Level::Debug);
 
 	lcf::LogHandler::SetHandler([](lcf::LogHandler::Level level, std::string_view message, lcf::LogHandler::UserData) {
