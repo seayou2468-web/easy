@@ -447,6 +447,8 @@ struct PlayerView: View {
 
         PlayerBridge.setFont1(config.font1Name ?? "")
         PlayerBridge.setFont2(config.font2Name ?? "")
+        PlayerBridge.setConfigString(section: "Player", key: "Font1", value: config.font1Name ?? "")
+        PlayerBridge.setConfigString(section: "Player", key: "Font2", value: config.font2Name ?? "")
         PlayerBridge.setFont1Size(config.font1Size)
         PlayerBridge.setFont2Size(config.font2Size)
         PlayerBridge.setFastForwardSpeedA(config.fastForwardMultiplier)
@@ -455,8 +457,7 @@ struct PlayerView: View {
         PlayerBridge.setLanguageSelectOnStart(config.languageSelectOnStart)
         PlayerBridge.setConfigBool(section: "Player", key: "SettingsInTitle", value: config.settingsInTitle)
         PlayerBridge.setConfigBool(section: "Player", key: "LanguageInTitle", value: config.languageInTitle)
-        // Force highest diagnostics during current iOS troubleshooting.
-        PlayerBridge.setConfigBool(section: "Player", key: "Logging", value: true)
+        PlayerBridge.setConfigBool(section: "Player", key: "Logging", value: config.loggingEnabled)
         PlayerBridge.setConfigBool(section: "Player", key: "ScreenshotTimestamp", value: config.screenshotTimestamp)
         PlayerBridge.setConfigBool(section: "Player", key: "AutomaticScreenshots", value: config.automaticScreenshots)
         PlayerBridge.setConfigInt(section: "Player", key: "ScreenshotScale", value: config.screenshotScale)

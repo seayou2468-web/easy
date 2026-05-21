@@ -217,4 +217,15 @@ enum PlayerBridge {
             }
         }
     }
+
+    static func setConfigString(section: String, key: String, value: String) {
+        AppLogger.log("ENTER setConfigString")
+        section.withCString { s in
+            key.withCString { k in
+                value.withCString { v in
+                    EasyRPG_iOS_SetConfigString(s, k, v)
+                }
+            }
+        }
+    }
 }

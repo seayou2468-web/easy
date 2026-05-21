@@ -781,6 +781,17 @@ void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t valu
 		}
 	});
 }
+
+void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const char* value) {
+	Schedule([section_s = std::string(section ? section : ""),
+	          key_s = std::string(key ? key : ""),
+	          value_s = std::string(value ? value : "")]() {
+		if (section_s == "Player") {
+			if (key_s == "Font1") Player::player_config.font1.Set(value_s);
+			else if (key_s == "Font2") Player::player_config.font2.Set(value_s);
+		}
+	});
+}
 }
 
 #endif
