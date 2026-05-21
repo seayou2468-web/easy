@@ -122,7 +122,11 @@ std::string ResolveAuxPathForIOS(std::string_view raw_path) {
 	}
 
 	auto docs_root = IOSUtils::GetDocumentsDir();
-	auto home_root = FileFinder::GetDirectoryName(docs_root);
+	auto home_root = docs_root;
+	const auto last_slash = home_root.find_last_of('/');
+	if (last_slash != std::string::npos) {
+		home_root.erase(last_slash);
+	}
 
 	const auto slash = canonical.find('/');
 	auto top = canonical.substr(0, slash);
