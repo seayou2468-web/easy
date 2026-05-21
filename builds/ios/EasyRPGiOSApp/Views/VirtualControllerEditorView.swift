@@ -8,6 +8,11 @@ struct VirtualControllerEditorView: View {
     @State private var showMenu = false
     @State private var showAddMenu = false
 
+    private var selectedButton: VirtualButtonLayout? {
+        guard let selectedButtonId else { return nil }
+        return workingButtons.first(where: { $0.id == selectedButtonId })
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             Text("Android同等: ドラッグで配置、メニューから追加/リセット/保存")
@@ -25,8 +30,7 @@ struct VirtualControllerEditorView: View {
             }
             .frame(minHeight: 360)
 
-            if let selectedButtonId,
-               let selected = workingButtons.first(where: { $0.id == selectedButtonId }) {
+            if let selected = selectedButton {
                 HStack {
                     Text("選択中: \(selected.title)")
                     Spacer()
@@ -44,39 +48,51 @@ struct VirtualControllerEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(Color.black.ignoresSafeArea())
         .onAppear { workingButtons = store.buttons }
-        .confirmationDialog("編集メニュー", isPresented: $showMenu) {
-            Button("ボタンを追加") { showAddMenu = true }
-            Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
-            Button("保存して閉じる") {
-                store.buttons = workingButtons
-                store.save()
-                dismiss()
-            }
-            Button("保存せず閉じる", role: .destructive) { dismiss() }
-        }
-        .confirmationDialog("追加するボタン", isPresented: $showAddMenu) {
-            ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
-                Button("\(item.title) (\(item.id))") {
-                    workingButtons.append(item)
-                }
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showMenu = true
-                } label: {
-                    Label("メニュー", systemImage: "line.3.horizontal")
-                }
-            }
+        .confirmationDialog("編集メニュー", isPresented: $showMenu, actions: menuDialog)
+        .confirmationDialog("追加するボタン", isPresented: $showAddMenu, actions: addButtonDialog)
+        .toolbar(content: toolbarContent)
+    }
 
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("保存") {
-                    store.buttons = workingButtons
-                    store.save()
-                }
+    @ViewBuilder
+    private func menuDialog() -> some View {
+        Button("ボタンを追加") { showAddMenu = true }
+        Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
+        Button("保存して閉じる") {
+            saveLayout()
+            dismiss()
+        }
+        Button("保存せず閉じる", role: .destructive) { dismiss() }
+    }
+
+    @ViewBuilder
+    private func addButtonDialog() -> some View {
+        ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
+            Button("\(item.title) (\(item.id))") {
+                workingButtons.append(item)
             }
         }
+    }
+
+    @ToolbarContentBuilder
+    private func toolbarContent() -> some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                showMenu = true
+            } label: {
+                Label("メニュー", systemImage: "line.3.horizontal")
+            }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            Button("保存") {
+                saveLayout()
+            }
+        }
+    }
+
+    private func saveLayout() {
+        store.buttons = workingButtons
+        store.save()
     }
 }
 

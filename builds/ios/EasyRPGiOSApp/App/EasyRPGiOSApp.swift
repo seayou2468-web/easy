@@ -8,43 +8,50 @@ struct EasyRPGiOSApp: App {
     @StateObject private var mappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
+    @ViewBuilder
+    private var rootScreen: some View {
+        if config.hasCompletedOnboarding {
+            GameBrowserView(
+                onOpenSettings: { path.append(.settings) },
+                onPlay: { game in path.append(.player(game)) },
+                library: library
+            )
+        } else {
+            InitView(showContinueToBrowserButton: true)
+        }
+    }
+
+    @ViewBuilder
+    private func destinationView(for screen: AppScreen) -> some View {
+        switch screen {
+        case .initScreen:
+            InitView(showContinueToBrowserButton: true)
+        case .browser:
+            GameBrowserView(
+                onOpenSettings: { path.append(.settings) },
+                onPlay: { game in path.append(.player(game)) },
+                library: library
+            )
+        case .player(let game):
+            PlayerView(game: game)
+        case .settings:
+            ParitySettingsRootView()
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
-                if config.hasCompletedOnboarding {
-                    GameBrowserView(
-                        onOpenSettings: { path.append(.settings) },
-                        onPlay: { game in path.append(.player(game)) },
-                        library: library
-                    )
-                } else {
-                    InitView(showContinueToBrowserButton: true)
-                }
-                .onAppear {
-                    AppLogger.log("Root view appeared")
-                    // Initialize everything
-                    mappingStore.applyToPlayer()
-                    for button in layoutStore.buttons {
-                        PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
+                rootScreen
+                    .onAppear {
+                        AppLogger.log("Root view appeared")
+                        mappingStore.applyToPlayer()
+                        for button in layoutStore.buttons {
+                            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
+                        }
                     }
-                }
-                .navigationDestination(for: AppScreen.self) { screen in
-                    switch screen {
-                    case .initScreen:
-                        InitView(showContinueToBrowserButton: true)
-
-                    case .browser:
-                        GameBrowserView(
-                            onOpenSettings: { path.append(.settings) },
-                            onPlay: { game in path.append(.player(game)) },
-                            library: library
-                        )
-
-                    case .player(let game):
-                        PlayerView(game: game)
-
-                    case .settings:
-                        ParitySettingsRootView()
+                    .navigationDestination(for: AppScreen.self) { screen in
+                        destinationView(for: screen)
                     }
                 }
             }
