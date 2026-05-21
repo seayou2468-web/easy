@@ -197,7 +197,7 @@ final class ConfigManager: ObservableObject {
         vibrateWhenSliding = defaults.bool(forKey: userDefaultsPrefix + "vibrateWhenSliding")
         showABasZX = defaults.bool(forKey: userDefaultsPrefix + "showABasZX")
         fastForwardMode = defaults.integer(forKey: userDefaultsPrefix + "fastForwardMode")
-        fastForwardMultiplier = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplier"))
+        fastForwardMultiplier = max(2, intValue(defaults, key: userDefaultsPrefix + "fastForwardMultiplier", default: 3))
         fastForwardMultiplierB = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") : 10)
         gamepadSwapAnalog = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapAnalog")
         gamepadSwapDpad = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapDpad")
@@ -215,7 +215,7 @@ final class ConfigManager: ObservableObject {
         startupLogos = min(2, max(0, defaults.integer(forKey: userDefaultsPrefix + "startupLogos")))
 
         layoutTransparency = intValue(defaults, key: userDefaultsPrefix + "layoutTransparency", default: 100)
-        layoutSize = defaults.integer(forKey: userDefaultsPrefix + "layoutSize") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutSize") : 100
+        layoutSize = intValue(defaults, key: userDefaultsPrefix + "layoutSize", default: 100)
         ignoreLayoutSize = defaults.bool(forKey: userDefaultsPrefix + "ignoreLayoutSize")
 
         preferExternalFonts = defaults.bool(forKey: userDefaultsPrefix + "preferExternalFonts")
