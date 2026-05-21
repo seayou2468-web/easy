@@ -549,16 +549,27 @@ void Sdl3Ui::UpdateDisplay() {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
 
-		float width_float = static_cast<float>(window.width);
-		float height_float = static_cast<float>(window.height);
+		SDL_Rect render_bounds {0, 0, window.width, window.height};
+#if defined(__APPLE__) && TARGET_OS_IOS
+		if ((current_display_mode.flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
+			int display_index = SDL_GetDisplayForWindow(sdl_window);
+			SDL_Rect usable_bounds;
+			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds)) {
+				render_bounds = usable_bounds;
+			}
+		}
+#endif
+
+		float width_float = static_cast<float>(render_bounds.w);
+		float height_float = static_cast<float>(render_bounds.h);
 
 		float want_aspect = (float)main_surface->width() / main_surface->height();
 		float real_aspect = width_float / height_float;
 
-		auto do_stretch = [this]() {
+		auto do_stretch = [this, &render_bounds]() {
 			if (vcfg.stretch.Get()) {
-				viewport.x = 0;
-				viewport.w = window.width;
+				viewport.x = render_bounds.x;
+				viewport.w = render_bounds.w;
 			}
 		};
 
@@ -571,9 +582,9 @@ void Sdl3Ui::UpdateDisplay() {
 			}
 
 			viewport.w = static_cast<int>(ceilf(main_surface->width() * window.scale));
-			viewport.x = (window.width - viewport.w) / 2;
+			viewport.x = render_bounds.x + (render_bounds.w - viewport.w) / 2;
 			viewport.h = static_cast<int>(ceilf(main_surface->height() * window.scale));
-			viewport.y = (window.height - viewport.h) / 2;
+			viewport.y = render_bounds.y + (render_bounds.h - viewport.h) / 2;
 			do_stretch();
 
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
@@ -583,26 +594,26 @@ void Sdl3Ui::UpdateDisplay() {
 			SDL_SetRenderViewport(sdl_renderer, nullptr);
 
 			// Only used here for the mouse coordinates
-			viewport.x = 0;
-			viewport.y = 0;
-			viewport.w = window.width;
-			viewport.h = window.height;
+			viewport.x = render_bounds.x;
+			viewport.y = render_bounds.y;
+			viewport.w = render_bounds.w;
+			viewport.h = render_bounds.h;
 		} else if (want_aspect > real_aspect) {
 			// Letterboxing (black bars top and bottom)
 			window.scale = width_float / main_surface->width();
-			viewport.x = 0;
-			viewport.w = window.width;
+			viewport.x = render_bounds.x;
+			viewport.w = render_bounds.w;
 			viewport.h = static_cast<int>(ceilf(main_surface->height() * window.scale));
-			viewport.y = (window.height - viewport.h) / 2;
+			viewport.y = render_bounds.y + (render_bounds.h - viewport.h) / 2;
 			do_stretch();
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
 		} else {
 			// black bars left and right
 			window.scale = height_float / main_surface->height();
-			viewport.y = 0;
-			viewport.h = window.height;
+			viewport.y = render_bounds.y;
+			viewport.h = render_bounds.h;
 			viewport.w = static_cast<int>(ceilf(main_surface->width() * window.scale));
-			viewport.x = (window.width - viewport.w) / 2;
+			viewport.x = render_bounds.x + (render_bounds.w - viewport.w) / 2;
 			do_stretch();
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
 		}
