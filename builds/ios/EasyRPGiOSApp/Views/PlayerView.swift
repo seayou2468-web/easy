@@ -34,6 +34,7 @@ private final class VirtualControllerOverlayWindowManager {
         if overlayWindow == nil || overlayScene !== scene {
             let window = TouchPassthroughWindow(windowScene: scene)
             window.backgroundColor = .clear
+            window.frame = scene.coordinateSpace.bounds
             window.windowLevel = preferredOverlayLevel(in: scene)
             let host = UIHostingController(rootView: AnyView(EmptyView()))
             host.view.backgroundColor = .clear
@@ -44,6 +45,7 @@ private final class VirtualControllerOverlayWindowManager {
         }
 
         if let window = overlayWindow {
+            window.frame = scene.coordinateSpace.bounds
             window.windowLevel = preferredOverlayLevel(in: scene)
         }
 
@@ -132,6 +134,7 @@ struct PlayerView: View {
     @State private var showSettings = false
     @State private var showFpsIndicator = false
     @State private var hasInitializedPlayer = false
+    @State private var orientationSettleTask: DispatchWorkItem?
     @State private var hasProjectSecurityScopeAccess = false
     @State private var projectSecurityScopeURL: URL?
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
@@ -295,8 +298,10 @@ struct PlayerView: View {
             applyVirtualLayoutToPlayer()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            presentVirtualControllerOverlayWindow()
-            applyVirtualLayoutToPlayer()
+            scheduleOrientationRealignment()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didChangeStatusBarOrientationNotification)) { _ in
+            scheduleOrientationRealignment()
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
@@ -322,6 +327,30 @@ struct PlayerView: View {
             onDirectionInput: handleDirectionInput,
             onButtonInput: handleButtonInput
         )
+    }
+
+    private func scheduleOrientationRealignment() {
+        orientationSettleTask?.cancel()
+
+        // iOS orientation transitions can report transient geometry values.
+        // Re-apply overlay + layout several times so final settled bounds win.
+        let task = DispatchWorkItem {
+            presentVirtualControllerOverlayWindow()
+            applyVirtualLayoutToPlayer()
+            keepOverlayInFrontTemporarily()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                presentVirtualControllerOverlayWindow()
+                applyVirtualLayoutToPlayer()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                presentVirtualControllerOverlayWindow()
+                applyVirtualLayoutToPlayer()
+            }
+        }
+
+        orientationSettleTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: task)
     }
 
     private func setupPlayerWithGame() {
