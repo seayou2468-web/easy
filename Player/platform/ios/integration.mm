@@ -76,6 +76,28 @@ std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
 	return canonical;
 }
 
+
+
+void LogProjectProbe(const FilesystemView& fs, const char* label) {
+	if (!fs) {
+		Output::Warning("[iOSBridge] {} filesystem is invalid", label);
+		return;
+	}
+	auto ldb = fs.FindFile("RPG_RT.ldb");
+	auto lmt = fs.FindFile("RPG_RT.lmt");
+	Output::Debug("[iOSBridge] {} probe fullpath='{}' RPG_RT.ldb='{}' RPG_RT.lmt='{}' valid_project={}",
+		label,
+		fs.GetFullPath(),
+		ldb,
+		lmt,
+		FileFinder::IsValidProject(fs));
+	auto files = fs.ListDirectory();
+	if (!files) {
+		Output::Warning("[iOSBridge] {} probe listdir failed for '{}'", label, fs.GetFullPath());
+	} else {
+		Output::Debug("[iOSBridge] {} probe listdir entries={}", label, files->size());
+	}
+}
 Input::Keys::InputKey ResolveVirtualButtonKey(const char* id) {
 	if (!id) return Input::Keys::NONE;
 	if (strcmp(id, "up") == 0) return Input::Keys::UP;
@@ -314,6 +336,7 @@ void LaunchGame(const char* args) {
 			if (gamefs) {
 				FileFinder::SetGameFilesystem(gamefs);
 				Output::Debug("[iOSBridge] Game filesystem set to '{}'", gamefs.GetFullPath());
+				LogProjectProbe(gamefs, "game");
 			} else {
 				Output::Warning("[iOSBridge] Failed to create game filesystem from '{}'", canonical_project);
 			}
@@ -327,6 +350,7 @@ void LaunchGame(const char* args) {
 			if (savefs) {
 				FileFinder::SetSaveFilesystem(savefs);
 				Output::Debug("[iOSBridge] Save filesystem set to '{}'", savefs.GetFullPath());
+				LogProjectProbe(savefs, "save");
 			} else {
 				Output::Warning("[iOSBridge] Failed to create save filesystem from '{}'", canonical_save);
 			}
