@@ -872,7 +872,7 @@ struct VirtualButtonView: View {
 
     var body: some View {
         ZStack {
-            AndroidStrokeText(text: displayTitle(), size: size * 0.26, color: Color.white.opacity(opacity))
+            AndroidStrokeText(text: displayTitle(), size: size * 0.26, opacity: opacity)
         }
         .frame(width: size, height: size)
         .background(
@@ -915,25 +915,38 @@ struct VirtualButtonView: View {
 }
 
 
-private struct AndroidStrokeText: View {
+private struct AndroidStrokeText: UIViewRepresentable {
     let text: String
     let size: CGFloat
-    let color: Color
+    let opacity: Double
 
-    var body: some View {
-        ZStack {
-            ForEach(strokeOffsets, id: \.self) { off in
-                Text(text)
-                    .font(.system(size: size, weight: .bold, design: .default))
-                    .foregroundStyle(color)
-                    .offset(x: off.width, y: off.height)
-            }
-        }
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.textAlignment = .center
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.1
+        label.numberOfLines = 1
+        label.backgroundColor = .clear
+        return label
     }
 
-    private var strokeOffsets: [CGSize] {
-        [CGSize(width: -1, height: 0), CGSize(width: 1, height: 0), CGSize(width: 0, height: -1), CGSize(width: 0, height: 1),
-         CGSize(width: -1, height: -1), CGSize(width: 1, height: -1), CGSize(width: -1, height: 1), CGSize(width: 1, height: 1)]
+    func updateUIView(_ label: UILabel, context: Context) {
+        let color = UIColor.white.withAlphaComponent(max(0.0, min(1.0, opacity)))
+        let font = UIFont.boldSystemFont(ofSize: size)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+
+        // Android uses Paint.Style.STROKE with width ~3 and white color.
+        // Using negative strokeWidth draws fill+stroke with the same color,
+        // giving the same "double/outlined" appearance seen on Android.
+        let attr = NSAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: color,
+            .strokeColor: color,
+            .strokeWidth: -3.0,
+            .paragraphStyle: paragraph
+        ])
+        label.attributedText = attr
     }
 }
 
