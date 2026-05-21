@@ -188,6 +188,18 @@ void StartRuntimeIfNeeded() {
 		return;
 	}
 
+	{
+		std::lock_guard<std::mutex> lock(ios_mutex);
+		if (!has_launch_args) {
+			// iOS app flow expects launch args (especially --project-path) to be
+			// registered before runtime starts. Starting without them boots to the
+			// generic EasyRPG menu and later LaunchGame() cannot re-run argv parsing.
+			Output::Warning("[iOSBridge] StartRuntimeIfNeeded called without launch args; runtime start skipped");
+			runtime_started = false;
+			return;
+		}
+	}
+
 	dispatch_async(dispatch_get_main_queue(), ^{
 		// iOS SwiftUI entrypoint does not go through SDL's usual C main wrapper.
 		// Mark SDL as main-ready before first SDL_Init() to avoid
