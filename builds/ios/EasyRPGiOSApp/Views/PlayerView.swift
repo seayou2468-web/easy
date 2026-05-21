@@ -478,7 +478,14 @@ struct PlayerView: View {
 
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
-        let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+        let isLandscape: Bool = {
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                return UIScreen.main.bounds.width > UIScreen.main.bounds.height
+            }
+            return scene.interfaceOrientation.isLandscape
+        }()
         for button in layoutStore.buttons(isLandscape: isLandscape) {
             let mappedX = button.x <= 1.0 ? button.x * 450.0 : button.x
             let mappedY = button.y <= 1.0 ? button.y * 500.0 : button.y
@@ -540,7 +547,7 @@ struct VirtualControllerView: View {
                         button: button,
                         isPressed: pressedButtons.contains(button.instanceId),
                         opacity: effectiveOpacity,
-                        size: calculateButtonSize(),
+                        size: sizeFor(button),
                         config: config
                     )
                     .position(
@@ -549,7 +556,17 @@ struct VirtualControllerView: View {
                     )
                     .gesture(
                         DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
+                            .onChanged { value in
+                                let size = sizeFor(button)
+                                let isInside = value.location.x >= 0 && value.location.x <= size.width &&
+                                    value.location.y >= 0 && value.location.y <= size.height
+                                if !isInside {
+                                    if pressedButtons.contains(button.instanceId) {
+                                        pressedButtons.remove(button.instanceId)
+                                        sendPress(for: button.id, isPressed: false)
+                                    }
+                                    return
+                                }
                                 if !pressedButtons.contains(button.instanceId) {
                                     pressedButtons.insert(button.instanceId)
                                     sendPress(for: button.id, isPressed: true)
@@ -578,6 +595,11 @@ struct VirtualControllerView: View {
         }
         let size = CGFloat(config.layoutSize)
         return max(32, min(size * 0.35, 96))
+    }
+
+    private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
+        let base = calculateButtonSize()
+        return max(28, min(160, base * (CGFloat(button.size) / 100.0)))
     }
 
     private func sendPress(for buttonId: String, isPressed: Bool) {

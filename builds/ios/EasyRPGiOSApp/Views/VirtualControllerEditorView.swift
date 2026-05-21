@@ -58,6 +58,25 @@ struct VirtualControllerEditorView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 12)
+
+                HStack {
+                    Text("サイズ")
+                    Slider(
+                        value: Binding(
+                            get: { Double(selected.size) },
+                            set: { newValue in
+                                guard let idx = workingButtons.firstIndex(where: { $0.instanceId == selected.instanceId }) else { return }
+                                workingButtons[idx].size = Int(newValue.rounded())
+                            }
+                        ),
+                        in: 50...180,
+                        step: 1
+                    )
+                    Text("\(selected.size)%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 12)
             }
 
             Button("メニュー") { showMenu = true }
@@ -89,6 +108,14 @@ struct VirtualControllerEditorView: View {
         Button("この向きをデフォルトにリセット") {
             workingButtons = VirtualButtonLayout.default
             saveLayout()
+        }
+        if selectedButton != nil {
+            Button("選択中ボタンを削除", role: .destructive) {
+                guard let id = selectedButtonInstanceId else { return }
+                workingButtons.removeAll { $0.instanceId == id }
+                selectedButtonInstanceId = nil
+                saveLayout()
+            }
         }
         Button("レイアウトを新規作成") {
             store.addProfile(name: "Layout \(store.profiles.count + 1)")
