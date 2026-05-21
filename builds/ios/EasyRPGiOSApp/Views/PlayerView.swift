@@ -438,6 +438,7 @@ struct PlayerView: View {
         PlayerBridge.setConfigBool(section: "Video", key: "Stretch", value: config.stretch)
         PlayerBridge.setConfigInt(section: "Video", key: "ScalingMode", value: config.scaleMode)
         PlayerBridge.setConfigInt(section: "Video", key: "GameResolution", value: config.gameResolution)
+        PlayerBridge.setConfigInt(section: "Video", key: "GameBrowserLabelMode", value: config.gameBrowserLabelMode)
 
         PlayerBridge.setMusicVolume(config.musicVolume)
         PlayerBridge.setSoundVolume(config.soundVolume)

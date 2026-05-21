@@ -267,8 +267,11 @@ final class ConfigManager: ObservableObject {
         iniContent += "Fullscreen=\(fullscreen ? 1 : 0)\n"
         iniContent += "ForceLandscape=\(forcedLandscape ? 1 : 0)\n"
         iniContent += "ImageSize=\(["nearest", "integer", "bilinear"][scaleMode])\n"
+        iniContent += "ScalingMode=\(scaleMode)\n"
         iniContent += "Stretch=\(stretch ? 1 : 0)\n"
         iniContent += "Resolution=\(["original", "widescreen", "ultrawide"][gameResolution])\n"
+        iniContent += "GameResolution=\(gameResolution)\n"
+        iniContent += "GameBrowserLabelMode=\(gameBrowserLabelMode)\n"
         iniContent += "\n"
 
         iniContent += "[Audio]\n"
