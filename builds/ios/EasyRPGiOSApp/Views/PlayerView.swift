@@ -813,7 +813,7 @@ private struct DPadCrossView: View {
                 .fill(Color.white.opacity(opacity))
                 .frame(width: size, height: size * 0.34)
             Text(symbol)
-                .font(.system(size: size * 0.17, weight: .black, design: .rounded))
+                .font(.system(size: size * 0.17, weight: .bold, design: .default))
                 .foregroundStyle(.black)
         }
         .frame(width: size, height: size)
@@ -844,7 +844,7 @@ struct VirtualButtonView: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(displayTitle())
-                .font(.system(size: size * 0.26, weight: .black, design: .rounded))
+                .font(.system(size: size * 0.26, weight: .bold, design: .default))
                 .foregroundStyle(.black)
         }
         .frame(width: size, height: size)
