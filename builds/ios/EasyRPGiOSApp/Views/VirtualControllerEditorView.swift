@@ -9,40 +9,17 @@ struct VirtualControllerEditorView: View {
     @State private var showAddMenu = false
 
     var body: some View {
-        editorContent
-            .navigationTitle("レイアウト編集")
-            .navigationBarTitleDisplayMode(.inline)
-            .background(Color.black.ignoresSafeArea())
-            .onAppear { workingButtons = store.buttons }
-            .confirmationDialog("編集メニュー", isPresented: $showMenu) {
-                Button("ボタンを追加") { showAddMenu = true }
-                Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
-                Button("保存して閉じる") { store.buttons = workingButtons; store.save(); dismiss() }
-                Button("保存せず閉じる", role: .destructive) { dismiss() }
-            }
-            .confirmationDialog("追加するボタン", isPresented: $showAddMenu) {
-                ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
-                    Button("\(item.title) (\(item.id))") { workingButtons.append(item) }
-                }
-            }
-            .toolbar { editorToolbar }
-    }
-
-    private var editorContent: some View {
         VStack(spacing: 10) {
             Text("Android同等: ドラッグで配置、メニューから追加/リセット/保存")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
             GeometryReader { geo in
                 ZStack {
                     Color.black.opacity(0.9).ignoresSafeArea()
 
                     ForEach($workingButtons) { $button in
-                        EditorButtonView(
-                            button: $button,
-                            selectedButtonId: $selectedButtonId,
-                            canvasSize: geo.size
-                        )
+                        EditorButtonView(button: $button, selectedButtonId: $selectedButtonId, canvasSize: geo.size)
                     }
                 }
             }
@@ -60,24 +37,45 @@ struct VirtualControllerEditorView: View {
                 .padding(.horizontal, 12)
             }
 
-            HStack(spacing: 12) {
-                Button("メニュー") { showMenu = true }
+            Button("メニュー") { showMenu = true }
                 .buttonStyle(.borderedProminent)
+        }
+        .navigationTitle("レイアウト編集")
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.black.ignoresSafeArea())
+        .onAppear { workingButtons = store.buttons }
+        .confirmationDialog("編集メニュー", isPresented: $showMenu) {
+            Button("ボタンを追加") { showAddMenu = true }
+            Button("デフォルトにリセット") { workingButtons = VirtualButtonLayout.default }
+            Button("保存して閉じる") {
+                store.buttons = workingButtons
+                store.save()
+                dismiss()
+            }
+            Button("保存せず閉じる", role: .destructive) { dismiss() }
+        }
+        .confirmationDialog("追加するボタン", isPresented: $showAddMenu) {
+            ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
+                Button("\(item.title) (\(item.id))") {
+                    workingButtons.append(item)
+                }
             }
         }
-    }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showMenu = true
+                } label: {
+                    Label("メニュー", systemImage: "line.3.horizontal")
+                }
+            }
 
-    @ToolbarContentBuilder
-    private var editorToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button {
-                showMenu = true
-            } label: {
-                Label("メニュー", systemImage: "line.3.horizontal")
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("保存") {
+                    store.buttons = workingButtons
+                    store.save()
+                }
             }
-        }
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            Button("保存") { store.buttons = workingButtons; store.save() }
         }
     }
 }
@@ -94,16 +92,13 @@ private struct EditorButtonView: View {
             .background(buttonBackground(for: button))
             .overlay(Circle().stroke(selectedButtonId == button.id ? Color.yellow : .clear, lineWidth: 2))
             .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
-            .onTapGesture {
-                selectedButtonId = button.id
-            }
+            .onTapGesture { selectedButtonId = button.id }
             .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        selectedButtonId = button.id
-                        button.x = min(max(0.0, value.location.x / canvasSize.width), 1.0)
-                        button.y = min(max(0.0, value.location.y / canvasSize.height), 1.0)
-                    }
+                DragGesture().onChanged { value in
+                    selectedButtonId = button.id
+                    button.x = min(max(0.0, value.location.x / canvasSize.width), 1.0)
+                    button.y = min(max(0.0, value.location.y / canvasSize.height), 1.0)
+                }
             )
     }
 }
@@ -119,6 +114,5 @@ private func buttonBackground(for button: VirtualButtonLayout) -> some View {
 }
 
 private func displayTitle(for button: VirtualButtonLayout) -> String {
-    if button.id == "menu" { return "≡" }
-    return button.title
+    button.id == "menu" ? "≡" : button.title
 }
