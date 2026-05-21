@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ButtonMappingEditorView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var store = ButtonMappingStore()
 
     var body: some View {
@@ -32,6 +33,11 @@ struct ButtonMappingEditorView: View {
             store.applyToPlayer()
         }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("閉じる") {
+                    dismiss()
+                }
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("保存") {
                     store.save()
