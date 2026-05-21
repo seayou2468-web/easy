@@ -198,7 +198,7 @@ final class ConfigManager: ObservableObject {
         showABasZX = defaults.bool(forKey: userDefaultsPrefix + "showABasZX")
         fastForwardMode = defaults.integer(forKey: userDefaultsPrefix + "fastForwardMode")
         fastForwardMultiplier = max(2, intValue(defaults, key: userDefaultsPrefix + "fastForwardMultiplier", default: 3))
-        fastForwardMultiplierB = max(2, defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "fastForwardMultiplierB") : 10)
+        fastForwardMultiplierB = max(2, intValue(defaults, key: userDefaultsPrefix + "fastForwardMultiplierB", default: 10))
         gamepadSwapAnalog = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapAnalog")
         gamepadSwapDpad = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapDpad")
         gamepadSwapAbxy = defaults.bool(forKey: userDefaultsPrefix + "gamepadSwapAbxy")
@@ -210,8 +210,8 @@ final class ConfigManager: ObservableObject {
         loggingEnabled = defaults.object(forKey: userDefaultsPrefix + "loggingEnabled") as? Bool ?? true
         screenshotTimestamp = defaults.object(forKey: userDefaultsPrefix + "screenshotTimestamp") as? Bool ?? true
         automaticScreenshots = defaults.bool(forKey: userDefaultsPrefix + "automaticScreenshots")
-        screenshotScale = max(1, defaults.integer(forKey: userDefaultsPrefix + "screenshotScale"))
-        automaticScreenshotsInterval = max(1, defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") : 30)
+        screenshotScale = max(1, intValue(defaults, key: userDefaultsPrefix + "screenshotScale", default: 1))
+        automaticScreenshotsInterval = max(1, intValue(defaults, key: userDefaultsPrefix + "automaticScreenshotsInterval", default: 30))
         startupLogos = min(2, max(0, defaults.integer(forKey: userDefaultsPrefix + "startupLogos")))
 
         layoutTransparency = intValue(defaults, key: userDefaultsPrefix + "layoutTransparency", default: 100)
@@ -221,8 +221,8 @@ final class ConfigManager: ObservableObject {
         preferExternalFonts = defaults.bool(forKey: userDefaultsPrefix + "preferExternalFonts")
         font1Name = defaults.string(forKey: userDefaultsPrefix + "font1Name")
         font2Name = defaults.string(forKey: userDefaultsPrefix + "font2Name")
-        font1Size = max(1, defaults.integer(forKey: userDefaultsPrefix + "font1Size") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "font1Size") : 12)
-        font2Size = max(1, defaults.integer(forKey: userDefaultsPrefix + "font2Size") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "font2Size") : 12)
+        font1Size = max(1, intValue(defaults, key: userDefaultsPrefix + "font1Size", default: 12))
+        font2Size = max(1, intValue(defaults, key: userDefaultsPrefix + "font2Size", default: 12))
 
         if let folderURL = restoreSecurityScopedURL(from: easyRPGFolderBookmarkKey) {
             easyRPGFolderURL = folderURL
