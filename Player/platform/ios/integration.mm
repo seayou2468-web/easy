@@ -66,10 +66,28 @@ std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
 	std::vector<std::pair<std::string, std::string>> candidates;
 	candidates.emplace_back("as-is", canonical);
 
+	auto append_under = [&](const std::string& base, std::string_view rel, const char* label) {
+		if (base.empty()) {
+			return;
+		}
+		auto path = FileFinder::MakeCanonical(FileFinder::MakePath(base, rel), 0);
+		candidates.emplace_back(label, std::move(path));
+	};
+
 	auto docs_root = IOSUtils::GetDocumentsDir();
 	if (!docs_root.empty()) {
-		auto docs_path = FileFinder::MakeCanonical(FileFinder::MakePath(docs_root, canonical), 0);
-		candidates.emplace_back("documents", docs_path);
+		append_under(docs_root, canonical, "documents");
+
+		// Handle paths prefixed with "Documents/" where "Documents" means
+		// the app's document root itself (not "<home>/Documents").
+		const auto slash = canonical.find('/');
+		auto top = canonical.substr(0, slash);
+		auto rel = slash == std::string::npos ? std::string_view() : std::string_view(canonical).substr(slash + 1);
+		if (!top.empty() && Utils::LowerCase(top) == "documents") {
+			if (!rel.empty()) {
+				append_under(docs_root, rel, "documents-trimmed");
+			}
+		}
 	}
 
 	auto default_root = Main_Data::GetDefaultProjectPath();
@@ -338,19 +356,13 @@ void LaunchGame(const char* args) {
 		Output::Debug("[iOSBridge] LaunchGame argv[{}]='{}'", i, parsed_args[i]);
 	}
 
-	// Android parity: command line is available before SDL/Player bootstrap.
-	{
-		std::lock_guard<std::mutex> lock(ios_mutex);
-		launch_args = parsed_args;
-		has_launch_args = true;
-	}
-
 	// Runtime path wiring for custom iOS UI -> Player connection.
 	// This allows launching/switching games after the app is already running.
 	for (size_t i = 0; i + 1 < parsed_args.size(); ++i) {
 		if (parsed_args[i] == "--project-path") {
 			auto canonical_project = ResolveLaunchPathForIOS(parsed_args[i + 1]);
 			Output::Debug("[iOSBridge] --project-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_project);
+			parsed_args[i + 1] = canonical_project;
 			auto gamefs = FileFinder::Root().Create(canonical_project);
 			if (gamefs) {
 				FileFinder::SetGameFilesystem(gamefs);
@@ -365,6 +377,7 @@ void LaunchGame(const char* args) {
 		if (parsed_args[i] == "--save-path") {
 			auto canonical_save = ResolveLaunchPathForIOS(parsed_args[i + 1]);
 			Output::Debug("[iOSBridge] --save-path raw='{}' canonical='{}'", parsed_args[i + 1], canonical_save);
+			parsed_args[i + 1] = canonical_save;
 			auto savefs = FileFinder::Root().Create(canonical_save);
 			if (savefs) {
 				FileFinder::SetSaveFilesystem(savefs);
@@ -376,6 +389,21 @@ void LaunchGame(const char* args) {
 			++i;
 			continue;
 		}
+		if (parsed_args[i] == "--config-path" || parsed_args[i] == "--log-file" || parsed_args[i] == "--soundfont") {
+			auto canonical_path = ResolveLaunchPathForIOS(parsed_args[i + 1]);
+			Output::Debug("[iOSBridge] {} raw='{}' canonical='{}'", parsed_args[i], parsed_args[i + 1], canonical_path);
+			parsed_args[i + 1] = canonical_path;
+			++i;
+			continue;
+		}
+	}
+
+
+	// Android parity: command line is available before SDL/Player bootstrap.
+	{
+		std::lock_guard<std::mutex> lock(ios_mutex);
+		launch_args = parsed_args;
+		has_launch_args = true;
 	}
 
 	// When runtime is already running, request reload like Android relaunch behavior.
