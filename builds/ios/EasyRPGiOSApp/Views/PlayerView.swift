@@ -920,36 +920,56 @@ private struct AndroidStrokeText: UIViewRepresentable {
     let size: CGFloat
     let opacity: Double
 
-    func makeUIView(context: Context) -> UILabel {
-        let label = UILabel()
-        label.textAlignment = .center
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.1
-        label.numberOfLines = 1
-        label.backgroundColor = .clear
-        return label
+    func makeUIView(context: Context) -> AndroidStrokeTextView {
+        AndroidStrokeTextView()
     }
 
-    func updateUIView(_ label: UILabel, context: Context) {
-        let color = UIColor.white.withAlphaComponent(max(0.0, min(1.0, opacity)))
-        let font = UIFont.boldSystemFont(ofSize: size)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-
-        // Android uses Paint.Style.STROKE with width ~3 and white color.
-        // Using negative strokeWidth draws fill+stroke with the same color,
-        // giving the same "double/outlined" appearance seen on Android.
-        let attr = NSAttributedString(string: text, attributes: [
-            .font: font,
-            .foregroundColor: color,
-            .strokeColor: color,
-            .strokeWidth: -3.0,
-            .paragraphStyle: paragraph
-        ])
-        label.attributedText = attr
+    func updateUIView(_ view: AndroidStrokeTextView, context: Context) {
+        view.text = text
+        view.fontSize = size
+        view.alphaColor = max(0.0, min(1.0, opacity))
+        view.setNeedsDisplay()
     }
 }
 
+private final class AndroidStrokeTextView: UIView {
+    var text: String = ""
+    var fontSize: CGFloat = 16
+    var alphaColor: Double = 1.0
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext(), !text.isEmpty else { return }
+
+        let color = UIColor.white.withAlphaComponent(alphaColor)
+        let font = UIFont.boldSystemFont(ofSize: fontSize)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let ns = text as NSString
+        var bounds = ns.boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+                                     options: [.usesLineFragmentOrigin, .usesFontLeading],
+                                     attributes: attrs,
+                                     context: nil)
+
+        // Android centers text manually and uses stroke paint only.
+        let x = rect.midX - bounds.width / 2.0
+        let y = rect.midY - bounds.height / 2.0
+
+        ctx.setLineWidth(3.0)
+        ctx.setLineJoin(.round)
+        ctx.setTextDrawingMode(.stroke)
+        color.setStroke()
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
+        bounds.origin = CGPoint(x: x, y: y)
+        ns.draw(in: bounds, withAttributes: [
+            .font: font,
+            .foregroundColor: UIColor.clear,
+            .strokeColor: color,
+            .strokeWidth: 3.0,
+            .paragraphStyle: paragraph
+        ])
+    }
+}
 
 private struct AndroidInsetCircleShape: Shape {
     func path(in rect: CGRect) -> Path {
