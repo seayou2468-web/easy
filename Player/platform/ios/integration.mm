@@ -770,13 +770,13 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 		}
 		else if (section_s == "Audio") {
 			if (key_s == "Fluidsynth") {
-				Player::game_config.audio.fluidsynth_midi.Set(value);
+				Audio().SetFluidsynthEnabled(value);
 			}
 			else if (key_s == "WildMidi") {
-				Player::game_config.audio.wildmidi_midi.Set(value);
+				Audio().SetWildMidiEnabled(value);
 			}
 			else if (key_s == "NativeMidi") {
-				Player::game_config.audio.native_midi.Set(value);
+				Audio().SetNativeMidiEnabled(value);
 			}
 		}
 		else if (section_s == "Input") {
@@ -877,7 +877,6 @@ void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const cha
 		}
 		else if (section_s == "Audio") {
 			if (key_s == "Soundfont") {
-				Player::game_config.audio.soundfont.Set(value_s);
 				Audio().SetFluidsynthSoundfont(value_s);
 			}
 		}
