@@ -66,7 +66,7 @@ struct VirtualControllerEditorView: View {
 
     @ViewBuilder
     private func addButtonDialog() -> some View {
-        ForEach(VirtualButtonLayout.addableButtons, id: \.id) { item in
+        ForEach(VirtualControllerLayoutStore.addableButtons, id: \.id) { item in
             Button("\(item.title) (\(item.id))") {
                 workingButtons.append(item)
             }

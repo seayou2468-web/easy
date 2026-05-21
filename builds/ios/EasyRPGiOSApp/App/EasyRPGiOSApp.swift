@@ -53,7 +53,6 @@ struct EasyRPGiOSApp: App {
                     .navigationDestination(for: AppScreen.self) { screen in
                         destinationView(for: screen)
                     }
-                }
             }
         }
     }
