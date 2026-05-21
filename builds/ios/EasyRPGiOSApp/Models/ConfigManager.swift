@@ -95,6 +95,13 @@ final class ConfigManager: ObservableObject {
 
     // MARK: - Settings Management
 
+    private func intValue(_ defaults: UserDefaults, key: String, default defaultValue: Int) -> Int {
+        if defaults.object(forKey: key) == nil {
+            return defaultValue
+        }
+        return defaults.integer(forKey: key)
+    }
+
     func saveSettings() {
         AppLogger.log("ENTER saveSettings")
         AppLogger.log("saveSettings called")
@@ -177,8 +184,8 @@ final class ConfigManager: ObservableObject {
         gameResolution = defaults.integer(forKey: userDefaultsPrefix + "gameResolution")
         gameBrowserLabelMode = defaults.integer(forKey: userDefaultsPrefix + "gameBrowserLabelMode")
 
-        musicVolume = defaults.integer(forKey: userDefaultsPrefix + "musicVolume") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "musicVolume") : 100
-        soundVolume = defaults.integer(forKey: userDefaultsPrefix + "soundVolume") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "soundVolume") : 100
+        musicVolume = intValue(defaults, key: userDefaultsPrefix + "musicVolume", default: 100)
+        soundVolume = intValue(defaults, key: userDefaultsPrefix + "soundVolume", default: 100)
         fluidsynthMidi = defaults.object(forKey: userDefaultsPrefix + "fluidsynthMidi") as? Bool ?? true
         wildMidi = defaults.object(forKey: userDefaultsPrefix + "wildMidi") as? Bool ?? true
         nativeMidi = defaults.object(forKey: userDefaultsPrefix + "nativeMidi") as? Bool ?? true
@@ -207,7 +214,7 @@ final class ConfigManager: ObservableObject {
         automaticScreenshotsInterval = max(1, defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "automaticScreenshotsInterval") : 30)
         startupLogos = min(2, max(0, defaults.integer(forKey: userDefaultsPrefix + "startupLogos")))
 
-        layoutTransparency = defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutTransparency") : 100
+        layoutTransparency = intValue(defaults, key: userDefaultsPrefix + "layoutTransparency", default: 100)
         layoutSize = defaults.integer(forKey: userDefaultsPrefix + "layoutSize") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "layoutSize") : 100
         ignoreLayoutSize = defaults.bool(forKey: userDefaultsPrefix + "ignoreLayoutSize")
 
