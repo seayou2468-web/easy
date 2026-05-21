@@ -20,6 +20,9 @@ final class ConfigManager: ObservableObject {
     @Published var musicVolume = 100
     @Published var soundVolume = 100
     @Published var selectedSoundFont: URL? = nil
+    @Published var fluidsynthMidi = true
+    @Published var wildMidi = true
+    @Published var nativeMidi = true
 
     // Input settings
     @Published var enableVibration = true
@@ -102,6 +105,9 @@ final class ConfigManager: ObservableObject {
 
         defaults.set(musicVolume, forKey: userDefaultsPrefix + "musicVolume")
         defaults.set(soundVolume, forKey: userDefaultsPrefix + "soundVolume")
+        defaults.set(fluidsynthMidi, forKey: userDefaultsPrefix + "fluidsynthMidi")
+        defaults.set(wildMidi, forKey: userDefaultsPrefix + "wildMidi")
+        defaults.set(nativeMidi, forKey: userDefaultsPrefix + "nativeMidi")
         if let url = selectedSoundFont {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "selectedSoundFont")
         }
@@ -159,6 +165,9 @@ final class ConfigManager: ObservableObject {
 
         musicVolume = defaults.integer(forKey: userDefaultsPrefix + "musicVolume") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "musicVolume") : 100
         soundVolume = defaults.integer(forKey: userDefaultsPrefix + "soundVolume") != 0 ? defaults.integer(forKey: userDefaultsPrefix + "soundVolume") : 100
+        fluidsynthMidi = defaults.object(forKey: userDefaultsPrefix + "fluidsynthMidi") as? Bool ?? true
+        wildMidi = defaults.object(forKey: userDefaultsPrefix + "wildMidi") as? Bool ?? true
+        nativeMidi = defaults.object(forKey: userDefaultsPrefix + "nativeMidi") as? Bool ?? true
         if let soundFontStr = defaults.string(forKey: userDefaultsPrefix + "selectedSoundFont") {
             selectedSoundFont = URL(string: soundFontStr)
         }
@@ -247,6 +256,9 @@ final class ConfigManager: ObservableObject {
         iniContent += "[Audio]\n"
         iniContent += "MusicVolume=\(musicVolume)\n"
         iniContent += "SoundVolume=\(soundVolume)\n"
+        iniContent += "Fluidsynth=\(fluidsynthMidi ? 1 : 0)\n"
+        iniContent += "WildMidi=\(wildMidi ? 1 : 0)\n"
+        iniContent += "NativeMidi=\(nativeMidi ? 1 : 0)\n"
         if let url = selectedSoundFont {
             iniContent += "SoundFont=\(url.path)\n"
         }

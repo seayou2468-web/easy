@@ -443,7 +443,9 @@ struct PlayerView: View {
         PlayerBridge.setSoundVolume(config.soundVolume)
         PlayerBridge.setConfigInt(section: "Audio", key: "MusicVolume", value: config.musicVolume)
         PlayerBridge.setConfigInt(section: "Audio", key: "SoundVolume", value: config.soundVolume)
-        PlayerBridge.setConfigBool(section: "Audio", key: "Fluidsynth", value: true)
+        PlayerBridge.setConfigBool(section: "Audio", key: "Fluidsynth", value: config.fluidsynthMidi)
+        PlayerBridge.setConfigBool(section: "Audio", key: "WildMidi", value: config.wildMidi)
+        PlayerBridge.setConfigBool(section: "Audio", key: "NativeMidi", value: config.nativeMidi)
         if let soundFont = config.selectedSoundFont {
             PlayerBridge.setSoundFont(pathForLaunch(fromAbsolutePath: soundFont.path))
             PlayerBridge.setConfigString(section: "Audio", key: "Soundfont", value: pathForLaunch(fromAbsolutePath: soundFont.path))

@@ -189,6 +189,13 @@ struct SettingsAudioView: View {
                 Divider()
 
                 Section(header: Text("カスタムサウンドフォント").font(.headline)) {
+                    Toggle("Fluidsynth (SF2) を有効", isOn: $config.fluidsynthMidi)
+                        .onChange(of: config.fluidsynthMidi) { _, _ in config.saveSettings() }
+                    Toggle("WildMidi (GUS) を有効", isOn: $config.wildMidi)
+                        .onChange(of: config.wildMidi) { _, _ in config.saveSettings() }
+                    Toggle("Native MIDI を有効", isOn: $config.nativeMidi)
+                        .onChange(of: config.nativeMidi) { _, _ in config.saveSettings() }
+
                     Text("SoundFonts フォルダ内の .sf2 ファイルを選択して、MIDI 音声レンダリングに使用します。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
