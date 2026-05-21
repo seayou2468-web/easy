@@ -340,43 +340,49 @@ struct VirtualControllerView: View {
 
     @State private var pressedButtons: Set<String> = []
 
+    private var effectiveOpacity: Double {
+        // Keep controller visible even when a broken/legacy value is loaded.
+        max(0.25, min(1.0, Double(config.layoutTransparency) / 255.0))
+    }
+
     var body: some View {
-        ZStack {
-            GeometryReader { geo in
+        GeometryReader { geo in
             let geometryWidth = geo.size.width
             let geometryHeight = geo.size.height
-            ForEach(layoutStore.buttons) { button in
-                VirtualButtonView(
-                    button: button,
-                    isPressed: pressedButtons.contains(button.id),
-                    opacity: Double(config.layoutTransparency) / 255.0,
-                    size: calculateButtonSize(),
-                    config: config
-                )
-                .position(
-                    x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
-                    y: button.y <= 1.0 ? button.y * geometryHeight : button.y
-                )
-                .gesture(
-                    LongPressGesture(minimumDuration: 0)
-                        .onChanged { _ in
-                            if !pressedButtons.contains(button.id) {
-                                pressedButtons.insert(button.id)
-                                onButtonInput(button.id, true)
-                                if config.enableVibration {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+            ZStack {
+                ForEach(layoutStore.buttons) { button in
+                    VirtualButtonView(
+                        button: button,
+                        isPressed: pressedButtons.contains(button.id),
+                        opacity: effectiveOpacity,
+                        size: calculateButtonSize(),
+                        config: config
+                    )
+                    .position(
+                        x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
+                        y: button.y <= 1.0 ? button.y * geometryHeight : button.y
+                    )
+                    .gesture(
+                        LongPressGesture(minimumDuration: 0)
+                            .onChanged { _ in
+                                if !pressedButtons.contains(button.id) {
+                                    pressedButtons.insert(button.id)
+                                    onButtonInput(button.id, true)
+                                    if config.enableVibration {
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    }
                                 }
                             }
-                        }
-                        .onEnded { _ in
-                            pressedButtons.remove(button.id)
-                            onButtonInput(button.id, false)
-                        }
-                )
+                            .onEnded { _ in
+                                pressedButtons.remove(button.id)
+                                onButtonInput(button.id, false)
+                            }
+                    )
+                }
             }
         }
-        }
-        .frame(maxWidth: .infinity, maxHeight: 240)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
         .padding(.horizontal, 12)
     }
