@@ -68,8 +68,10 @@ struct VirtualControllerEditorView: View {
     private func addButtonDialog() -> some View {
         ForEach(VirtualControllerLayoutStore.addableButtons, id: \.id) { item in
             Button("\(item.title) (\(item.id))") {
+                guard !workingButtons.contains(where: { $0.id == item.id }) else { return }
                 workingButtons.append(item)
             }
+            .disabled(workingButtons.contains(where: { $0.id == item.id }))
         }
     }
 
@@ -109,8 +111,8 @@ private struct EditorButtonView: View {
             .overlay(Circle().stroke(selectedButtonId == button.id ? Color.yellow : .clear, lineWidth: 2))
             .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
             .onTapGesture { selectedButtonId = button.id }
-            .gesture(
-                DragGesture().onChanged { value in
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 0).onChanged { value in
                     selectedButtonId = button.id
                     button.x = min(max(0.0, value.location.x / canvasSize.width), 1.0)
                     button.y = min(max(0.0, value.location.y / canvasSize.height), 1.0)

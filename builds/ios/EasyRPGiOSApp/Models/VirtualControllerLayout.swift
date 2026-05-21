@@ -38,13 +38,27 @@ final class VirtualControllerLayoutStore: ObservableObject {
             buttons = Self.clamped(VirtualButtonLayout.default)
             return
         }
-        let keyed = Dictionary(uniqueKeysWithValues: decoded.map { ($0.id, $0) })
-        buttons = Self.clamped(VirtualButtonLayout.default.map { keyed[$0.id] ?? $0 })
+
+        // Decode may contain duplicate ids (from old editor bugs); keep first.
+        var uniqueById: [String: VirtualButtonLayout] = [:]
+        var extras: [VirtualButtonLayout] = []
+        for item in decoded {
+            guard uniqueById[item.id] == nil else { continue }
+            uniqueById[item.id] = item
+            if !VirtualButtonLayout.requiredIds.contains(item.id) {
+                extras.append(item)
+            }
+        }
+
+        let required = VirtualButtonLayout.default.map { uniqueById[$0.id] ?? $0 }
+        buttons = Self.clamped(required + extras)
     }
 
     func save() {
         AppLogger.log("ENTER save")
-        if let data = try? JSONEncoder().encode(buttons) {
+        let normalized = Self.normalized(buttons)
+        buttons = normalized
+        if let data = try? JSONEncoder().encode(normalized) {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
@@ -78,6 +92,15 @@ final class VirtualControllerLayoutStore: ObservableObject {
             m.x = min(max(0.0, m.x), 1.0)
             m.y = min(max(0.0, m.y), 1.0)
             return m
+        }
+    }
+
+    private static func normalized(_ buttons: [VirtualButtonLayout]) -> [VirtualButtonLayout] {
+        var seen: Set<String> = []
+        return clamped(buttons).filter {
+            guard !seen.contains($0.id) else { return false }
+            seen.insert($0.id)
+            return true
         }
     }
 }
