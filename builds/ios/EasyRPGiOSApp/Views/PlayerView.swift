@@ -663,9 +663,10 @@ struct VirtualControllerView: View {
     }
 
     private func handleDragChanged(value: DragGesture.Value, button: VirtualButtonLayout, buttonSize: CGFloat) {
-        let isInside = value.location.x >= 0 && value.location.x <= buttonSize &&
-            value.location.y >= 0 && value.location.y <= buttonSize
-        if !isInside {
+        let maxCancelDistance = buttonSize * 0.9
+        let dragDistance = hypot(value.translation.width, value.translation.height)
+
+        if dragDistance > maxCancelDistance {
             if pressedButtons.contains(button.instanceId) {
                 pressedButtons.remove(button.instanceId)
                 sendPress(for: button.id, isPressed: false)
