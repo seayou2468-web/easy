@@ -1,5 +1,65 @@
 import SwiftUI
 
+private final class TouchPassthroughWindow: UIWindow {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let hitView = super.hitTest(point, with: event)
+        if hitView === rootViewController?.view {
+            return nil
+        }
+        return hitView
+    }
+}
+
+private final class VirtualControllerOverlayWindowManager {
+    static let shared = VirtualControllerOverlayWindowManager()
+    private var overlayWindow: TouchPassthroughWindow?
+
+    func present(
+        layoutStore: VirtualControllerLayoutStore,
+        config: ConfigManager,
+        onDirectionInput: @escaping (String, Bool) -> Void,
+        onButtonInput: @escaping (String, Bool) -> Void
+    ) {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return
+        }
+
+        if overlayWindow == nil {
+            let window = TouchPassthroughWindow(windowScene: scene)
+            window.backgroundColor = .clear
+            window.windowLevel = .statusBar + 1
+            window.rootViewController = UIHostingController(
+                rootView: AnyView(
+                    VirtualControllerView(
+                        layoutStore: layoutStore,
+                        config: config,
+                        onDirectionInput: onDirectionInput,
+                        onButtonInput: onButtonInput
+                    )
+                    .ignoresSafeArea()
+                    .background(Color.clear)
+                )
+            )
+            window.rootViewController?.view.backgroundColor = .clear
+            overlayWindow = window
+        }
+
+        if overlayWindow?.windowScene !== scene {
+            overlayWindow?.windowScene = scene
+        }
+
+        overlayWindow?.isHidden = false
+    }
+
+    func dismiss() {
+        overlayWindow?.isHidden = true
+        overlayWindow?.rootViewController = nil
+        overlayWindow = nil
+    }
+}
+
 struct PlayerView: View {
     let game: Game
     @Environment(\.dismiss) private var dismiss
@@ -44,18 +104,7 @@ struct PlayerView: View {
 
                 Spacer()
 
-                // Virtual Controller Area
-                VirtualControllerView(
-                    layoutStore: layoutStore,
-                    config: config,
-                    onDirectionInput: handleDirectionInput,
-                    onButtonInput: handleButtonInput
-                )
-                .zIndex(1000)
-
                 Spacer()
-
-                
             }
             .padding(.vertical, 16)
 
@@ -175,6 +224,7 @@ struct PlayerView: View {
             uiVisible = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
+            presentVirtualControllerOverlayWindow()
             keepOverlayInFrontTemporarily()
             applySettings()
             buttonMappingStore.applyToPlayer()
@@ -183,6 +233,7 @@ struct PlayerView: View {
             AppLogger.log("PlayerView onDisappear")
             overlayFrontTask?.cancel()
             overlayFrontTask = nil
+            VirtualControllerOverlayWindowManager.shared.dismiss()
             releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
@@ -202,41 +253,21 @@ struct PlayerView: View {
         }
     }
 
+    private func presentVirtualControllerOverlayWindow() {
+        VirtualControllerOverlayWindowManager.shared.present(
+            layoutStore: layoutStore,
+            config: config,
+            onDirectionInput: handleDirectionInput,
+            onButtonInput: handleButtonInput
+        )
+    }
+
     private func keepOverlayInFrontTemporarily() {
         overlayFrontTask?.cancel()
         let task = DispatchWorkItem {
             for step in 0..<30 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * 0.1)) {
-                    guard let scene = UIApplication.shared.connectedScenes
-                        .compactMap({ $0 as? UIWindowScene })
-                        .first(where: { $0.activationState == .foregroundActive }) else {
-                        return
-                    }
-
-                    // SDL can temporarily promote its own window/view to the front
-                    // when the runtime boots. Keep the SwiftUI window above it so
-                    // the virtual controller remains visible and interactive.
-                    let windows = scene.windows
-                    guard !windows.isEmpty else { return }
-
-                    let overlayWindow =
-                        windows.first(where: { window in
-                            guard let root = window.rootViewController else { return false }
-                            return String(describing: type(of: root)).contains("UIHostingController")
-                        })
-                        ?? windows.first(where: { $0.rootViewController != nil && !$0.isHidden && $0.alpha > 0.0 })
-                        ?? windows.first
-
-                    guard let overlayWindow else { return }
-                    overlayWindow.windowLevel = .normal + 1
-                    overlayWindow.makeKey()
-                    overlayWindow.isHidden = false
-
-                    if let rootView = overlayWindow.rootViewController?.view {
-                        overlayWindow.bringSubviewToFront(rootView)
-                        rootView.setNeedsLayout()
-                        rootView.layoutIfNeeded()
-                    }
+                    presentVirtualControllerOverlayWindow()
                 }
             }
         }
