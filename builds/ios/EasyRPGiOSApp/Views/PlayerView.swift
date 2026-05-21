@@ -281,11 +281,13 @@ struct PlayerView: View {
             presentVirtualControllerOverlayWindow()
             keepOverlayInFrontTemporarily()
             applySettings()
+            applyPreferredOrientationMode()
             buttonMappingStore.applyToPlayer()
         }
         .onDisappear {
             AppLogger.log("PlayerView onDisappear")
             VirtualControllerOverlayWindowManager.shared.dismiss()
+            restoreDefaultOrientationMode()
             releaseProjectSecurityScope()
         }
         .onChange(of: showFpsIndicator) { _, isVisible in
@@ -308,6 +310,7 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .configManagerDidSaveSettings)) { _ in
             applySettings()
+            applyPreferredOrientationMode()
         }
     }
 
@@ -351,6 +354,35 @@ struct PlayerView: View {
 
         orientationSettleTask = task
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: task)
+    }
+
+    private func applyPreferredOrientationMode() {
+        guard #available(iOS 16.0, *) else { return }
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return
+        }
+
+        let mask: UIInterfaceOrientationMask = config.forcedLandscape ? .landscape : .allButUpsideDown
+        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: mask)
+        scene.requestGeometryUpdate(prefs) { error in
+            AppLogger.log("requestGeometryUpdate failed: \(error.localizedDescription)")
+        }
+    }
+
+
+    private func restoreDefaultOrientationMode() {
+        guard #available(iOS 16.0, *) else { return }
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return
+        }
+        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .allButUpsideDown)
+        scene.requestGeometryUpdate(prefs) { error in
+            AppLogger.log("restore orientation failed: \(error.localizedDescription)")
+        }
     }
 
     private func setupPlayerWithGame() {
@@ -939,3 +971,4 @@ struct PlayerMenuSheet: View {
         savePath: "/path/to/saves"
     ))
 }
+
