@@ -114,6 +114,8 @@ final class ConfigManager: ObservableObject {
         defaults.set(nativeMidi, forKey: userDefaultsPrefix + "nativeMidi")
         if let url = selectedSoundFont {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "selectedSoundFont")
+        } else {
+            defaults.removeObject(forKey: userDefaultsPrefix + "selectedSoundFont")
         }
 
         defaults.set(enableVibration, forKey: userDefaultsPrefix + "enableVibration")
@@ -149,11 +151,15 @@ final class ConfigManager: ObservableObject {
 
         if let url = easyRPGFolderURL {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "easyRPGFolder")
+        } else {
+            defaults.removeObject(forKey: userDefaultsPrefix + "easyRPGFolder")
         }
         defaults.set(enableRtpScanning, forKey: userDefaultsPrefix + "enableRtpScanning")
         defaults.set(hasCompletedOnboarding, forKey: userDefaultsPrefix + "hasCompletedOnboarding")
         if let url = rtpFolderURL {
             defaults.set(url.absoluteString, forKey: userDefaultsPrefix + "rtpFolder")
+        } else {
+            defaults.removeObject(forKey: userDefaultsPrefix + "rtpFolder")
         }
 
         saveConfigToIni()
@@ -164,7 +170,7 @@ final class ConfigManager: ObservableObject {
         AppLogger.log("ENTER loadSettings")
         AppLogger.log("loadSettings called")
         let defaults = UserDefaults.standard
-        fullscreen = defaults.bool(forKey: userDefaultsPrefix + "fullscreen") || fullscreen
+        fullscreen = defaults.object(forKey: userDefaultsPrefix + "fullscreen") as? Bool ?? fullscreen
         forcedLandscape = defaults.bool(forKey: userDefaultsPrefix + "forcedLandscape")
         scaleMode = defaults.integer(forKey: userDefaultsPrefix + "scaleMode")
         stretch = defaults.bool(forKey: userDefaultsPrefix + "stretch")
@@ -180,7 +186,7 @@ final class ConfigManager: ObservableObject {
             selectedSoundFont = URL(string: soundFontStr)
         }
 
-        enableVibration = defaults.bool(forKey: userDefaultsPrefix + "enableVibration") || enableVibration
+        enableVibration = defaults.object(forKey: userDefaultsPrefix + "enableVibration") as? Bool ?? enableVibration
         vibrateWhenSliding = defaults.bool(forKey: userDefaultsPrefix + "vibrateWhenSliding")
         showABasZX = defaults.bool(forKey: userDefaultsPrefix + "showABasZX")
         fastForwardMode = defaults.integer(forKey: userDefaultsPrefix + "fastForwardMode")
@@ -219,7 +225,7 @@ final class ConfigManager: ObservableObject {
         } else {
             easyRPGFolderURL = defaultEasyRPGDocumentsFolder()
         }
-        enableRtpScanning = defaults.bool(forKey: userDefaultsPrefix + "enableRtpScanning") || enableRtpScanning
+        enableRtpScanning = defaults.object(forKey: userDefaultsPrefix + "enableRtpScanning") as? Bool ?? enableRtpScanning
         if let rtpURL = restoreSecurityScopedURL(from: rtpFolderBookmarkKey) {
             rtpFolderURL = rtpURL
         } else if let rtpStr = defaults.string(forKey: userDefaultsPrefix + "rtpFolder") {
