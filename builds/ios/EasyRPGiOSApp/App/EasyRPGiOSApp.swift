@@ -11,11 +11,17 @@ struct EasyRPGiOSApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
-                GameBrowserView(
-                    onOpenSettings: { path.append(.settings) },
-                    onPlay: { game in path.append(.player(game)) },
-                    library: library
-                )
+                Group {
+                    if config.hasCompletedOnboarding {
+                        GameBrowserView(
+                            onOpenSettings: { path.append(.settings) },
+                            onPlay: { game in path.append(.player(game)) },
+                            library: library
+                        )
+                    } else {
+                        InitView()
+                    }
+                }
                     .onAppear {
                         AppLogger.log("Root view appeared")
                         // Initialize everything

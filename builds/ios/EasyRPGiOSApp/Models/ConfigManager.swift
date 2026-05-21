@@ -331,6 +331,16 @@ final class ConfigManager: ObservableObject {
         saveSettings()
     }
 
+    func useAutomaticEasyRPGFolderInDocuments() {
+        AppLogger.log("ENTER useAutomaticEasyRPGFolderInDocuments")
+        if let documentsFolder = defaultEasyRPGDocumentsFolder() {
+            easyRPGFolderURL = documentsFolder.standardizedFileURL
+            UserDefaults.standard.removeObject(forKey: easyRPGFolderBookmarkKey)
+            hasCompletedOnboarding = true
+            saveSettings()
+        }
+    }
+
     func completeOnboardingIfNeeded() {
         AppLogger.log("ENTER completeOnboardingIfNeeded")
         if !hasCompletedOnboarding {

@@ -5,6 +5,7 @@ struct InitView: View {
     private static let tutorialURL = URL(string: "https://www.youtube.com/watch?v=r9qU-6P3HOs")
     private static let websiteURL = URL(string: "https://easyrpg.org")
     @State private var showFolderPicker = false
+    @State private var useAutomaticPath = true
     @StateObject private var config = ConfigManager.shared
 
     var body: some View {
@@ -30,14 +31,26 @@ struct InitView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("ゲームフォルダの設定").font(.headline)
 
+                    Picker("設定方式", selection: $useAutomaticPath) {
+                        Text("自動 (Documents)").tag(true)
+                        Text("任意パス").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+
                     Text("ゲームを格納するフォルダを選択してください。")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Button(action: { showFolderPicker = true }) {
+                    Button(action: {
+                        if useAutomaticPath {
+                            config.useAutomaticEasyRPGFolderInDocuments()
+                        } else {
+                            showFolderPicker = true
+                        }
+                    }) {
                         HStack {
                             Image(systemName: "folder.circle.fill")
-                            Text("ゲームフォルダを選択")
+                            Text(useAutomaticPath ? "Documentsを自動設定" : "ゲームフォルダを選択")
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -136,6 +149,9 @@ struct InitView: View {
         }
         .onAppear {
             AppLogger.log("InitView onAppear")
+            if let folder = config.easyRPGFolderURL {
+                useAutomaticPath = folder.path.hasPrefix((FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.path ?? "") + "/") || folder.path == FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.path
+            }
         }
     }
 }
