@@ -64,14 +64,13 @@ struct SettingsMainView: View {
         .buttonStyle(.plain)
     }
 
-    @ViewBuilder
-    private func safeSystemImage(_ name: String) -> some View {
+    private func safeSystemImage(_ name: String) -> Image {
         if UIImage(systemName: name) != nil {
-            Image(systemName: name)
-        } else {
-            AppLogger.log("Missing SF Symbol: \(name)")
-            Image(systemName: "questionmark.circle")
+            return Image(systemName: name)
         }
+
+        AppLogger.log("Missing SF Symbol: \(name)")
+        return Image(systemName: "questionmark.circle")
     }
 }
 
