@@ -49,7 +49,6 @@ struct Game: Identifiable, Hashable {
     }
 
     func getDisplayTitle(labelMode: Int) -> String {
-        AppLogger.log("ENTER getDisplayTitle")
         if let customTitle = customTitle, !customTitle.isEmpty {
             return customTitle
         }

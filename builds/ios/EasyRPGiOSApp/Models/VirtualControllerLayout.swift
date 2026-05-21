@@ -11,11 +11,12 @@ struct VirtualButtonLayout: Codable, Hashable {
     var size: Int = 100
 
     static let `default`: [VirtualButtonLayout] = [
-        .init(id: "menu", title: "M", x: 0.01, y: 0.01, size: 90),
-        .init(id: "up", title: "↑", x: 0.01, y: 0.32),
-        .init(id: "down", title: "↓", x: 0.01, y: 0.48),
-        .init(id: "left", title: "←", x: -0.06, y: 0.40),
-        .init(id: "right", title: "→", x: 0.09, y: 0.40),
+        .init(id: "menu", title: "M", x: 0.05, y: 0.08, size: 90),
+        // Android-parity cross d-pad arrangement
+        .init(id: "up", title: "↑", x: 0.16, y: 0.66),
+        .init(id: "down", title: "↓", x: 0.16, y: 0.84),
+        .init(id: "left", title: "←", x: 0.07, y: 0.75),
+        .init(id: "right", title: "→", x: 0.25, y: 0.75),
         .init(id: "decision", title: "A", x: 0.80, y: 0.55),
         .init(id: "cancel", title: "B", x: 0.90, y: 0.45)
     ]

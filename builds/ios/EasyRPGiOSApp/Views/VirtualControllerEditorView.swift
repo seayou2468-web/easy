@@ -2,6 +2,25 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct VirtualControllerEditorView: View {
+    private struct DevicePreset: Identifiable, Hashable {
+        let id: String
+        let name: String
+        let points: CGSize
+
+        var aspectRatio: CGFloat { points.width / points.height }
+    }
+
+    private static let devicePresets: [DevicePreset] = [
+        .init(id: "iphone_se_3", name: "iPhone SE (3rd)", points: CGSize(width: 375, height: 667)),
+        .init(id: "iphone_12_mini", name: "iPhone 12 mini", points: CGSize(width: 360, height: 780)),
+        .init(id: "iphone_12_12_pro", name: "iPhone 12 / 12 Pro", points: CGSize(width: 390, height: 844)),
+        .init(id: "iphone_13_14", name: "iPhone 13/14", points: CGSize(width: 390, height: 844)),
+        .init(id: "iphone_14_pro", name: "iPhone 14 Pro", points: CGSize(width: 393, height: 852)),
+        .init(id: "iphone_14_pro_max", name: "iPhone 14 Pro Max", points: CGSize(width: 430, height: 932)),
+        .init(id: "iphone_15_16", name: "iPhone 15/16", points: CGSize(width: 393, height: 852)),
+        .init(id: "iphone_15_16_plus", name: "iPhone 15/16 Plus", points: CGSize(width: 430, height: 932))
+    ]
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var store = VirtualControllerLayoutStore()
     @State private var workingButtons: [VirtualButtonLayout] = []
@@ -12,6 +31,8 @@ struct VirtualControllerEditorView: View {
     @State private var exportURL: URL?
     @State private var showExporter = false
     @State private var showImporter = false
+    @State private var autoDetectedPresetId: String = Self.detectCurrentDevicePreset().id
+    @ObservedObject private var config = ConfigManager.shared
 
     private var selectedButton: VirtualButtonLayout? {
         guard let selectedButtonInstanceId else { return nil }
@@ -19,22 +40,27 @@ struct VirtualControllerEditorView: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.black.opacity(0.9).ignoresSafeArea()
+        ZStack {
+            Color.black.opacity(0.9).ignoresSafeArea()
 
-                ForEach($workingButtons, id: \.instanceId) { $button in
-                    EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: geo.size)
-                }
-            }
-        }
-        .safeAreaInset(edge: .top, spacing: 8) {
-            VStack(spacing: 10) {
+            VStack(spacing: 14) {
                 Picker("対象", selection: $isLandscapeEditing) {
                     Text("縦").tag(false)
                     Text("横").tag(true)
                 }
                 .pickerStyle(.segmented)
+
+                Text("編集デバイス: \(activePreset.name)（自動判別）")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("ボタンサイズを自動調整（Android比率）", isOn: Binding(
+                    get: { !config.ignoreLayoutSize },
+                    set: {
+                        config.ignoreLayoutSize = !$0
+                        config.saveSettings()
+                    }
+                ))
 
                 Picker("レイアウト", selection: $store.activeProfileId) {
                     ForEach(store.profiles) { profile in
@@ -73,15 +99,23 @@ struct VirtualControllerEditorView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                DeviceFrameEditorCanvas(
+                    preset: activePreset,
+                    workingButtons: $workingButtons,
+                    selectedButtonInstanceId: $selectedButtonInstanceId
+                )
+                .padding(.horizontal, 12)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(.black.opacity(0.45))
         }
         .navigationTitle("レイアウト編集")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color.black.ignoresSafeArea())
-        .onAppear { loadWorkingButtons() }
+        .onAppear {
+            autoDetectedPresetId = Self.detectCurrentDevicePreset().id
+            loadWorkingButtons()
+        }
         .onChange(of: isLandscapeEditing) { _, _ in loadWorkingButtons() }
         .confirmationDialog("編集メニュー", isPresented: $showMenu, actions: menuDialog)
         .confirmationDialog("追加するボタン", isPresented: $showAddMenu, actions: addButtonDialog)
@@ -97,6 +131,20 @@ struct VirtualControllerEditorView: View {
 
     private func loadWorkingButtons() {
         workingButtons = store.buttons(isLandscape: isLandscapeEditing)
+    }
+
+    private var activePreset: DevicePreset {
+        Self.devicePresets.first(where: { $0.id == autoDetectedPresetId }) ?? Self.devicePresets[0]
+    }
+
+    private static func detectCurrentDevicePreset() -> DevicePreset {
+        let bounds = UIScreen.main.bounds
+        let portraitSize = CGSize(width: min(bounds.width, bounds.height), height: max(bounds.width, bounds.height))
+        return devicePresets.min(by: {
+            let lhsDelta = abs($0.points.width - portraitSize.width) + abs($0.points.height - portraitSize.height)
+            let rhsDelta = abs($1.points.width - portraitSize.width) + abs($1.points.height - portraitSize.height)
+            return lhsDelta < rhsDelta
+        }) ?? devicePresets[0]
     }
 
     @ViewBuilder
@@ -166,6 +214,7 @@ private struct EditorButtonView: View {
     @Binding var selectedButtonInstanceId: String?
     let canvasSize: CGSize
     @ObservedObject private var config = ConfigManager.shared
+    @State private var dragAnchor: CGPoint?
 
     private var editorButtonSize: CGFloat {
         VirtualControllerView.visualSize(for: button, config: config)
@@ -180,12 +229,57 @@ private struct EditorButtonView: View {
             .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
             .onTapGesture { selectedButtonInstanceId = button.instanceId }
             .highPriorityGesture(
-                DragGesture(minimumDistance: 0).onChanged { value in
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
                     selectedButtonInstanceId = button.instanceId
-                    button.x = min(max(0.0, value.location.x / canvasSize.width), 1.0)
-                    button.y = min(max(0.0, value.location.y / canvasSize.height), 1.0)
+                    if dragAnchor == nil {
+                        dragAnchor = CGPoint(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
+                    }
+                    guard let dragAnchor else { return }
+                    let translatedPoint = CGPoint(
+                        x: dragAnchor.x + value.translation.width,
+                        y: dragAnchor.y + value.translation.height
+                    )
+                    button.x = min(max(0.0, translatedPoint.x / canvasSize.width), 1.0)
+                    button.y = min(max(0.0, translatedPoint.y / canvasSize.height), 1.0)
                 }
+                .onEnded { _ in dragAnchor = nil }
             )
+    }
+}
+
+private struct DeviceFrameEditorCanvas: View {
+    let preset: VirtualControllerEditorView.DevicePreset
+    @Binding var workingButtons: [VirtualButtonLayout]
+    @Binding var selectedButtonInstanceId: String?
+
+    var body: some View {
+        GeometryReader { outerGeo in
+            let frameWidth = min(outerGeo.size.width, outerGeo.size.height * preset.aspectRatio)
+            let frameHeight = frameWidth / preset.aspectRatio
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(Color(white: 0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 34, style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+
+                ZStack {
+                    Color.black
+                    ForEach($workingButtons, id: \.instanceId) { $button in
+                        EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: CGSize(width: frameWidth - 28, height: frameHeight - 28))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .padding(14)
+            }
+            .frame(width: frameWidth, height: frameHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(preset.aspectRatio, contentMode: .fit)
     }
 }
 
@@ -208,5 +302,5 @@ private func buttonBackground(for button: VirtualButtonLayout) -> some View {
 }
 
 private func displayTitle(for button: VirtualButtonLayout) -> String {
-    button.id == "menu" ? "≡" : button.title
+    button.title
 }

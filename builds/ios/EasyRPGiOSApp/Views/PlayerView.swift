@@ -3,10 +3,9 @@ import SwiftUI
 private final class TouchPassthroughWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hitView = super.hitTest(point, with: event)
-        // Passing through when the hosting root view is hit can swallow valid
-        // SwiftUI control interactions (the root view is often the resolved hit).
-        // Only pass through when nothing in this window was hit.
-        if hitView === self || hitView === rootViewController?.view {
+        // Pass through only when this window itself was hit.
+        // Returning nil for the SwiftUI hosting root breaks DragGesture and taps.
+        if hitView === self {
             return nil
         }
         return hitView
@@ -547,7 +546,7 @@ struct PlayerView: View {
 
     private func handleButtonInput(buttonId: String, isPressed: Bool) {
         AppLogger.log("ENTER handleButtonInput")
-        // Android parity: the virtual ≡ button opens/closes app menu on release
+        // Android parity: the virtual menu button opens/closes app menu on release
         // instead of sending an in-game key event.
         if buttonId == "menu" {
             if !isPressed {
@@ -571,6 +570,7 @@ struct VirtualControllerView: View {
     let onButtonInput: (String, Bool) -> Void
 
     @State private var pressedButtons: Set<String> = []
+    @State private var autoSizeByDevice = true
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
@@ -600,12 +600,10 @@ struct VirtualControllerView: View {
     }
 
     static func visualSize(for button: VirtualButtonLayout, config: ConfigManager) -> CGFloat {
-        let base: CGFloat
-        if config.ignoreLayoutSize {
-            base = 42
-        } else {
-            base = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
-        }
+        let screenMin = min(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
+        let androidParityBase = max(36, min(96, screenMin * 0.125))
+        let manualBase = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
+        let base: CGFloat = config.ignoreLayoutSize ? manualBase : androidParityBase
         return max(28, min(160, base * (CGFloat(button.size) / 100.0)))
     }
 
@@ -685,10 +683,10 @@ struct VirtualButtonView: View {
         .background(
             Group {
                 if isDirectional {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color.white.opacity(opacity))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .stroke(Color.black.opacity(0.2), lineWidth: 1)
                         )
                 } else {
@@ -710,15 +708,13 @@ struct VirtualButtonView: View {
     }
 
     private func displayTitle() -> String {
-        AppLogger.log("ENTER displayTitle")
         if config.showABasZX {
             if button.id == "z" || button.id == "decision" { return "A" }
             if button.id == "x" || button.id == "cancel" { return "B" }
         }
         if button.id == "fast_forward_a" && config.fastForwardMode == 1 {
-            return "⏩"
+            return "»"
         }
-        if button.id == "menu" { return "≡" }
         if button.id == "debug_menu" { return "M" }
         if button.id == "debug_through" { return "T" }
         return button.title
