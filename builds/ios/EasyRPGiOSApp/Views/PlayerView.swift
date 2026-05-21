@@ -6,7 +6,7 @@ private final class TouchPassthroughWindow: UIWindow {
         // Passing through when the hosting root view is hit can swallow valid
         // SwiftUI control interactions (the root view is often the resolved hit).
         // Only pass through when nothing in this window was hit.
-        if hitView === self {
+        if hitView === self || hitView === rootViewController?.view {
             return nil
         }
         return hitView
@@ -555,17 +555,17 @@ struct VirtualControllerView: View {
         // the same coordinate space for position parity.
     }
 
-    private func calculateButtonSize() -> CGFloat {
-        AppLogger.log("ENTER calculateButtonSize")
-        if config.ignoreLayoutSize {
-            return 42
-        }
-        let size = CGFloat(config.layoutSize)
-        return max(32, min(size * 0.35, 96))
+    private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
+        Self.visualSize(for: button, config: config)
     }
 
-    private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
-        let base = calculateButtonSize()
+    static func visualSize(for button: VirtualButtonLayout, config: ConfigManager) -> CGFloat {
+        let base: CGFloat
+        if config.ignoreLayoutSize {
+            base = 42
+        } else {
+            base = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
+        }
         return max(28, min(160, base * (CGFloat(button.size) / 100.0)))
     }
 
@@ -588,8 +588,8 @@ struct VirtualControllerView: View {
             config: config
         )
         .position(
-            x: button.x <= 1.0 ? button.x * geometryWidth : button.x,
-            y: button.y <= 1.0 ? button.y * geometryHeight : button.y
+            x: button.x * geometryWidth,
+            y: button.y * geometryHeight
         )
         .gesture(
             DragGesture(minimumDistance: 0)

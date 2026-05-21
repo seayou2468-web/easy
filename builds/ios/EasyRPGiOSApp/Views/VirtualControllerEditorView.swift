@@ -19,73 +19,70 @@ struct VirtualControllerEditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            Picker("対象", selection: $isLandscapeEditing) {
-                Text("縦").tag(false)
-                Text("横").tag(true)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 12)
-            .onChange(of: isLandscapeEditing) { _, _ in loadWorkingButtons() }
+        GeometryReader { geo in
+            ZStack {
+                Color.black.opacity(0.9).ignoresSafeArea()
 
-            Picker("レイアウト", selection: $store.activeProfileId) {
-                ForEach(store.profiles) { profile in
-                    Text(profile.name).tag(profile.id)
+                ForEach($workingButtons, id: \.instanceId) { $button in
+                    EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: geo.size)
                 }
             }
-            .onChange(of: store.activeProfileId) { _, newId in
-                store.setActiveProfile(newId)
-                loadWorkingButtons()
-            }
-            .padding(.horizontal, 12)
+        }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            VStack(spacing: 10) {
+                Picker("対象", selection: $isLandscapeEditing) {
+                    Text("縦").tag(false)
+                    Text("横").tag(true)
+                }
+                .pickerStyle(.segmented)
 
-            GeometryReader { geo in
-                ZStack {
-                    Color.black.opacity(0.9).ignoresSafeArea()
-                    ForEach($workingButtons, id: \.instanceId) { $button in
-                        EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: geo.size)
+                Picker("レイアウト", selection: $store.activeProfileId) {
+                    ForEach(store.profiles) { profile in
+                        Text(profile.name).tag(profile.id)
+                    }
+                }
+                .onChange(of: store.activeProfileId) { _, newId in
+                    store.setActiveProfile(newId)
+                    loadWorkingButtons()
+                }
+
+                if let selected = selectedButton {
+                    HStack {
+                        Text("選択中: \(selected.title)")
+                        Spacer()
+                        Text(selected.id)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack {
+                        Text("サイズ")
+                        Slider(
+                            value: Binding(
+                                get: { Double(selected.size) },
+                                set: { newValue in
+                                    guard let idx = workingButtons.firstIndex(where: { $0.instanceId == selected.instanceId }) else { return }
+                                    workingButtons[idx].size = Int(newValue.rounded())
+                                }
+                            ),
+                            in: 50...180,
+                            step: 1
+                        )
+                        Text("\(selected.size)%")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
-            .frame(minHeight: 360)
-
-            if let selected = selectedButton {
-                HStack {
-                    Text("選択中: \(selected.title)")
-                    Spacer()
-                    Text(selected.id)
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 12)
-
-                HStack {
-                    Text("サイズ")
-                    Slider(
-                        value: Binding(
-                            get: { Double(selected.size) },
-                            set: { newValue in
-                                guard let idx = workingButtons.firstIndex(where: { $0.instanceId == selected.instanceId }) else { return }
-                                workingButtons[idx].size = Int(newValue.rounded())
-                            }
-                        ),
-                        in: 50...180,
-                        step: 1
-                    )
-                    Text("\(selected.size)%")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 12)
-            }
-
-            Button("メニュー") { showMenu = true }
-                .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.black.opacity(0.45))
         }
         .navigationTitle("レイアウト編集")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color.black.ignoresSafeArea())
         .onAppear { loadWorkingButtons() }
+        .onChange(of: isLandscapeEditing) { _, _ in loadWorkingButtons() }
         .confirmationDialog("編集メニュー", isPresented: $showMenu, actions: menuDialog)
         .confirmationDialog("追加するボタン", isPresented: $showAddMenu, actions: addButtonDialog)
         .toolbar(content: toolbarContent)
@@ -168,11 +165,16 @@ private struct EditorButtonView: View {
     @Binding var button: VirtualButtonLayout
     @Binding var selectedButtonInstanceId: String?
     let canvasSize: CGSize
+    @ObservedObject private var config = ConfigManager.shared
+
+    private var editorButtonSize: CGFloat {
+        VirtualControllerView.visualSize(for: button, config: config)
+    }
 
     var body: some View {
         Text(displayTitle(for: button))
             .font(.headline)
-            .frame(width: button.id == "menu" ? 48 : 54, height: button.id == "menu" ? 48 : 54)
+            .frame(width: editorButtonSize, height: editorButtonSize)
             .background(buttonBackground(for: button))
             .overlay(Circle().stroke(selectedButtonInstanceId == button.instanceId ? Color.yellow : .clear, lineWidth: 2))
             .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
