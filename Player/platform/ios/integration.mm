@@ -300,11 +300,17 @@ void Invoke() {
 		fn();
 	}
 
-	if (Input::source) {
-		for (auto key : held_keys) {
-			if (key != Input::Keys::NONE) {
-				Input::source->SimulateKeyPress(key);
-			}
+	// Android parity lifetime behavior:
+	// when no active runtime input source exists there is no key state carrier,
+	// so any cached held virtual keys must be dropped immediately.
+	if (!Input::source) {
+		ClearHeldKeys();
+		return;
+	}
+
+	for (auto key : held_keys) {
+		if (key != Input::Keys::NONE) {
+			Input::source->SimulateKeyPress(key);
 		}
 	}
 }
