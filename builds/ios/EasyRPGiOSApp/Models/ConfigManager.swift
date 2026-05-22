@@ -153,8 +153,16 @@ final class ConfigManager: ObservableObject {
         defaults.set(touchUI, forKey: userDefaultsPrefix + "touchUI")
 
         defaults.set(preferExternalFonts, forKey: userDefaultsPrefix + "preferExternalFonts")
-        defaults.set(font1Name ?? "", forKey: userDefaultsPrefix + "font1Name")
-        defaults.set(font2Name ?? "", forKey: userDefaultsPrefix + "font2Name")
+        if let font1Name, !font1Name.isEmpty {
+            defaults.set(font1Name, forKey: userDefaultsPrefix + "font1Name")
+        } else {
+            defaults.removeObject(forKey: userDefaultsPrefix + "font1Name")
+        }
+        if let font2Name, !font2Name.isEmpty {
+            defaults.set(font2Name, forKey: userDefaultsPrefix + "font2Name")
+        } else {
+            defaults.removeObject(forKey: userDefaultsPrefix + "font2Name")
+        }
         defaults.set(font1Size, forKey: userDefaultsPrefix + "font1Size")
         defaults.set(font2Size, forKey: userDefaultsPrefix + "font2Size")
 
@@ -222,8 +230,8 @@ final class ConfigManager: ObservableObject {
         touchUI = defaults.object(forKey: userDefaultsPrefix + "touchUI") as? Bool ?? true
 
         preferExternalFonts = defaults.bool(forKey: userDefaultsPrefix + "preferExternalFonts")
-        font1Name = defaults.string(forKey: userDefaultsPrefix + "font1Name")
-        font2Name = defaults.string(forKey: userDefaultsPrefix + "font2Name")
+        font1Name = defaults.string(forKey: userDefaultsPrefix + "font1Name")?.nilIfEmpty
+        font2Name = defaults.string(forKey: userDefaultsPrefix + "font2Name")?.nilIfEmpty
         font1Size = max(1, intValue(defaults, key: userDefaultsPrefix + "font1Size", default: 12))
         font2Size = max(1, intValue(defaults, key: userDefaultsPrefix + "font2Size", default: 12))
 
@@ -495,4 +503,9 @@ final class ConfigManager: ObservableObject {
         }
         saveSettings()
     }
+}
+
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

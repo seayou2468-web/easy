@@ -552,23 +552,6 @@ void Sdl3Ui::UpdateDisplay() {
 	SDL_UpdateTexture(sdl_texture_game, nullptr, main_surface->pixels(), main_surface->pitch());
 #endif
 
-#if defined(__APPLE__) && defined(__IPHONEOS__)
-	// UIKit can resize/reposition the underlying SDL host view without always
-	// delivering a corresponding SDL window size event immediately.
-	// Re-sample current pixel size each frame and mark size_changed when needed
-	// so viewport math stays aligned with Swift-managed gameplayFrame.
-	if (sdl_window) {
-		int live_w = 0;
-		int live_h = 0;
-		SDL_GetWindowSizeInPixels(sdl_window, &live_w, &live_h);
-		if (live_w > 0 && live_h > 0 && (live_w != window.width || live_h != window.height)) {
-			window.width = live_w;
-			window.height = live_h;
-			window.size_changed = true;
-		}
-	}
-#endif
-
 	if (window.size_changed && window.width > 0 && window.height > 0) {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
@@ -800,21 +783,6 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
 		window.width = evnt.window.data1;
 		window.height = evnt.window.data2;
-
-#if defined(__APPLE__) && defined(__IPHONEOS__)
-		// On iPhone/iPad, rotation can momentarily report stale window-event sizes.
-		// Query current pixel size from SDL window directly to avoid drift after
-		// repeated landscape <-> portrait transitions.
-		if (sdl_window) {
-			int px_w = 0;
-			int px_h = 0;
-			SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-			if (px_w > 0 && px_h > 0) {
-				window.width = px_w;
-				window.height = px_h;
-			}
-		}
-#endif
 
 #ifdef EMSCRIPTEN
 		double display_ratio = emscripten_get_device_pixel_ratio();
