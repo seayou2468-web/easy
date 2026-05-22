@@ -235,7 +235,7 @@ private struct EditorButtonView: View {
     @State private var dragAnchor: CGPoint?
 
     private var editorButtonSize: CGFloat {
-        VirtualControllerView.visualSize(for: button, config: config)
+        VirtualControllerView.visualSize(for: button, config: config, viewport: .zero)
     }
 
     var body: some View {

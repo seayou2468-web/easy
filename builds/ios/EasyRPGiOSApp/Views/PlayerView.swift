@@ -1,6 +1,6 @@
 import SwiftUI
 
-private struct RuntimeViewport: Equatable {
+struct RuntimeViewport: Equatable {
     var size: CGSize = .zero
 
     var isLandscape: Bool {
@@ -60,6 +60,7 @@ private enum IOSDisplayCoordinator {
     }
 }
 
+@MainActor
 private enum IOSInputCoordinator {
     static func applyVirtualLayout(layoutStore: VirtualControllerLayoutStore, viewport: RuntimeViewport) {
         let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
@@ -129,95 +130,63 @@ struct PlayerView: View {
         }
     }
 
+    @ViewBuilder
+    private var runtimeSceneLayer: some View {
+        // Keep SwiftUI layer transparent so the native EasyRPG render surface stays visible.
+        Color.clear
+            .ignoresSafeArea()
+
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showHud.toggle()
+                }
+            }
+            .allowsHitTesting(!config.touchUI)
+
+        VStack {
+            HStack(spacing: 10) {
+                if showHud {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("タップでHUDを表示/非表示")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                }
+                Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
+                    Image(systemName: "speedometer").font(.system(size: 18, weight: .semibold))
+                }.buttonStyle(.borderedProminent).opacity(showHud ? 1.0 : 0.0).allowsHitTesting(showHud)
+                Button(action: { showMenu = true }) {
+                    Image(systemName: "line.3.horizontal").font(.system(size: 18, weight: .semibold))
+                }.buttonStyle(.borderedProminent).opacity(showHud ? 1.0 : 0.0).allowsHitTesting(showHud)
+                Spacer()
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom).allowsHitTesting(false))
+        .opacity(showHud ? 1.0 : 0.0)
+        .animation(.easeInOut(duration: 0.2), value: showHud)
+
+        if !showHud {
+            VStack { HStack { Spacer(); Text("HUD").font(.caption2.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 6).background(.ultraThinMaterial, in: Capsule()).foregroundStyle(.white) }; Spacer() }
+                .padding(16).allowsHitTesting(false)
+        }
+        if showFpsIndicator {
+            VStack { Text("FPS表示を切り替えました").font(.caption).padding(.horizontal, 12).padding(.vertical, 8).background(.ultraThinMaterial, in: Capsule()).foregroundStyle(.white); Spacer() }
+                .padding(.top, 20).transition(.opacity)
+        }
+        virtualControllerLayer
+    }
+
     var body: some View {
         GeometryReader { rootGeo in
             ZStack {
-            // Keep SwiftUI layer transparent so the native EasyRPG render surface stays visible.
-            Color.clear
-                .ignoresSafeArea()
-
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showHud.toggle()
-                    }
-                }
-                .allowsHitTesting(!config.touchUI)
-
-            VStack {
-                HStack(spacing: 10) {
-                    if showHud {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(game.getDisplayTitle(labelMode: config.gameBrowserLabelMode))
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                            Text("タップでHUDを表示/非表示")
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.75))
-                        }
-                    }
-
-                    Button(action: { PlayerBridge.toggleFps(); showFpsIndicator = true }) {
-                        Image(systemName: "speedometer")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .opacity(showHud ? 1.0 : 0.0)
-                    .allowsHitTesting(showHud)
-
-                    Button(action: { showMenu = true }) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .opacity(showHud ? 1.0 : 0.0)
-                    .allowsHitTesting(showHud)
-
-                    Spacer()
-                }
-                Spacer()
-            }
-            .padding(16)
-            .background(
-                LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
-                    .allowsHitTesting(false)
-            )
-            .opacity(showHud ? 1.0 : 0.0)
-            .animation(.easeInOut(duration: 0.2), value: showHud)
-
-            if !showHud {
-                VStack {
-                    HStack {
-                        Spacer()
-                        Text("HUD")
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .foregroundStyle(.white)
-                    }
-                    Spacer()
-                }
-                .padding(16)
-                .allowsHitTesting(false)
-            }
-
-            if showFpsIndicator {
-                VStack {
-                    Text("FPS表示を切り替えました")
-                        .font(.caption)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .foregroundStyle(.white)
-                    Spacer()
-                }
-                .padding(.top, 20)
-                .transition(.opacity)
-            }
-
-            virtualControllerLayer
+                runtimeSceneLayer
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
