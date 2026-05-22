@@ -125,12 +125,17 @@ private final class VirtualControllerOverlayWindowManager {
     }
 
     private func resolvedBounds(for scene: UIWindowScene) -> CGRect {
-        // Prefer live screen bounds because coordinateSpace bounds can be stale
-        // during orientation transitions on iOS.
-        let b = scene.screen.bounds
-        if b.width > 0 && b.height > 0 {
-            return b
+        // Android parity-like behavior: anchor overlay to active app window
+        // bounds so game and controller share the same geometry space.
+        if let appWin = scene.windows.first(where: { !$0.isHidden && $0 !== overlayWindow }) {
+            let b = appWin.bounds
+            if b.width > 0 && b.height > 0 {
+                return b
+            }
         }
+
+        let b = scene.screen.bounds
+        if b.width > 0 && b.height > 0 { return b }
         return scene.coordinateSpace.bounds
     }
 }
@@ -370,13 +375,16 @@ struct PlayerView: View {
 
     private func applyPreferredOrientationMode() {
         guard #available(iOS 16.0, *) else { return }
+        // Android parity: when forced landscape is off, do not request any
+        // orientation geometry lock. Let system/user rotation drive it.
+        guard config.forcedLandscape else { return }
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }) else {
             return
         }
 
-        let mask: UIInterfaceOrientationMask = config.forcedLandscape ? .landscape : .allButUpsideDown
+        let mask: UIInterfaceOrientationMask = .landscape
         let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: mask)
         scene.requestGeometryUpdate(prefs) { error in
             AppLogger.log("requestGeometryUpdate failed: \(error.localizedDescription)")
@@ -386,6 +394,9 @@ struct PlayerView: View {
 
     private func restoreDefaultOrientationMode() {
         guard #available(iOS 16.0, *) else { return }
+        // Android parity: avoid issuing reset geometry requests when we never
+        // forced orientation in the first place.
+        guard config.forcedLandscape else { return }
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }) else {
