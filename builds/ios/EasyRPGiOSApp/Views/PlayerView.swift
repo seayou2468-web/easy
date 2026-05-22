@@ -112,7 +112,6 @@ struct PlayerView: View {
     @State private var showSettings = false
     @State private var showFpsIndicator = false
     @State private var hasInitializedPlayer = false
-    @State private var orientationSettleTask: DispatchWorkItem?
     @State private var hasProjectSecurityScopeAccess = false
     @State private var projectSecurityScopeURL: URL?
     @State private var fastForwardAToggleActive = false
@@ -199,12 +198,11 @@ struct PlayerView: View {
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
-                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
+                applyAndroidParityScreenPositionAndInputLayout()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
-                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
-                scheduleOrientationRealignment()
+                applyAndroidParityScreenPositionAndInputLayout()
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -279,7 +277,7 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
             let d = UIDevice.current.orientation
             if d == .landscapeLeft || d == .landscapeRight || d == .portrait || d == .portraitUpsideDown {
-                scheduleOrientationRealignment()
+                applyAndroidParityScreenPositionAndInputLayout()
             }
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
@@ -291,22 +289,12 @@ struct PlayerView: View {
         }
     }
 
-    private func scheduleOrientationRealignment() {
-        orientationSettleTask?.cancel()
-
-        // Android parity-style behavior: apply one deterministic realignment
-        // after rotation settles, avoid repeated overlay churn.
-        let task = DispatchWorkItem {
-            IOSDisplayCoordinator.applyGameplayFrameToSDLView()
-            applyVirtualLayoutToPlayer()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
-                applyVirtualLayoutToPlayer()
-            }
-        }
-
-        orientationSettleTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: task)
+    private func applyAndroidParityScreenPositionAndInputLayout() {
+        // Android parity: EasyRpgPlayerActivity calls updateScreenPosition()
+        // and showInputLayout() once per event (onCreate/onConfigurationChanged/
+        // surfaceChanged/onRestart). Mirror that ordering and call count.
+        IOSDisplayCoordinator.applyGameplayFrameToSDLView()
+        applyVirtualLayoutToPlayer()
     }
 
     private func applyPreferredOrientationMode() {
