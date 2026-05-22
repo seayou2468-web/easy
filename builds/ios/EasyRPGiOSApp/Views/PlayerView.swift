@@ -145,6 +145,7 @@ struct PlayerView: View {
                 gameplayFrame: gameplayFrame
             )
             .ignoresSafeArea()
+            .zIndex(2000)
         }
     }
 
