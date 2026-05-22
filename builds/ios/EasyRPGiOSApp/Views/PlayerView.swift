@@ -24,27 +24,32 @@ private enum IOSDisplayCoordinator {
     }
 
     static func gameplayFrame(in viewport: RuntimeViewport) -> CGRect {
-        let size = viewport.size
-        guard size.width > 0, size.height > 0 else { return .zero }
+        gameplayFrame(in: viewport.size)
+    }
+
+    static func gameplayFrame(in containerSize: CGSize) -> CGRect {
+        guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
         // Android parity: EasyRpgPlayerActivity#updateScreenPosition()
         // width = screenWidth, height = screenWidth * 0.75, anchored top-left.
-        let width = size.width
-        let height = min(size.height, width * 0.75)
+        let width = containerSize.width
+        let height = width * 0.75
         return CGRect(x: 0, y: 0, width: width, height: height)
     }
 
-    static func applyGameplayFrameToSDLView(viewport: RuntimeViewport) {
-        let frame = gameplayFrame(in: viewport)
-        guard frame.width > 0, frame.height > 0 else { return }
+    static func applyGameplayFrameToSDLView() {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }) else { return }
         for window in scene.windows where !window.isHidden {
-            if let sdlView = findSDLView(in: window) {
+            if let sdlView = findSDLView(in: window), let container = sdlView.superview {
+                let frame = gameplayFrame(in: container.bounds.size)
+                guard frame.width > 0, frame.height > 0 else { continue }
                 if sdlView.frame != frame {
-                    sdlView.frame = frame
-                    sdlView.setNeedsLayout()
-                    sdlView.layoutIfNeeded()
+                    UIView.performWithoutAnimation {
+                        sdlView.frame = frame
+                        sdlView.setNeedsLayout()
+                        sdlView.layoutIfNeeded()
+                    }
                 }
             }
         }
@@ -190,11 +195,11 @@ struct PlayerView: View {
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
-                IOSDisplayCoordinator.applyGameplayFrameToSDLView(viewport: runtimeViewport)
+                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
-                IOSDisplayCoordinator.applyGameplayFrameToSDLView(viewport: runtimeViewport)
+                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
                 scheduleOrientationRealignment()
             }
         }
@@ -288,8 +293,10 @@ struct PlayerView: View {
         // Android parity-style behavior: apply one deterministic realignment
         // after rotation settles, avoid repeated overlay churn.
         let task = DispatchWorkItem {
+            IOSDisplayCoordinator.applyGameplayFrameToSDLView()
             applyVirtualLayoutToPlayer()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                IOSDisplayCoordinator.applyGameplayFrameToSDLView()
                 applyVirtualLayoutToPlayer()
             }
         }
