@@ -300,7 +300,7 @@ struct SettingsAudioView: View {
 
 struct SettingsInputView: View {
     @StateObject private var config = ConfigManager.shared
-    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var mappingStore = ButtonMappingStore()
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false

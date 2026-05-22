@@ -4,7 +4,7 @@ import SwiftUI
 struct EasyRPGiOSApp: App {
     @State private var path: [AppScreen] = []
     @StateObject private var library = GameLibrary()
-    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var mappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 

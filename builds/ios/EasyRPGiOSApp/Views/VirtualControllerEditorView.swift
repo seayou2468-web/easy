@@ -35,7 +35,7 @@ struct VirtualControllerEditorView: View {
         "iPhone17,1": "iphone_15_16", "iPhone17,2": "iphone_15_16_plus"
     ]
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var store = VirtualControllerLayoutStore()
+    @StateObject private var store = VirtualControllerLayoutStore.shared
     @State private var workingButtons: [VirtualButtonLayout] = []
     @State private var selectedButtonInstanceId: String?
     @State private var showMenu = false

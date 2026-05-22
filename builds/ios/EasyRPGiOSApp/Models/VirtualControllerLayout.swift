@@ -40,6 +40,7 @@ struct VirtualControllerLayoutProfile: Identifiable, Codable, Hashable {
 
 @MainActor
 final class VirtualControllerLayoutStore: ObservableObject {
+    static let shared = VirtualControllerLayoutStore()
     @Published var profiles: [VirtualControllerLayoutProfile] = []
     @Published var activeProfileId: String = VirtualControllerLayoutProfile.default.id
 

@@ -550,7 +550,7 @@ struct GameArchivePicker: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.zip, UTType(filenameExtension: "7z") ?? .data], asCopy: true)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.zip, UTType(filenameExtension: "7z") ?? .data], asCopy: false)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = true
         return picker

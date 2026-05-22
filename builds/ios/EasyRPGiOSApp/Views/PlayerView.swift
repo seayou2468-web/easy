@@ -155,7 +155,7 @@ struct PlayerView: View {
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
-    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
