@@ -10,7 +10,7 @@ struct RuntimeViewport: Equatable {
     static let zero = RuntimeViewport()
 }
 
-private enum IOSDisplayCoordinator {
+enum IOSDisplayCoordinator {
     static func isLandscape(viewport: RuntimeViewport) -> Bool {
         if viewport.size.width > 0 && viewport.size.height > 0 {
             return viewport.isLandscape
