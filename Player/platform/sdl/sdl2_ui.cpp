@@ -356,11 +356,19 @@ bool Sdl2Ui::RefreshDisplayMode() {
 
 		// Create our window
 		if (vcfg.window_x.Get() < 0 || vcfg.window_y.Get() < 0 || vcfg.window_height.Get() <= 0 || vcfg.window_width.Get() <= 0) {
+#if defined(__APPLE__) && TARGET_OS_IOS
+			sdl_window = SDL_CreateWindow(GAME_TITLE,
+				0,
+				0,
+				display_width_zoomed, display_height_zoomed,
+				SDL_WINDOW_RESIZABLE | flags);
+#else
 			sdl_window = SDL_CreateWindow(GAME_TITLE,
 				SDL_WINDOWPOS_CENTERED,
 				SDL_WINDOWPOS_CENTERED,
 				display_width_zoomed, display_height_zoomed,
 				SDL_WINDOW_RESIZABLE | flags);
+#endif
 		} else {
 			sdl_window = SDL_CreateWindow(GAME_TITLE,
 				vcfg.window_x.Get(),

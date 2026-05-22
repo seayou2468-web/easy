@@ -31,8 +31,12 @@ enum IOSDisplayCoordinator {
         guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
         // Android parity: EasyRpgPlayerActivity#updateScreenPosition()
         // width = screenWidth, height = screenWidth * 0.75, anchored top-left.
-        let width = containerSize.width
-        let height = width * 0.75
+        var width = containerSize.width
+        var height = width * 0.75
+        if height > containerSize.height {
+            height = containerSize.height
+            width = height / 0.75
+        }
         return CGRect(x: 0, y: 0, width: width, height: height)
     }
 

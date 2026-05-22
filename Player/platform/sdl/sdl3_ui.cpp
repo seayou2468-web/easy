@@ -324,10 +324,17 @@ bool Sdl3Ui::RefreshDisplayMode() {
 		SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, SDL_WINDOW_RESIZABLE | flags);
 
 		if (vcfg.window_x.Get() < 0 || vcfg.window_y.Get() < 0 || vcfg.window_height.Get() <= 0 || vcfg.window_width.Get() <= 0) {
+#if defined(__APPLE__) && TARGET_OS_IOS
+			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, 0);
+			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, 0);
+			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, display_width_zoomed);
+			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, display_height_zoomed);
+#else
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, display_width_zoomed);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, display_height_zoomed);
+#endif
 		} else {
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, vcfg.window_x.Get());
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, vcfg.window_y.Get());
