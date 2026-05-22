@@ -37,18 +37,28 @@ enum IOSDisplayCoordinator {
         // rendering cuts reported on real devices.
         let safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
 
-        let aspect: CGFloat = 4.0 / 3.0
-        let safeAspect = safeRect.width / safeRect.height
+        let isPortrait = safeRect.height >= safeRect.width
 
+        // Portrait-only fix:
+        // iOS SDL runtime already performs its own internal viewport/aspect handling.
+        // Applying an additional Swift-side 4:3 fit in portrait can cause partial
+        // clipping/cut-off rendering on some devices.
+        // Keep landscape behavior unchanged per requirement.
         let frameSize: CGSize
-        if safeAspect > aspect {
-            // Safe area is wider than 4:3, height-constrained fit.
-            let height = safeRect.height
-            frameSize = CGSize(width: height * aspect, height: height)
+        if isPortrait {
+            frameSize = safeRect.size
         } else {
-            // Safe area is taller/narrower than 4:3, width-constrained fit.
-            let width = safeRect.width
-            frameSize = CGSize(width: width, height: width / aspect)
+            let aspect: CGFloat = 4.0 / 3.0
+            let safeAspect = safeRect.width / safeRect.height
+            if safeAspect > aspect {
+                // Safe area is wider than 4:3, height-constrained fit.
+                let height = safeRect.height
+                frameSize = CGSize(width: height * aspect, height: height)
+            } else {
+                // Safe area is taller/narrower than 4:3, width-constrained fit.
+                let width = safeRect.width
+                frameSize = CGSize(width: width, height: width / aspect)
+            }
         }
 
         // Center inside safe-area on both axes so Swift-side clipping frame
@@ -128,8 +138,11 @@ enum IOSDisplayCoordinator {
 
         for scene in scenes {
             for window in scene.windows where !window.isHidden {
-                guard let sdlView = findSDLView(in: window) else { continue }
-                applyOverlayInputSafety(to: sdlView)
+                let sdlViews = findSDLViews(in: window)
+                guard !sdlViews.isEmpty else { continue }
+                for sdlView in sdlViews {
+                    applyOverlayInputSafety(to: sdlView)
+                }
             }
         }
     }
@@ -159,12 +172,19 @@ enum IOSDisplayCoordinator {
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
+        findSDLViews(in: root).first
+    }
+
+    private static func findSDLViews(in root: UIView) -> [UIView] {
+        var matched: [UIView] = []
         let name = NSStringFromClass(type(of: root))
-        if name.localizedCaseInsensitiveContains("SDL") { return root }
-        for v in root.subviews {
-            if let found = findSDLView(in: v) { return found }
+        if name.localizedCaseInsensitiveContains("SDL") {
+            matched.append(root)
         }
-        return nil
+        for v in root.subviews {
+            matched.append(contentsOf: findSDLViews(in: v))
+        }
+        return matched
     }
 }
 
