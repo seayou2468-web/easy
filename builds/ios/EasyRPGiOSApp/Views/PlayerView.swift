@@ -254,7 +254,6 @@ struct PlayerView: View {
             restoreDefaultOrientationMode()
             releaseProjectSecurityScope()
         }
-        }
         .onReceive(layoutStore.$profiles) { _ in
             applyVirtualLayoutToPlayer()
         }
