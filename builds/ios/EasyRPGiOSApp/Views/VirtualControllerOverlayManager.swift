@@ -9,10 +9,22 @@ final class VirtualControllerOverlayManager {
     private final class PassThroughWindow: UIWindow {
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             guard let hit = super.hitTest(point, with: event) else { return nil }
-            // If super hit-tests only the window itself, pass through.
-            // Do not drop rootViewController.view hits here because SwiftUI
-            // can legitimately resolve interactive overlays through hosting root.
-            return hit === self ? nil : hit
+            if hit === self { return nil }
+
+            // iOS 18+ can intermittently return only the hosting root view on the
+            // first hit test, even when a child SwiftUI control is interactive.
+            // Retry against the hosting root and pass through when no concrete
+            // interactive descendant can be resolved.
+            if let rootView = rootViewController?.view, hit === rootView {
+                let localPoint = rootView.convert(point, from: self)
+                let resolved = rootView.hitTest(localPoint, with: event)
+                if let resolved, resolved !== rootView {
+                    return resolved
+                }
+                return nil
+            }
+
+            return hit
         }
     }
 
