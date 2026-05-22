@@ -35,6 +35,7 @@ enum IOSDisplayCoordinator {
 
         var appliedFrame: CGRect = .zero
         for scene in scenes {
+            ensureVirtualControllerHostWindowAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
@@ -68,6 +69,7 @@ enum IOSDisplayCoordinator {
         guard !scenes.isEmpty else { return }
 
         for scene in scenes {
+            ensureVirtualControllerHostWindowAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
                 guard let sdlView = findSDLView(in: window) else { continue }
                 applyOverlayInputSafety(to: sdlView)
@@ -98,6 +100,31 @@ enum IOSDisplayCoordinator {
             if let found = findSDLView(in: v) { return found }
         }
         return nil
+    }
+
+    private static func ensureVirtualControllerHostWindowAboveSDL(in scene: UIWindowScene) {
+        let visible = scene.windows.filter { !$0.isHidden }
+        guard !visible.isEmpty else { return }
+
+        let sdlWindows = visible.filter { findSDLView(in: $0) != nil }
+        guard !sdlWindows.isEmpty else { return }
+        let topSDLLevel = sdlWindows.map(\.windowLevel.rawValue).max() ?? UIWindow.Level.normal.rawValue
+
+        // Root fix:
+        // only target the app's SwiftUI host window (UIHostingController),
+        // and never mutate unrelated system/helper windows.
+        let hostCandidates = visible.filter { w in
+            guard findSDLView(in: w) == nil else { return false }
+            guard let root = w.rootViewController else { return false }
+            let rootName = NSStringFromClass(type(of: root))
+            return rootName.localizedCaseInsensitiveContains("UIHosting")
+        }
+        guard let hostWindow = hostCandidates.first(where: \.isKeyWindow) ?? hostCandidates.first else { return }
+
+        let requiredLevel = max(UIWindow.Level.normal.rawValue, topSDLLevel + 1)
+        if hostWindow.windowLevel.rawValue < requiredLevel {
+            hostWindow.windowLevel = UIWindow.Level(rawValue: requiredLevel)
+        }
     }
 }
 
