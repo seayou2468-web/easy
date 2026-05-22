@@ -9,7 +9,10 @@ final class VirtualControllerOverlayManager {
     private final class PassThroughWindow: UIWindow {
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             guard let hit = super.hitTest(point, with: event) else { return nil }
-            return hit === rootViewController?.view ? nil : hit
+            // If super hit-tests only the window itself, pass through.
+            // Do not drop rootViewController.view hits here because SwiftUI
+            // can legitimately resolve interactive overlays through hosting root.
+            return hit === self ? nil : hit
         }
     }
 
@@ -27,6 +30,8 @@ final class VirtualControllerOverlayManager {
         if let existing = overlayWindow, existing.windowScene === scene {
             window = existing
             alignFrame(window: window, scene: scene)
+            window.isUserInteractionEnabled = true
+            window.isHidden = false
             if let host = window.rootViewController as? UIHostingController<AnyView> {
                 host.rootView = AnyView(content)
             } else {
