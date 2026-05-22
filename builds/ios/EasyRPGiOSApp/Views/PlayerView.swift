@@ -179,6 +179,7 @@ struct PlayerView: View {
     @State private var runtimeViewport: RuntimeViewport = .zero
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
+    @State private var relayoutScheduled = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -221,15 +222,13 @@ struct PlayerView: View {
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
-                    applyAndroidParityScreenPositionAndInputLayout()
-                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    scheduleRelayout()
                 }
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
                 if newSize.width > 0, newSize.height > 0 {
-                    applyAndroidParityScreenPositionAndInputLayout()
-                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    scheduleRelayout()
                 }
             }
         }
@@ -285,8 +284,7 @@ struct PlayerView: View {
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                applyAndroidParityScreenPositionAndInputLayout()
-                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                scheduleRelayout()
             }
             applySettings()
             applyPreferredOrientationMode()
@@ -308,31 +306,37 @@ struct PlayerView: View {
             applyPreferredOrientationMode()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            scheduleRelayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            scheduleRelayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeVisibleNotification)) { _ in
-            applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            scheduleRelayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { _ in
-            applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            scheduleRelayout()
         }
 
         .onChange(of: config.touchUI) { _, _ in
-            applyAndroidParityScreenPositionAndInputLayout()
+            scheduleRelayout()
         }
         .onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
             let rev = PlayerBridge.surfaceGeometryRevision()
             if rev != lastSurfaceGeometryRevision {
                 lastSurfaceGeometryRevision = rev
-                applyAndroidParityScreenPositionAndInputLayout()
+                scheduleRelayout()
             }
+        }
+    }
+
+    private func scheduleRelayout() {
+        guard !relayoutScheduled else { return }
+        relayoutScheduled = true
+        DispatchQueue.main.async {
+            relayoutScheduled = false
+            applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
     }
 
