@@ -736,7 +736,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
         let contentTypes = allowedContentTypes.compactMap { UTType($0) }
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes, asCopy: true)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: contentTypes.isEmpty ? [.item] : contentTypes, asCopy: false)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker
@@ -775,7 +775,7 @@ struct FolderPickerView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         AppLogger.log("ENTER makeUIViewController")
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: true)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = false
         return picker

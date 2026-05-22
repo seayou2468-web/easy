@@ -135,6 +135,11 @@ final class VirtualControllerLayoutStore: ObservableObject {
         .init(id: "*", title: "*", x: 0.5, y: 0.5), .init(id: "/", title: "/", x: 0.5, y: 0.5),
         .init(id: "menu", title: "M", x: 0.5, y: 0.5, size: 90),
         .init(id: "fast_forward_a", title: "»", x: 0.5, y: 0.5),
+        .init(id: "fast_forward_b", title: "»B", x: 0.5, y: 0.5),
+        .init(id: "page_up", title: "Pg+", x: 0.5, y: 0.5),
+        .init(id: "page_down", title: "Pg-", x: 0.5, y: 0.5),
+        .init(id: "reset", title: "R", x: 0.5, y: 0.5),
+        .init(id: "toggle_fps", title: "FPS", x: 0.5, y: 0.5),
         .init(id: "debug_menu", title: "M", x: 0.5, y: 0.5),
         .init(id: "debug_through", title: "T", x: 0.5, y: 0.5)
     ]

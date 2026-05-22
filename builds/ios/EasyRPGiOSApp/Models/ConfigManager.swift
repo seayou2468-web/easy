@@ -222,7 +222,7 @@ final class ConfigManager: ObservableObject {
         automaticScreenshots = defaults.bool(forKey: userDefaultsPrefix + "automaticScreenshots")
         screenshotScale = max(1, intValue(defaults, key: userDefaultsPrefix + "screenshotScale", default: 1))
         automaticScreenshotsInterval = max(1, intValue(defaults, key: userDefaultsPrefix + "automaticScreenshotsInterval", default: 30))
-        startupLogos = min(2, max(0, defaults.integer(forKey: userDefaultsPrefix + "startupLogos")))
+        startupLogos = min(2, max(0, intValue(defaults, key: userDefaultsPrefix + "startupLogos", default: 1)))
 
         layoutTransparency = intValue(defaults, key: userDefaultsPrefix + "layoutTransparency", default: 100)
         layoutSize = intValue(defaults, key: userDefaultsPrefix + "layoutSize", default: 100)
@@ -446,7 +446,7 @@ final class ConfigManager: ObservableObject {
                 }
                 return url
             }
-            return url
+            return nil
         } catch {
             AppLogger.log("[iOS] Failed to restore security-scoped bookmark for key \(key): \(error)")
             return nil

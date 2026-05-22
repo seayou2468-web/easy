@@ -226,6 +226,9 @@ struct PlayerView: View {
             NavigationStack {
                 ParitySettingsRootView()
             }
+            .onDisappear {
+                layoutStore.load()
+            }
         }
         .alert("ゲームをリセットしますか？", isPresented: $showResetConfirm) {
             Button("キャンセル", role: .cancel) {}

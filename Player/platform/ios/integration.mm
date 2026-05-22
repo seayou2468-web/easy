@@ -51,11 +51,11 @@ std::vector<std::string> launch_args;
 bool has_launch_args = false;
 bool has_pending_relaunch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
+std::vector<std::pair<Input::Keys::InputKey, int>> held_key_counts;
 std::atomic<bool> runtime_started{false};
 std::atomic<bool> restart_requested{false};
 std::atomic<uint32_t> surface_geometry_revision{0};
 
-bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
 
 
 std::string ResolveLaunchPathForIOS(std::string_view raw_path) {
@@ -234,6 +234,7 @@ void SimulateVirtualPress(float x, float y) {
 
 void ClearHeldKeys() {
 	held_keys.clear();
+	held_key_counts.clear();
 }
 
 SDL_Rect last_reported_display_bounds{0,0,0,0};
@@ -542,8 +543,13 @@ void SendKeyDown(const char* button_id) {
 		if (!Input::source) return;
 		auto add_held_key = [](Input::Keys::InputKey key) {
 			if (key == Input::Keys::NONE) return;
-			if (std::find(held_keys.begin(), held_keys.end(), key) == held_keys.end()) {
+			auto it = std::find_if(held_key_counts.begin(), held_key_counts.end(),
+				[key](const auto& item) { return item.first == key; });
+			if (it == held_key_counts.end()) {
+				held_key_counts.emplace_back(key, 1);
 				held_keys.push_back(key);
+			} else {
+				it->second += 1;
 			}
 		};
 		auto btn = ResolveButtonId(button.c_str());
@@ -573,7 +579,14 @@ void SendKeyUp(const char* button_id) {
 	Schedule([button = std::string(button_id ? button_id : "")]() {
 		auto remove_held_key = [](Input::Keys::InputKey key) {
 			if (key == Input::Keys::NONE) return;
-			held_keys.erase(std::remove(held_keys.begin(), held_keys.end(), key), held_keys.end());
+			auto it = std::find_if(held_key_counts.begin(), held_key_counts.end(),
+				[key](const auto& item) { return item.first == key; });
+			if (it == held_key_counts.end()) return;
+			it->second -= 1;
+			if (it->second <= 0) {
+				held_key_counts.erase(it);
+				held_keys.erase(std::remove(held_keys.begin(), held_keys.end(), key), held_keys.end());
+			}
 		};
 
 		auto btn = ResolveButtonId(button.c_str());
