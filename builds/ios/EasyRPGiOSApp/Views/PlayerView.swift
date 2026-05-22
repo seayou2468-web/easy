@@ -39,7 +39,7 @@ private enum IOSDisplayCoordinator {
     static func applyGameplayFrameToSDLView() -> CGRect {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else { return .zero }
+            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return .zero }
 
         var appliedFrame: CGRect = .zero
         for window in scene.windows where !window.isHidden {
@@ -301,6 +301,15 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: .configManagerDidSaveSettings)) { _ in
             applySettings()
             applyPreferredOrientationMode()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            applyAndroidParityScreenPositionAndInputLayout()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            applyAndroidParityScreenPositionAndInputLayout()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeVisibleNotification)) { _ in
+            applyAndroidParityScreenPositionAndInputLayout()
         }
         .onChange(of: config.touchUI) { _, _ in
             applyAndroidParityScreenPositionAndInputLayout()
