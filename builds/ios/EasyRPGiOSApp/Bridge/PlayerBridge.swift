@@ -228,8 +228,8 @@ enum PlayerBridge {
             }
         }
     }
-}
 
     static func surfaceGeometryRevision() -> UInt32 {
         EasyRPG_iOS_GetSurfaceGeometryRevision()
     }
+}

@@ -160,7 +160,7 @@ struct PlayerView: View {
                 viewport: runtimeViewport,
                 gameplayFrame: gameplayFrame
             )
-             .ignoresSafeArea()
+            .ignoresSafeArea()
             .allowsHitTesting(true)
             .zIndex(2000)
         }
@@ -326,10 +326,10 @@ struct PlayerView: View {
             applyAndroidParityScreenPositionAndInputLayout()
         }
 
-                .onChange(of: config.touchUI) { _, _ in
+        .onChange(of: config.touchUI) { _, _ in
             applyAndroidParityScreenPositionAndInputLayout()
         }
-.onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
             let rev = PlayerBridge.surfaceGeometryRevision()
             if rev != lastSurfaceGeometryRevision {
                 lastSurfaceGeometryRevision = rev
