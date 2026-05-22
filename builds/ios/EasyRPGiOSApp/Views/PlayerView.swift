@@ -58,10 +58,21 @@ private enum IOSDisplayCoordinator {
                     sdlView.layoutIfNeeded()
                 }
             }
-            // Android parity layering: surface is added first, virtual buttons are above it.
+
+            // Android parity layering:
+            // gameplay surface is below virtual-controller overlay.
+            // iOS/SDL can host render view in a dedicated UIWindow, so enforce both
+            // intra-container z-order and window stacking.
             if container.subviews.last !== sdlView {
                 container.sendSubviewToBack(sdlView)
             }
+            if let sdlWindow = sdlView.window {
+                let targetLevel = UIWindow.Level.normal - 1
+                if sdlWindow.windowLevel != targetLevel {
+                    sdlWindow.windowLevel = targetLevel
+                }
+            }
+
             appliedFrame = displayFrame
         }
         return appliedFrame
