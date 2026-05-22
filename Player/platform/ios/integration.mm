@@ -913,6 +913,19 @@ uint32_t EasyRPG_iOS_GetSurfaceGeometryRevision() {
 	return surface_geometry_revision.load(std::memory_order_relaxed);
 }
 
+void EasyRPG_iOS_NotifyWindowSize(int32_t width_px, int32_t height_px) {
+	if (width_px <= 0 || height_px <= 0) {
+		return;
+	}
+	Schedule([width_px, height_px]() {
+		SDL_Event ev{};
+		ev.type = SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED;
+		ev.window.data1 = width_px;
+		ev.window.data2 = height_px;
+		SDL_PushEvent(&ev);
+	});
+}
+
 void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const char* value) {
 	Schedule([section_s = std::string(section ? section : ""),
 	          key_s = std::string(key ? key : ""),

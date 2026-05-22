@@ -232,4 +232,8 @@ enum PlayerBridge {
     static func surfaceGeometryRevision() -> UInt32 {
         EasyRPG_iOS_GetSurfaceGeometryRevision()
     }
+
+    static func notifyWindowSize(widthPx: Int, heightPx: Int) {
+        EasyRPG_iOS_NotifyWindowSize(Int32(widthPx), Int32(heightPx))
+    }
 }

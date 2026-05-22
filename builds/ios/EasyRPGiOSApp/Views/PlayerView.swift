@@ -129,6 +129,13 @@ enum IOSDisplayCoordinator {
             }
 
             applyOverlayInputSafety(to: sdlView)
+
+            let scale = baseWindow.screen.nativeScale
+            PlayerBridge.notifyWindowSize(
+                widthPx: Int(frame.width * scale),
+                heightPx: Int(frame.height * scale)
+            )
+
             appliedFrame = displayFrame
             }
         }
