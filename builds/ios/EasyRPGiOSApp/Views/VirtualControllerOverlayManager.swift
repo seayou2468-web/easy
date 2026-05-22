@@ -87,7 +87,14 @@ final class VirtualControllerOverlayManager {
         }
         guard target.width > 1, target.height > 1 else { return }
 
-        if window.frame != target {
+        let dx = abs(window.frame.origin.x - target.origin.x)
+        let dy = abs(window.frame.origin.y - target.origin.y)
+        let dw = abs(window.frame.size.width - target.size.width)
+        let dh = abs(window.frame.size.height - target.size.height)
+        // iOS 18+ can oscillate sub-pixel values across transactions.
+        // Use tolerance to prevent endless frame-update transactions.
+        let epsilon: CGFloat = 0.5
+        if dx > epsilon || dy > epsilon || dw > epsilon || dh > epsilon {
             window.frame = target
         }
         lastStableFrame = target

@@ -128,7 +128,18 @@ struct VirtualControllerView: View {
     }
 
     static func visualSize(for button: VirtualButtonLayout, config: ConfigManager, viewport: RuntimeViewport) -> CGFloat {
-        let baseSize = viewport.size == .zero ? UIScreen.main.bounds.size : viewport.size
+        let baseSize: CGSize
+        if viewport.size == .zero {
+            if let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) {
+                baseSize = scene.coordinateSpace.bounds.size
+            } else {
+                baseSize = UIScreen.main.bounds.size
+            }
+        } else {
+            baseSize = viewport.size
+        }
         let screenMin = min(baseSize.width, baseSize.height)
         let androidParityBase = max(44, min(104, screenMin * 0.135))
         let manualBase = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
