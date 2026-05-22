@@ -19,6 +19,15 @@ private final class VirtualControllerOverlayWindowManager {
     private var overlayHost: UIHostingController<AnyView>?
     private var keepAliveTimer: Timer?
 
+    var currentOrientationIsLandscape: Bool? {
+        guard let scene = overlayScene ?? UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return nil
+        }
+        return scene.interfaceOrientation.isLandscape
+    }
+
     func present(
         layoutStore: VirtualControllerLayoutStore,
         config: ConfigManager,
@@ -319,7 +328,10 @@ struct PlayerView: View {
             applyVirtualLayoutToPlayer()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            scheduleOrientationRealignment()
+            let d = UIDevice.current.orientation
+            if d == .landscapeLeft || d == .landscapeRight || d == .portrait || d == .portraitUpsideDown {
+                scheduleOrientationRealignment()
+            }
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
@@ -367,38 +379,13 @@ struct PlayerView: View {
     }
 
     private func applyPreferredOrientationMode() {
-        guard #available(iOS 16.0, *) else { return }
-        // Android parity: when forced landscape is off, do not request any
-        // orientation geometry lock. Let system/user rotation drive it.
-        guard config.forcedLandscape else { return }
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else {
-            return
-        }
-
-        let mask: UIInterfaceOrientationMask = .landscape
-        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: mask)
-        scene.requestGeometryUpdate(prefs) { error in
-            AppLogger.log("requestGeometryUpdate failed: \(error.localizedDescription)")
-        }
+        // Android parity: do not force runtime geometry updates here.
+        // Orientation policy is handled by app-level settings/system rotation.
     }
 
 
     private func restoreDefaultOrientationMode() {
-        guard #available(iOS 16.0, *) else { return }
-        // Android parity: avoid issuing reset geometry requests when we never
-        // forced orientation in the first place.
-        guard config.forcedLandscape else { return }
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else {
-            return
-        }
-        let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .allButUpsideDown)
-        scene.requestGeometryUpdate(prefs) { error in
-            AppLogger.log("restore orientation failed: \(error.localizedDescription)")
-        }
+        // Android parity: no per-view geometry reset requests.
     }
 
     private func setupPlayerWithGame() {
@@ -587,14 +574,8 @@ struct PlayerView: View {
 
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
-        let isLandscape: Bool = {
-            guard let scene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first(where: { $0.activationState == .foregroundActive }) else {
-                return UIScreen.main.bounds.width > UIScreen.main.bounds.height
-            }
-            return scene.interfaceOrientation.isLandscape
-        }()
+        let isLandscape = VirtualControllerOverlayWindowManager.shared.currentOrientationIsLandscape
+            ?? (UIScreen.main.bounds.width > UIScreen.main.bounds.height)
         for button in layoutStore.buttons(isLandscape: isLandscape) {
             // Keep bridge coordinates aligned with editor/runtime normalized layout.
             // Legacy fixed canvas mapping (450x500) caused large position drift.
