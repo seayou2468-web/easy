@@ -737,6 +737,25 @@ void Sdl3Ui::ProcessEvent(SDL_Event &evnt) {
 		case SDL_EVENT_FINGER_MOTION:
 			ProcessFingerEvent(evnt);
 			return;
+
+#ifdef SDL_EVENT_DISPLAY_ORIENTATION
+		case SDL_EVENT_DISPLAY_ORIENTATION:
+#if defined(__APPLE__) && defined(__IPHONEOS__)
+			// Display orientation changed (SDL version dependent symbol).
+			// Keep SDL as source of truth and refresh from the live window size.
+			if (sdl_window) {
+				int px_w = 0;
+				int px_h = 0;
+				SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
+				if (px_w > 0 && px_h > 0) {
+					window.width = px_w;
+					window.height = px_h;
+				}
+			}
+#endif
+			window.size_changed = true;
+			return;
+#endif
 		default:
 			if (evnt.type >= SDL_EVENT_WINDOW_FIRST && evnt.type <= SDL_EVENT_WINDOW_LAST) {
 				ProcessWindowEvent(evnt);
