@@ -27,13 +27,39 @@ enum IOSDisplayCoordinator {
         gameplayFrame(in: viewport.size)
     }
 
-    static func gameplayFrame(in containerSize: CGSize) -> CGRect {
+    static func gameplayFrame(in containerSize: CGSize, safeInsets: UIEdgeInsets = .zero) -> CGRect {
         guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
-        // Android parity: EasyRpgPlayerActivity#updateScreenPosition()
-        // width = screenWidth, height = screenWidth * 0.75, anchored top-left.
-        let width = containerSize.width
-        let height = width * 0.75
-        return CGRect(x: 0, y: 0, width: width, height: height)
+
+        // Keep RPG frame aspect ratio (4:3) while fitting inside safe bounds.
+        // This prevents overlap with notch/dynamic-island and avoids overflow on
+        // repeated orientation changes.
+        let safeRect = CGRect(
+            x: safeInsets.left,
+            y: safeInsets.top,
+            width: max(0, containerSize.width - safeInsets.left - safeInsets.right),
+            height: max(0, containerSize.height - safeInsets.top - safeInsets.bottom)
+        )
+        guard safeRect.width > 0, safeRect.height > 0 else { return .zero }
+
+        let aspect: CGFloat = 4.0 / 3.0
+        let safeAspect = safeRect.width / safeRect.height
+
+        let frameSize: CGSize
+        if safeAspect > aspect {
+            // Safe area is wider than 4:3, height-constrained fit.
+            let height = safeRect.height
+            frameSize = CGSize(width: height * aspect, height: height)
+        } else {
+            // Safe area is taller/narrower than 4:3, width-constrained fit.
+            let width = safeRect.width
+            frameSize = CGSize(width: width, height: width / aspect)
+        }
+
+        // Keep top edge at safe-area top (portrait: below notch/island), and
+        // center horizontally within safe width to avoid side clipping.
+        let x = safeRect.minX + (safeRect.width - frameSize.width) / 2.0
+        let y = safeRect.minY
+        return CGRect(x: x, y: y, width: frameSize.width, height: frameSize.height).integral
     }
 
     static func applyGameplayFrameToSDLView() -> CGRect {
@@ -51,7 +77,7 @@ enum IOSDisplayCoordinator {
             // If SDL is hosted in a different UIWindow than SwiftUI, using the
             // SwiftUI window here can push the surface off-screen.
             let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
+            let displayFrame = gameplayFrame(in: baseWindow.bounds.size, safeInsets: baseWindow.safeAreaInsets)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
 
             // Android parity: updateScreenPosition() applies x=0,y=0 in the
