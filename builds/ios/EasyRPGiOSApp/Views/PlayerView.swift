@@ -22,6 +22,16 @@ private enum IOSDisplayCoordinator {
         }
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
+
+    static func gameplayFrame(in viewport: RuntimeViewport) -> CGRect {
+        let size = viewport.size
+        guard size.width > 0, size.height > 0 else { return .zero }
+        // Android parity: EasyRpgPlayerActivity#updateScreenPosition()
+        // width = screenWidth, height = screenWidth * 0.75, anchored top-left.
+        let width = size.width
+        let height = min(size.height, width * 0.75)
+        return CGRect(x: 0, y: 0, width: width, height: height)
+    }
 }
 
 private enum IOSInputCoordinator {
@@ -523,8 +533,11 @@ struct VirtualControllerView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let geometryWidth = geo.size.width
-            let geometryHeight = geo.size.height
+            let gameplayFrame = IOSDisplayCoordinator.gameplayFrame(
+                in: RuntimeViewport(size: geo.size)
+            )
+            let geometryWidth = gameplayFrame.width > 0 ? gameplayFrame.width : geo.size.width
+            let geometryHeight = gameplayFrame.height > 0 ? gameplayFrame.height : geo.size.height
             let isLandscape = geometryWidth > geometryHeight
             let buttons = layoutStore.buttons(isLandscape: isLandscape)
             let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }
@@ -538,6 +551,8 @@ struct VirtualControllerView: View {
                     runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
+            .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
+            .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
