@@ -32,7 +32,9 @@ final class VirtualControllerOverlayManager {
             window = PassThroughWindow(windowScene: scene)
             window.backgroundColor = .clear
             window.rootViewController = hosting
-            window.windowLevel = UIWindow.Level.statusBar + 1
+            // Keep overlay near top but below system-critical windows.
+            // Avoid relying on deprecated/weakly-guaranteed statusBar offsets.
+            window.windowLevel = UIWindow.Level.alert - 1
             window.isHidden = false
             overlayWindow = window
         }
@@ -50,4 +52,3 @@ final class VirtualControllerOverlayManager {
         scene = nil
     }
 }
-

@@ -276,12 +276,23 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout()
+            // Scene/window re-attach stabilization:
+            // refresh overlay one frame later after UIKit settles safe-area/window tree.
+            DispatchQueue.main.async {
+                refreshOverlayWindow()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeVisibleNotification)) { _ in
             scheduleRelayout()
+            DispatchQueue.main.async {
+                refreshOverlayWindow()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { _ in
             scheduleRelayout()
+            DispatchQueue.main.async {
+                refreshOverlayWindow()
+            }
         }
 
         .onChange(of: config.touchUI) { _, _ in
