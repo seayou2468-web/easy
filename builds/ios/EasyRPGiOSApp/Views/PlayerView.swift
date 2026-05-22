@@ -276,6 +276,9 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             scheduleRelayout()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            VirtualControllerOverlayManager.shared.dismiss()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout()
             refreshOverlayWindowPostLayout()
@@ -285,7 +288,7 @@ struct PlayerView: View {
             scheduleRelayout()
             refreshOverlayWindow()
         }
-        .onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
             let rev = PlayerBridge.surfaceGeometryRevision()
             if rev != lastSurfaceGeometryRevision {
                 lastSurfaceGeometryRevision = rev
