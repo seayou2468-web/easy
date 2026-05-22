@@ -32,6 +32,32 @@ private enum IOSDisplayCoordinator {
         let height = min(size.height, width * 0.75)
         return CGRect(x: 0, y: 0, width: width, height: height)
     }
+
+    static func applyGameplayFrameToSDLView(viewport: RuntimeViewport) {
+        let frame = gameplayFrame(in: viewport)
+        guard frame.width > 0, frame.height > 0 else { return }
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else { return }
+        for window in scene.windows where !window.isHidden {
+            if let sdlView = findSDLView(in: window) {
+                if sdlView.frame != frame {
+                    sdlView.frame = frame
+                    sdlView.setNeedsLayout()
+                    sdlView.layoutIfNeeded()
+                }
+            }
+        }
+    }
+
+    private static func findSDLView(in root: UIView) -> UIView? {
+        let name = NSStringFromClass(type(of: root))
+        if name.localizedCaseInsensitiveContains("SDL") { return root }
+        for v in root.subviews {
+            if let found = findSDLView(in: v) { return found }
+        }
+        return nil
+    }
 }
 
 private enum IOSInputCoordinator {
@@ -195,9 +221,11 @@ struct PlayerView: View {
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
+                IOSDisplayCoordinator.applyGameplayFrameToSDLView(viewport: runtimeViewport)
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
+                IOSDisplayCoordinator.applyGameplayFrameToSDLView(viewport: runtimeViewport)
                 scheduleOrientationRealignment()
             }
         }
