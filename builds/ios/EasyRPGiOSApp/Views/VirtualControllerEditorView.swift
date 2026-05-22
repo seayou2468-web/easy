@@ -124,35 +124,48 @@ struct VirtualControllerEditorView: View {
     }
 
     private var editorMenuOverlay: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             Color.black.opacity(0.55).ignoresSafeArea().onTapGesture { showMenu = false }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack { Text("編集メニュー").font(.headline); Spacer(); Button("閉じる") { showMenu = false } }
-                    menuAction(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") { isLandscapeEditing.toggle() }
-                    menuAction(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") { config.ignoreLayoutSize.toggle(); config.saveSettings() }
-                    menuAction("全ボタンを少し大きく") { adjustAllButtons(by: 5) }
-                    menuAction("全ボタンを少し小さく") { adjustAllButtons(by: -5) }
-                    menuAction("ボタンを追加") { showAddMenu = true }
-                    menuAction("この向きをデフォルトにリセット") { workingButtons = VirtualButtonLayout.default; saveLayout() }
+
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.4))
+                    .frame(width: 44, height: 5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
+
+                ScrollView {
+                    VStack(spacing: 0) {
+                    menuRow(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") { isLandscapeEditing.toggle() }
+                    menuRow(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") { config.ignoreLayoutSize.toggle(); config.saveSettings() }
+                    menuRow("全ボタンを少し大きく") { adjustAllButtons(by: 5) }
+                    menuRow("全ボタンを少し小さく") { adjustAllButtons(by: -5) }
+                    menuRow("ボタンを追加") { showAddMenu = true }
+                    menuRow("この向きをデフォルトにリセット") { workingButtons = VirtualButtonLayout.default; saveLayout() }
                     if selectedButton != nil {
-                        menuAction("選択中ボタンを削除", destructive: true) {
+                        menuRow("選択中ボタンを削除", destructive: true) {
                             guard let id = selectedButtonInstanceId else { return }
                             workingButtons.removeAll { $0.instanceId == id }
                             selectedButtonInstanceId = nil
                             saveLayout()
                         }
                     }
-                    menuAction("レイアウトを新規作成") { store.addProfile(name: "Layout \(store.profiles.count + 1)"); loadWorkingButtons() }
-                    menuAction("エクスポート") { exportURL = store.exportActiveProfile(); showExporter = exportURL != nil }
-                    menuAction("インポート") { showImporter = true }
-                    menuAction("保存して閉じる") { saveLayout(); dismiss() }
-                    menuAction("保存せず閉じる", destructive: true) { dismiss() }
+                    menuRow("レイアウトを新規作成") { store.addProfile(name: "Layout \(store.profiles.count + 1)"); loadWorkingButtons() }
+                    menuRow("エクスポート") { exportURL = store.exportActiveProfile(); showExporter = exportURL != nil }
+                    menuRow("インポート") { showImporter = true }
+                    menuRow("保存して閉じる") { saveLayout(); dismiss() }
+                    menuRow("保存せず閉じる", destructive: true) { dismiss() }
+                    menuRow("閉じる") { showMenu = false }
+                    }
                 }
-                .padding(16)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                .padding(20)
+                .frame(maxHeight: 420)
             }
+            .background(Color(UIColor.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.secondary.opacity(0.2), lineWidth: 1))
+            .padding(.horizontal, 10)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
@@ -186,13 +199,13 @@ struct VirtualControllerEditorView: View {
         }
     }
 
-    private func menuAction(_ title: String, destructive: Bool = false, _ action: @escaping () -> Void) -> some View {
+    private func menuRow(_ title: String, destructive: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 12)
-                .background(destructive ? Color.red.opacity(0.15) : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .bottom) { Divider().opacity(0.35) }
                 .foregroundStyle(destructive ? Color.red : Color.primary)
         }
     }
@@ -304,4 +317,3 @@ private struct LayoutExportDocument: FileDocument {
     init(configuration: ReadConfiguration) throws { self.data = configuration.file.regularFileContents ?? Data() }
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { .init(regularFileWithContents: data) }
 }
-
