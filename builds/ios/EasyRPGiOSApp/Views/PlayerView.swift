@@ -299,7 +299,6 @@ struct PlayerView: View {
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             presentVirtualControllerOverlayWindow()
-            keepOverlayInFrontTemporarily()
             applySettings()
             applyPreferredOrientationMode()
             buttonMappingStore.applyToPlayer()
@@ -352,25 +351,19 @@ struct PlayerView: View {
     private func scheduleOrientationRealignment() {
         orientationSettleTask?.cancel()
 
-        // iOS orientation transitions can report transient geometry values.
-        // Re-apply overlay + layout several times so final settled bounds win.
+        // Android parity-style behavior: apply one deterministic realignment
+        // after rotation settles, avoid repeated overlay churn.
         let task = DispatchWorkItem {
             presentVirtualControllerOverlayWindow()
             applyVirtualLayoutToPlayer()
-            keepOverlayInFrontTemporarily()
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                presentVirtualControllerOverlayWindow()
-                applyVirtualLayoutToPlayer()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 presentVirtualControllerOverlayWindow()
                 applyVirtualLayoutToPlayer()
             }
         }
 
         orientationSettleTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: task)
     }
 
     private func applyPreferredOrientationMode() {
