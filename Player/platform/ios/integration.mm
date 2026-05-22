@@ -2,6 +2,8 @@
 
 #if defined(__APPLE__) && TARGET_OS_IOS
 
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #include <functional>
 #include <mutex>
 #include <atomic>
