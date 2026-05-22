@@ -552,6 +552,22 @@ void Sdl3Ui::UpdateDisplay() {
 	SDL_UpdateTexture(sdl_texture_game, nullptr, main_surface->pixels(), main_surface->pitch());
 #endif
 
+#if defined(__APPLE__) && TARGET_OS_IOS
+	// Root fix for iOS orientation freeze:
+	// even when no size-event arrives, keep drawable/window geometry in sync
+	// with the live SDL window each frame.
+	if (sdl_window) {
+		int px_w = 0;
+		int px_h = 0;
+		SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
+		if (px_w > 0 && px_h > 0 && (window.width != px_w || window.height != px_h)) {
+			window.width = px_w;
+			window.height = px_h;
+			window.size_changed = true;
+		}
+	}
+#endif
+
 	if (window.size_changed && window.width > 0 && window.height > 0) {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
