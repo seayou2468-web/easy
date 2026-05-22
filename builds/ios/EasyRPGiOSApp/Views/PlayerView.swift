@@ -45,7 +45,6 @@ private enum IOSDisplayCoordinator {
             if let sdlView = findSDLView(in: window), let container = sdlView.superview {
                 let frame = gameplayFrame(in: container.bounds.size)
                 guard frame.width > 0, frame.height > 0 else { continue }
-                appliedFrame = frame
                 if sdlView.frame != frame {
                     UIView.performWithoutAnimation {
                         sdlView.frame = frame
@@ -53,6 +52,7 @@ private enum IOSDisplayCoordinator {
                         sdlView.layoutIfNeeded()
                     }
                 }
+                appliedFrame = sdlView.frame
             }
         }
         return appliedFrame
@@ -558,8 +558,8 @@ struct VirtualControllerView: View {
                     runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
-            .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
-            .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
+             .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
+            .offset(x: activeGameplayFrame.minX, y: activeGameplayFrame.minY)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
