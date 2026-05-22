@@ -35,7 +35,6 @@ enum IOSDisplayCoordinator {
 
         var appliedFrame: CGRect = .zero
         for scene in scenes {
-            ensureVirtualControllerHostWindowAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
@@ -69,7 +68,6 @@ enum IOSDisplayCoordinator {
         guard !scenes.isEmpty else { return }
 
         for scene in scenes {
-            ensureVirtualControllerHostWindowAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
                 guard let sdlView = findSDLView(in: window) else { continue }
                 applyOverlayInputSafety(to: sdlView)
@@ -102,30 +100,7 @@ enum IOSDisplayCoordinator {
         return nil
     }
 
-    private static func ensureVirtualControllerHostWindowAboveSDL(in scene: UIWindowScene) {
-        let visible = scene.windows.filter { !$0.isHidden }
-        guard !visible.isEmpty else { return }
-
-        let sdlWindows = visible.filter { findSDLView(in: $0) != nil }
-        guard !sdlWindows.isEmpty else { return }
-        let topSDLLevel = sdlWindows.map(\.windowLevel.rawValue).max() ?? UIWindow.Level.normal.rawValue
-
-        // Root fix:
-        // only target the app's SwiftUI host window (UIHostingController),
-        // and never mutate unrelated system/helper windows.
-        let hostCandidates = visible.filter { w in
-            guard findSDLView(in: w) == nil else { return false }
-            guard let root = w.rootViewController else { return false }
-            let rootName = NSStringFromClass(type(of: root))
-            return rootName.localizedCaseInsensitiveContains("UIHosting")
-        }
-        guard let hostWindow = hostCandidates.first(where: \.isKeyWindow) ?? hostCandidates.first else { return }
-
-        let requiredLevel = max(UIWindow.Level.normal.rawValue, topSDLLevel + 1)
-        if hostWindow.windowLevel.rawValue < requiredLevel {
-            hostWindow.windowLevel = UIWindow.Level(rawValue: requiredLevel)
-        }
-    }
+    // Overlay window ordering is managed by VirtualControllerOverlayManager.
 }
 
 @MainActor
@@ -190,19 +165,7 @@ struct PlayerView: View {
 
     @ViewBuilder
     private var virtualControllerLayer: some View {
-        if touchUIEnabled {
-            VirtualControllerView(
-                layoutStore: layoutStore,
-                config: config,
-                onDirectionInput: handleDirectionInput,
-                onButtonInput: handleButtonInput,
-                viewport: runtimeViewport,
-                gameplayFrame: gameplayFrame
-            )
-            .ignoresSafeArea()
-            .allowsHitTesting(true)
-            .zIndex(2000)
-        }
+        EmptyView()
     }
 
     @ViewBuilder
@@ -224,6 +187,7 @@ struct PlayerView: View {
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
                     scheduleRelayout()
                 }
+                refreshOverlayWindow()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
@@ -292,11 +256,13 @@ struct PlayerView: View {
         }
         .onDisappear {
             AppLogger.log("PlayerView onDisappear")
+            VirtualControllerOverlayManager.shared.dismiss()
             restoreDefaultOrientationMode()
             releaseProjectSecurityScope()
         }
         .onReceive(layoutStore.$profiles) { _ in
             applyVirtualLayoutToPlayer()
+            refreshOverlayWindow()
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
@@ -320,6 +286,7 @@ struct PlayerView: View {
 
         .onChange(of: config.touchUI) { _, _ in
             scheduleRelayout()
+            refreshOverlayWindow()
         }
         .onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
             let rev = PlayerBridge.surfaceGeometryRevision()
@@ -337,7 +304,29 @@ struct PlayerView: View {
             relayoutScheduled = false
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            refreshOverlayWindow()
         }
+    }
+
+    private func refreshOverlayWindow() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
+        guard touchUIEnabled else {
+            VirtualControllerOverlayManager.shared.dismiss()
+            return
+        }
+        let content = VirtualControllerView(
+            layoutStore: layoutStore,
+            config: config,
+            onDirectionInput: handleDirectionInput,
+            onButtonInput: handleButtonInput,
+            viewport: runtimeViewport,
+            gameplayFrame: gameplayFrame
+        )
+        .ignoresSafeArea()
+        .allowsHitTesting(true)
+        VirtualControllerOverlayManager.shared.present(in: scene, content: content)
     }
 
     private func applyAndroidParityScreenPositionAndInputLayout() {
