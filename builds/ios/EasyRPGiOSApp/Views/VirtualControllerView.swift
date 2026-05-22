@@ -18,11 +18,10 @@ struct VirtualControllerView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let activeGameplayFrame = gameplayFrame.width > 0 && gameplayFrame.height > 0
-                ? gameplayFrame
-                : IOSDisplayCoordinator.gameplayFrame(in: RuntimeViewport(size: geo.size))
-            let geometryWidth = activeGameplayFrame.width > 0 ? activeGameplayFrame.width : geo.size.width
-            let geometryHeight = activeGameplayFrame.height > 0 ? activeGameplayFrame.height : geo.size.height
+            // Android parity: controls are placed in the full parent layout,
+            // while SDL surface itself is resized separately.
+            let geometryWidth = geo.size.width
+            let geometryHeight = geo.size.height
             let isLandscape = geometryWidth > geometryHeight
             let buttons = layoutStore.buttons(isLandscape: isLandscape)
             let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }

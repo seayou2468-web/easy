@@ -66,13 +66,6 @@ enum IOSDisplayCoordinator {
             if container.subviews.last !== sdlView {
                 container.sendSubviewToBack(sdlView)
             }
-            if let sdlWindow = sdlView.window {
-                let targetLevel = UIWindow.Level.normal - 1
-                if sdlWindow.windowLevel != targetLevel {
-                    sdlWindow.windowLevel = targetLevel
-                }
-            }
-
             appliedFrame = displayFrame
         }
         return appliedFrame
