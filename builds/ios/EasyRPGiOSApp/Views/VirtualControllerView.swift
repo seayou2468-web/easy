@@ -37,11 +37,14 @@ struct VirtualControllerView: View {
                     runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
+            .allowsHitTesting(true)
             .contentShape(Rectangle())
              .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
             .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(true)
+        .contentShape(Rectangle())
                 .onDisappear {
             releaseAllVirtualInputs()
         }
@@ -57,6 +60,7 @@ struct VirtualControllerView: View {
         let dpadSize = refSize * 2.2
 
         DPadCrossView(opacity: effectiveOpacity, size: dpadSize)
+            .allowsHitTesting(true)
             .contentShape(Rectangle())
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
             .highPriorityGesture(
@@ -167,6 +171,7 @@ struct VirtualControllerView: View {
             size: buttonSize,
             config: config
         )
+        .allowsHitTesting(true)
         .contentShape(Rectangle())
         .position(
             x: button.x * geometryWidth,
