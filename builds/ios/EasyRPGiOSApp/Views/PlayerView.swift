@@ -705,19 +705,44 @@ struct VirtualControllerView: View {
     }
 
     private func resolveDPadDirection(from point: CGPoint, size: CGFloat) -> String? {
-        let third = size * 0.33
-        let pad = size * 0.20
-        let x = point.x
-        let y = point.y
-        let leftRect = CGRect(x: -pad, y: third, width: third + pad, height: third + pad)
-        let rightRect = CGRect(x: third * 2, y: third, width: third + pad, height: third + pad)
-        let upRect = CGRect(x: third, y: -pad, width: third, height: third + pad)
-        let downRect = CGRect(x: third, y: third * 2, width: third, height: third + pad)
+        // Android parity (VirtualCross#setBounds):
+        // iconSize_33 = int(realSize * 0.33), padding = int(realSize * 0.20)
+        let iconSize33 = Int(size * 0.33)
+        let padding = Int(size * 0.20)
+        let realSize = Int(size)
+        let px = Int(point.x)
+        let py = Int(point.y)
 
-        if leftRect.contains(CGPoint(x: x, y: y)) { return "left" }
-        if rightRect.contains(CGPoint(x: x, y: y)) { return "right" }
-        if upRect.contains(CGPoint(x: x, y: y)) { return "up" }
-        if downRect.contains(CGPoint(x: x, y: y)) { return "down" }
+        let leftRect = CGRect(
+            x: CGFloat(-padding),
+            y: CGFloat(iconSize33),
+            width: CGFloat(realSize - 2 * iconSize33 + padding),
+            height: CGFloat(realSize - 2 * iconSize33 + padding)
+        )
+        let rightRect = CGRect(
+            x: CGFloat(2 * iconSize33),
+            y: CGFloat(iconSize33),
+            width: CGFloat(realSize - 2 * iconSize33 + padding),
+            height: CGFloat(realSize - 2 * iconSize33 + padding)
+        )
+        let upRect = CGRect(
+            x: CGFloat(iconSize33),
+            y: CGFloat(-padding),
+            width: CGFloat(realSize - 2 * iconSize33),
+            height: CGFloat(realSize - 2 * iconSize33)
+        )
+        let downRect = CGRect(
+            x: CGFloat(iconSize33),
+            y: CGFloat(2 * iconSize33),
+            width: CGFloat(realSize - 2 * iconSize33),
+            height: CGFloat(realSize - 2 * iconSize33 + padding)
+        )
+
+        let p = CGPoint(x: px, y: py)
+        if leftRect.contains(p) { return "left" }
+        if rightRect.contains(p) { return "right" }
+        if upRect.contains(p) { return "up" }
+        if downRect.contains(p) { return "down" }
         return nil
     }
 
@@ -777,12 +802,10 @@ struct VirtualControllerView: View {
 
         let anchor = buttonTouchAnchors[button.instanceId] ?? value.startLocation
         let translatedPoint = CGPoint(x: anchor.x + value.translation.width, y: anchor.y + value.translation.height)
-        let slop = buttonSize * 0.22
-        let minX = -slop
-        let maxX = buttonSize + slop
-        let minY = -slop
-        let maxY = buttonSize + slop
-        let isInside = translatedPoint.x >= minX && translatedPoint.x <= maxX && translatedPoint.y >= minY && translatedPoint.y <= maxY
+
+        // Android parity (VirtualButton): use button bounds containment in parent coords.
+        let buttonRect = CGRect(x: 0, y: 0, width: buttonSize, height: buttonSize)
+        let isInside = buttonRect.contains(translatedPoint)
 
         if isInside && !pressedButtons.contains(button.instanceId) {
             pressedButtons.insert(button.instanceId)
