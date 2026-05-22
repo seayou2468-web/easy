@@ -199,11 +199,10 @@ private struct EditorButtonView: View {
     }
 
     var body: some View {
-        Text(displayTitle(for: button))
-            .font(.headline)
-            .frame(width: editorButtonSize, height: editorButtonSize)
-            .background(buttonBackground(for: button))
-            .overlay(Circle().stroke(selectedButtonInstanceId == button.instanceId ? Color.yellow : .clear, lineWidth: 2))
+        VirtualButtonView(button: button, isPressed: false, opacity: max(0.0, min(1.0, Double(255 - config.layoutTransparency) / 255.0)), size: editorButtonSize, config: config)
+            .overlay(
+                Circle().stroke(selectedButtonInstanceId == button.instanceId ? Color.yellow : .clear, lineWidth: 2)
+            )
             .position(x: button.x * canvasSize.width, y: button.y * canvasSize.height)
             .onTapGesture { selectedButtonInstanceId = button.instanceId }
             .highPriorityGesture(
@@ -277,28 +276,3 @@ private struct LayoutExportDocument: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { .init(regularFileWithContents: data) }
 }
 
-@ViewBuilder
-private func buttonBackground(for button: VirtualButtonLayout) -> some View {
-    if ["up", "down", "left", "right"].contains(button.id) {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
-            if button.id == "up" || button.id == "down" {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 16, height: 30)
-            }
-            if button.id == "left" || button.id == "right" {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 30, height: 16)
-            }
-        }
-    } else {
-        Circle().fill(.ultraThinMaterial)
-    }
-}
-
-private func displayTitle(for button: VirtualButtonLayout) -> String {
-    button.title
-}
