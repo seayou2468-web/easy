@@ -230,6 +230,10 @@ void SimulateVirtualPress(float x, float y) {
 		Input::source->SimulateKeyPress(best_key);
 	}
 }
+
+void ClearHeldKeys() {
+	held_keys.clear();
+}
 }
 
 namespace IOSIntegration {
@@ -307,12 +311,14 @@ void Invoke() {
 
 void EndGame() {
 	Schedule([]() {
+		ClearHeldKeys();
 		Player::exit_flag = true;
 	});
 }
 
 void ResetGame() {
 	Schedule([]() {
+		ClearHeldKeys();
 		Player::reset_flag = true;
 	});
 }
@@ -490,6 +496,7 @@ void LaunchGame(const char* args) {
 	// If runtime is not running yet, start it now that launch args are registered.
 	// This enforces the required ordering: LaunchGame(args) -> Player::Init(args).
 	if (!runtime_started.load()) {
+		Schedule([]() { ClearHeldKeys(); });
 		StartRuntimeIfNeeded();
 		return;
 	}
@@ -499,6 +506,7 @@ void LaunchGame(const char* args) {
 		Output::Debug("[iOSBridge] runtime already running; requesting full restart to re-parse argv");
 		restart_requested = true;
 		Schedule([]() {
+			ClearHeldKeys();
 			// Root fix: reset does not re-parse argv.
 			// Request full shutdown; runtime thread will auto-restart with latest launch_args.
 			Player::exit_flag = true;
