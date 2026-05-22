@@ -35,7 +35,6 @@ enum IOSDisplayCoordinator {
 
         var appliedFrame: CGRect = .zero
         for scene in scenes {
-            ensureOverlayWindowsAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
@@ -69,7 +68,6 @@ enum IOSDisplayCoordinator {
         guard !scenes.isEmpty else { return }
 
         for scene in scenes {
-            ensureOverlayWindowsAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
                 guard let sdlView = findSDLView(in: window) else { continue }
                 applyOverlayInputSafety(to: sdlView)
@@ -100,28 +98,6 @@ enum IOSDisplayCoordinator {
             if let found = findSDLView(in: v) { return found }
         }
         return nil
-    }
-
-    private static func ensureOverlayWindowsAboveSDL(in scene: UIWindowScene) {
-        let visible = scene.windows.filter { !$0.isHidden }
-        guard !visible.isEmpty else { return }
-
-        let sdlWindows = visible.filter { findSDLView(in: $0) != nil }
-        guard !sdlWindows.isEmpty else { return }
-        let topSDLLevel = sdlWindows.map(\.windowLevel).max() ?? .normal
-        let overlayCandidates = visible.filter { findSDLView(in: $0) == nil }
-        guard !overlayCandidates.isEmpty else { return }
-
-        // Root fix:
-        // raise only the app overlay host window (prefer key window),
-        // avoid mutating unrelated windows (alerts/keyboard/system windows).
-        let overlayWindow = overlayCandidates.first(where: \.isKeyWindow) ?? overlayCandidates.first
-        guard let overlayWindow else { return }
-
-        let required = UIWindow.Level(rawValue: topSDLLevel.rawValue + 1)
-        if overlayWindow.windowLevel.rawValue < required.rawValue {
-            overlayWindow.windowLevel = required
-        }
     }
 }
 
