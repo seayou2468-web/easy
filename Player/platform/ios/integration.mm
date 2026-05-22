@@ -234,6 +234,18 @@ void SimulateVirtualPress(float x, float y) {
 void ClearHeldKeys() {
 	held_keys.clear();
 }
+
+CGSize last_reported_screen_size = CGSizeZero;
+void NotifySurfaceGeometryIfNeeded() {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		CGSize current = UIScreen.mainScreen.bounds.size;
+		if (CGSizeEqualToSize(current, CGSizeZero)) return;
+		if (!CGSizeEqualToSize(current, last_reported_screen_size)) {
+			last_reported_screen_size = current;
+			[[NSNotificationCenter defaultCenter] postNotificationName:@"EasyRPGIOSSurfaceGeometryDidChange" object:nil];
+		}
+	});
+}
 }
 
 namespace IOSIntegration {
@@ -287,6 +299,7 @@ void StartRuntimeIfNeeded() {
 }
 
 void Invoke() {
+	NotifySurfaceGeometryIfNeeded();
 	std::vector<std::function<void()>> pending;
 	{
 		std::lock_guard<std::mutex> lock(ios_mutex);
