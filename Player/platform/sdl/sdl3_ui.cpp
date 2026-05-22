@@ -788,6 +788,21 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		window.width = evnt.window.data1;
 		window.height = evnt.window.data2;
 
+#if defined(__APPLE__) && defined(__IPHONEOS__)
+		// On iPhone/iPad, rotation can momentarily report stale window-event sizes.
+		// Query current pixel size from SDL window directly to avoid drift after
+		// repeated landscape <-> portrait transitions.
+		if (sdl_window) {
+			int px_w = 0;
+			int px_h = 0;
+			SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
+			if (px_w > 0 && px_h > 0) {
+				window.width = px_w;
+				window.height = px_h;
+			}
+		}
+#endif
+
 #ifdef EMSCRIPTEN
 		double display_ratio = emscripten_get_device_pixel_ratio();
 		window.width = static_cast<int>(window.width * display_ratio);
