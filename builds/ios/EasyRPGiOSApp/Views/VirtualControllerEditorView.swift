@@ -35,7 +35,7 @@ struct VirtualControllerEditorView: View {
         "iPhone17,1": "iphone_15_16", "iPhone17,2": "iphone_15_16_plus"
     ]
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var store = VirtualControllerLayoutStore()
+    @StateObject private var store = VirtualControllerLayoutStore.shared
     @State private var workingButtons: [VirtualButtonLayout] = []
     @State private var selectedButtonInstanceId: String?
     @State private var showMenu = false
@@ -265,6 +265,90 @@ private struct EditorButtonView: View {
     }
 }
 
+
+private struct EditorDPadView: View {
+    @Binding var workingButtons: [VirtualButtonLayout]
+    let canvasSize: CGSize
+
+    @ObservedObject private var config = ConfigManager.shared
+    @State private var dragStart: [String: CGPoint] = [:]
+
+    private var directionalIndexes: [Int] {
+        workingButtons.indices.filter { ["up", "down", "left", "right"].contains(workingButtons[$0].id) }
+    }
+
+    private var center: CGPoint {
+        guard !directionalIndexes.isEmpty else { return .zero }
+        let xs = directionalIndexes.map { workingButtons[$0].x }
+        let ys = directionalIndexes.map { workingButtons[$0].y }
+        return CGPoint(x: xs.reduce(0, +) / CGFloat(xs.count), y: ys.reduce(0, +) / CGFloat(ys.count))
+    }
+
+    private var dpadSize: CGFloat {
+        let sizes = directionalIndexes.map { VirtualControllerView.visualSize(for: workingButtons[$0], config: config, viewport: .zero) }
+        let maxSize = sizes.max() ?? 64
+        return maxSize * 2.2
+    }
+
+    var body: some View {
+        if directionalIndexes.count == 4 {
+            AndroidDPadShape()
+                .stroke(Color.white.opacity(max(0.0, min(1.0, Double(255 - config.layoutTransparency) / 255.0))), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
+                .frame(width: dpadSize, height: dpadSize)
+                .position(x: center.x * canvasSize.width, y: center.y * canvasSize.height)
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if dragStart.isEmpty {
+                                for idx in directionalIndexes {
+                                    dragStart[workingButtons[idx].instanceId] = CGPoint(x: workingButtons[idx].x, y: workingButtons[idx].y)
+                                }
+                            }
+                            let dx = value.translation.width / max(canvasSize.width, 1)
+                            let dy = value.translation.height / max(canvasSize.height, 1)
+                            for idx in directionalIndexes {
+                                guard let base = dragStart[workingButtons[idx].instanceId] else { continue }
+                                workingButtons[idx].x = min(max(0.0, base.x + dx), 1.0)
+                                workingButtons[idx].y = min(max(0.0, base.y + dy), 1.0)
+                            }
+                        }
+                        .onEnded { _ in
+                            dragStart.removeAll()
+                        }
+                )
+        }
+    }
+}
+
+private struct AndroidDPadShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height)
+        let oneThird = floor(s * 0.33)
+        let twoThird = oneThird * 2
+        let border: CGFloat = 5
+        let minX = rect.minX + border
+        let minY = rect.minY + border
+        let maxX = rect.maxX - border
+        let maxY = rect.maxY - border
+
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX + oneThird, y: minY))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: minY))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: maxX, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: maxX, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: rect.minX + twoThird, y: maxY))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: maxY))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: minX, y: rect.minY + twoThird))
+        p.addLine(to: CGPoint(x: minX, y: rect.minY + oneThird))
+        p.addLine(to: CGPoint(x: rect.minX + oneThird, y: rect.minY + oneThird))
+        p.closeSubpath()
+        return p
+    }
+}
+
 private struct DeviceFrameEditorCanvas: View {
     let preset: VirtualControllerEditorView.DevicePreset
     @Binding var workingButtons: [VirtualButtonLayout]
@@ -295,8 +379,11 @@ private struct DeviceFrameEditorCanvas: View {
 
                 ZStack {
                     Color.black
+                    EditorDPadView(workingButtons: $workingButtons, canvasSize: CGSize(width: frameWidth - 28, height: frameHeight - 28))
                     ForEach($workingButtons, id: \.instanceId) { $button in
-                        EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: CGSize(width: frameWidth - 28, height: frameHeight - 28))
+                        if !["up", "down", "left", "right"].contains(button.id) {
+                            EditorButtonView(button: $button, selectedButtonInstanceId: $selectedButtonInstanceId, canvasSize: CGSize(width: frameWidth - 28, height: frameHeight - 28))
+                        }
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))

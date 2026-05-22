@@ -610,6 +610,12 @@ void SendKeyUp(const char* button_id) {
 	});
 }
 
+void ReleaseAllVirtualInputs() {
+	Schedule([]() {
+		ClearHeldKeys();
+	});
+}
+
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 	if (!has_launch_args) {
 		Output::Debug("[iOSBridge] ConsumeLaunchArgs: no args available");
@@ -681,6 +687,7 @@ void EasyRPG_iOS_SetVirtualButtonPoint(const char* button_id, float x, float y) 
 void EasyRPG_iOS_LaunchGame(const char* args) { LogBridgeCall("EasyRPG_iOS_LaunchGame"); IOSIntegration::LaunchGame(args); }
 void EasyRPG_iOS_SendKeyDown(const char* button_id) { LogBridgeCall("EasyRPG_iOS_SendKeyDown"); IOSIntegration::SendKeyDown(button_id); }
 void EasyRPG_iOS_SendKeyUp(const char* button_id) { LogBridgeCall("EasyRPG_iOS_SendKeyUp"); IOSIntegration::SendKeyUp(button_id); }
+void EasyRPG_iOS_ReleaseAllVirtualInputs() { LogBridgeCall("EasyRPG_iOS_ReleaseAllVirtualInputs"); IOSIntegration::ReleaseAllVirtualInputs(); }
 void EasyRPG_iOS_SetLayoutTransparency(float) {}
 void EasyRPG_iOS_SetLayoutSize(float) {}
 void EasyRPG_iOS_SetVibrationEnabled(bool) {}

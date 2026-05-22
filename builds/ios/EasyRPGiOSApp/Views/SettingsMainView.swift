@@ -300,7 +300,7 @@ struct SettingsAudioView: View {
 
 struct SettingsInputView: View {
     @StateObject private var config = ConfigManager.shared
-    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var mappingStore = ButtonMappingStore()
     @State private var showLayoutEditor = false
     @State private var showButtonMapping = false
@@ -318,6 +318,9 @@ struct SettingsInputView: View {
 
                     Toggle("A/B を Z/X として表示", isOn: $config.showABasZX)
                         .onChange(of: config.showABasZX) { _, _ in config.saveSettings() }
+
+                    Toggle("タッチUI（仮想コントローラー）", isOn: $config.touchUI)
+                        .onChange(of: config.touchUI) { _, _ in config.saveSettings() }
                 }
                 .padding(.bottom, 8)
 

@@ -23,6 +23,7 @@ void EasyRPG_iOS_ResetButtonMappings(void);
 // Input
 void EasyRPG_iOS_SendKeyDown(const char* button_id);
 void EasyRPG_iOS_SendKeyUp(const char* button_id);
+void EasyRPG_iOS_ReleaseAllVirtualInputs(void);
 
 // Virtual Controller Touch Events
 void EasyRPG_iOS_VirtualTouchDown(float x, float y);

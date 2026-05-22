@@ -69,6 +69,12 @@ enum PlayerBridge {
         }
     }
 
+
+    static func releaseAllVirtualInputs() {
+        AppLogger.log("ENTER releaseAllVirtualInputs")
+        EasyRPG_iOS_ReleaseAllVirtualInputs()
+    }
+
     // MARK: - Virtual Controller Touch Events
     static func virtualTouchDown(x: CGFloat, y: CGFloat) {
         AppLogger.log("ENTER virtualTouchDown")

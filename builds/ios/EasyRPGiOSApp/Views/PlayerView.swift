@@ -82,13 +82,9 @@ enum IOSDisplayCoordinator {
     }
 
     private static func applyOverlayInputSafety(to sdlView: UIView) {
-        // Keep the SDL surface from stealing touch events from the SwiftUI
-        // virtual-controller overlay when SDL is hosted in its own UIWindow.
-        // Gameplay input is routed through virtual button key events.
-        sdlView.isUserInteractionEnabled = false
-        // Do not force SDL UIWindow level down here.
-        // Some SDL/iOS setups render into their own window and lowering its
-        // level can hide gameplay entirely behind other app windows.
+        // Do not force-disable SDL touch handling here.
+        // Overlay ownership is handled by the overlay window's hitTest policy.
+        _ = sdlView
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
@@ -155,7 +151,7 @@ struct PlayerView: View {
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
-    @StateObject private var layoutStore = VirtualControllerLayoutStore()
+    @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
@@ -187,7 +183,6 @@ struct PlayerView: View {
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
                     scheduleRelayout()
                 }
-                refreshOverlayWindow()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
@@ -277,6 +272,9 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             scheduleRelayout()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            VirtualControllerOverlayManager.shared.dismiss()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout()
             refreshOverlayWindowPostLayout()
@@ -286,7 +284,7 @@ struct PlayerView: View {
             scheduleRelayout()
             refreshOverlayWindow()
         }
-        .onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
             let rev = PlayerBridge.surfaceGeometryRevision()
             if rev != lastSurfaceGeometryRevision {
                 lastSurfaceGeometryRevision = rev
@@ -314,31 +312,37 @@ struct PlayerView: View {
             VirtualControllerOverlayManager.shared.dismiss()
             return
         }
-        let content = VirtualControllerView(
+        VirtualControllerOverlayManager.shared.registerOnDismiss {
+            PlayerBridge.releaseAllVirtualInputs()
+        }
+        VirtualControllerOverlayManager.shared.present(
+            in: scene,
             layoutStore: layoutStore,
             config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput,
             viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame
+            gameplayFrame: gameplayFrame,
+            onDirectionInput: { direction, isPressed in
+                handleDirectionInput(direction: direction, isPressed: isPressed)
+            },
+            onButtonInput: { buttonId, isPressed in
+                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
+            }
         )
-        .ignoresSafeArea()
-        .allowsHitTesting(true)
-        VirtualControllerOverlayManager.shared.present(in: scene, content: content)
     }
 
     private func refreshOverlayWindowPostLayout() {
-        let content = VirtualControllerView(
+        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(
             layoutStore: layoutStore,
             config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput,
             viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame
+            gameplayFrame: gameplayFrame,
+            onDirectionInput: { direction, isPressed in
+                handleDirectionInput(direction: direction, isPressed: isPressed)
+            },
+            onButtonInput: { buttonId, isPressed in
+                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
+            }
         )
-        .ignoresSafeArea()
-        .allowsHitTesting(true)
-        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(content: content)
     }
 
     private func applyAndroidParityScreenPositionAndInputLayout() {
@@ -554,11 +558,10 @@ struct PlayerView: View {
 
     private func handleDirectionInput(direction: String, isPressed: Bool) {
         AppLogger.log("ENTER handleDirectionInput")
-        let buttonId = ["up": "up", "down": "down", "left": "left", "right": "right"][direction] ?? direction
         if isPressed {
-            PlayerBridge.sendKeyDown(buttonId)
+            PlayerBridge.sendKeyDown(direction)
         } else {
-            PlayerBridge.sendKeyUp(buttonId)
+            PlayerBridge.sendKeyUp(direction)
         }
     }
 
