@@ -159,12 +159,9 @@ enum IOSDisplayCoordinator {
         // virtual-controller overlay when SDL is hosted in its own UIWindow.
         // Gameplay input is routed through virtual button key events.
         sdlView.isUserInteractionEnabled = false
-        if let sdlWindow = sdlView.window {
-            let targetLevel = UIWindow.Level.normal - 1
-            if sdlWindow.windowLevel >= UIWindow.Level.normal {
-                sdlWindow.windowLevel = targetLevel
-            }
-        }
+        // Do not force SDL UIWindow level down here.
+        // Some SDL/iOS setups render into their own window and lowering its
+        // level can hide gameplay entirely behind other app windows.
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
