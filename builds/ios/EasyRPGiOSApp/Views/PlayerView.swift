@@ -31,13 +31,16 @@ private final class VirtualControllerOverlayWindowManager {
             return
         }
 
+        let sceneBounds = resolvedBounds(for: scene)
+
         if overlayWindow == nil || overlayScene !== scene {
             let window = TouchPassthroughWindow(windowScene: scene)
             window.backgroundColor = .clear
-            window.frame = scene.coordinateSpace.bounds
+            window.frame = sceneBounds
             window.windowLevel = preferredOverlayLevel(in: scene)
             let host = UIHostingController(rootView: AnyView(EmptyView()))
             host.view.backgroundColor = .clear
+            host.view.frame = sceneBounds
             window.rootViewController = host
             overlayHost = host
             overlayWindow = window
@@ -45,7 +48,7 @@ private final class VirtualControllerOverlayWindowManager {
         }
 
         if let window = overlayWindow {
-            window.frame = scene.coordinateSpace.bounds
+            window.frame = sceneBounds
             window.windowLevel = preferredOverlayLevel(in: scene)
         }
 
@@ -61,6 +64,7 @@ private final class VirtualControllerOverlayWindowManager {
         )
 
         if let rootView = overlayHost?.view {
+            rootView.frame = sceneBounds
             rootView.setNeedsLayout()
             rootView.layoutIfNeeded()
         }
@@ -118,6 +122,16 @@ private final class VirtualControllerOverlayWindowManager {
             .max() ?? .normal
         let minimumOverlayLevel = UIWindow.Level.alert + 1
         return max(minimumOverlayLevel, highestSceneLevel + 1)
+    }
+
+    private func resolvedBounds(for scene: UIWindowScene) -> CGRect {
+        // Prefer live screen bounds because coordinateSpace bounds can be stale
+        // during orientation transitions on iOS.
+        let b = scene.screen.bounds
+        if b.width > 0 && b.height > 0 {
+            return b
+        }
+        return scene.coordinateSpace.bounds
     }
 }
 
@@ -301,9 +315,6 @@ struct PlayerView: View {
             applyVirtualLayoutToPlayer()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            scheduleOrientationRealignment()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didChangeStatusBarOrientationNotification)) { _ in
             scheduleOrientationRealignment()
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
