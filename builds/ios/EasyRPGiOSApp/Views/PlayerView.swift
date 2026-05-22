@@ -80,9 +80,36 @@ enum IOSDisplayCoordinator {
             if container.subviews.last !== sdlView {
                 container.sendSubviewToBack(sdlView)
             }
+
+            applyOverlayInputSafety(to: sdlView)
             appliedFrame = displayFrame
         }
         return appliedFrame
+    }
+
+
+    static func enforceSDLTouchPassthrough() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
+
+        for window in scene.windows where !window.isHidden {
+            guard let sdlView = findSDLView(in: window) else { continue }
+            applyOverlayInputSafety(to: sdlView)
+        }
+    }
+
+    private static func applyOverlayInputSafety(to sdlView: UIView) {
+        // Keep the SDL surface from stealing touch events from the SwiftUI
+        // virtual-controller overlay when SDL is hosted in its own UIWindow.
+        // Gameplay input is routed through virtual button key events.
+        sdlView.isUserInteractionEnabled = false
+        if let sdlWindow = sdlView.window {
+            let targetLevel = UIWindow.Level.normal - 1
+            if sdlWindow.windowLevel >= UIWindow.Level.normal {
+                sdlWindow.windowLevel = targetLevel
+            }
+        }
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
@@ -289,6 +316,9 @@ struct PlayerView: View {
                 lastSurfaceGeometryRevision = rev
                 applyAndroidParityScreenPositionAndInputLayout()
             }
+        }
+        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
     }
 
