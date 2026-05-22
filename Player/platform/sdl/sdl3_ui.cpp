@@ -552,6 +552,23 @@ void Sdl3Ui::UpdateDisplay() {
 	SDL_UpdateTexture(sdl_texture_game, nullptr, main_surface->pixels(), main_surface->pitch());
 #endif
 
+#if defined(__APPLE__) && defined(__IPHONEOS__)
+	// UIKit can resize/reposition the underlying SDL host view without always
+	// delivering a corresponding SDL window size event immediately.
+	// Re-sample current pixel size each frame and mark size_changed when needed
+	// so viewport math stays aligned with Swift-managed gameplayFrame.
+	if (sdl_window) {
+		int live_w = 0;
+		int live_h = 0;
+		SDL_GetWindowSizeInPixels(sdl_window, &live_w, &live_h);
+		if (live_w > 0 && live_h > 0 && (live_w != window.width || live_h != window.height)) {
+			window.width = live_w;
+			window.height = live_h;
+			window.size_changed = true;
+		}
+	}
+#endif
+
 	if (window.size_changed && window.width > 0 && window.height > 0) {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
