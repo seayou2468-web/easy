@@ -240,6 +240,7 @@ struct PlayerView: View {
     @State private var fastForwardAToggleActive = false
     @State private var runtimeViewport: RuntimeViewport = .zero
     @State private var gameplayFrame: CGRect = .zero
+    @State private var pendingViewportSizeForStabilization: CGSize = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var pendingInitialSurfaceSync = true
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
@@ -291,13 +292,19 @@ struct PlayerView: View {
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
                 guard newSize.width > 0, newSize.height > 0 else { return }
+                pendingViewportSizeForStabilization = newSize
+                let settledSize = newSize
                 DispatchQueue.main.async {
+                    guard pendingViewportSizeForStabilization == settledSize else { return }
+                    guard runtimeViewport.size == settledSize else { return }
                     applyAndroidParityScreenPositionAndInputLayout()
                     IOSDisplayCoordinator.enforceSDLTouchPassthrough()
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                    applyAndroidParityScreenPositionAndInputLayout()
-                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    DispatchQueue.main.async {
+                        guard pendingViewportSizeForStabilization == settledSize else { return }
+                        guard runtimeViewport.size == settledSize else { return }
+                        applyAndroidParityScreenPositionAndInputLayout()
+                        IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    }
                 }
             }
         }
