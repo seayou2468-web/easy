@@ -799,11 +799,16 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		mouse_focus = false;
 	}
 #endif
-	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
+	const bool is_size_related_event =
+		state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
 		state == SDL_EVENT_WINDOW_RESIZED ||
 		state == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||
-		state == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED ||
-		state == SDL_EVENT_WINDOW_ORIENTATION_CHANGED) {
+		state == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED
+#ifdef SDL_EVENT_WINDOW_ORIENTATION_CHANGED
+		|| state == SDL_EVENT_WINDOW_ORIENTATION_CHANGED
+#endif
+		;
+	if (is_size_related_event) {
 
 #if defined(__APPLE__) && defined(__IPHONEOS__)
 		// Root fix for iOS rotation:
