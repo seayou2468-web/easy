@@ -83,12 +83,12 @@ enum IOSDisplayCoordinator {
     }
 
     static func applyGameplayFrameToSDLView() -> CGRect {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return .zero }
+        let scenes = activeWindowScenes()
+        guard !scenes.isEmpty else { return .zero }
 
         var appliedFrame: CGRect = .zero
-        for window in scene.windows where !window.isHidden {
+        for scene in scenes {
+            for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
             // Android parity: updateScreenPosition() uses display width directly.
@@ -130,20 +130,28 @@ enum IOSDisplayCoordinator {
 
             applyOverlayInputSafety(to: sdlView)
             appliedFrame = displayFrame
+            }
         }
         return appliedFrame
     }
 
 
     static func enforceSDLTouchPassthrough() {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
+        let scenes = activeWindowScenes()
+        guard !scenes.isEmpty else { return }
 
-        for window in scene.windows where !window.isHidden {
-            guard let sdlView = findSDLView(in: window) else { continue }
-            applyOverlayInputSafety(to: sdlView)
+        for scene in scenes {
+            for window in scene.windows where !window.isHidden {
+                guard let sdlView = findSDLView(in: window) else { continue }
+                applyOverlayInputSafety(to: sdlView)
+            }
         }
+    }
+
+    private static func activeWindowScenes() -> [UIWindowScene] {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
     }
 
     private static func applyOverlayInputSafety(to sdlView: UIView) {
@@ -267,6 +275,7 @@ struct PlayerView: View {
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
                 applyAndroidParityScreenPositionAndInputLayout()
+                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             }
         }
         .toolbar(.hidden, for: .navigationBar)
