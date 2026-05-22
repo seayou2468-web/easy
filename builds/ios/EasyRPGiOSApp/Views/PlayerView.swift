@@ -52,6 +52,11 @@ private enum IOSDisplayCoordinator {
                         sdlView.layoutIfNeeded()
                     }
                 }
+                // Android parity layering: surface is added first, virtual buttons are above it.
+                // Keep SDL render view behind SwiftUI overlay/touch controls.
+                if container.subviews.last !== sdlView {
+                    container.sendSubviewToBack(sdlView)
+                }
                 appliedFrame = frame
             }
         }
@@ -291,6 +296,9 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: .configManagerDidSaveSettings)) { _ in
             applySettings()
             applyPreferredOrientationMode()
+        }
+        .onChange(of: config.touchUI) { _, _ in
+            applyAndroidParityScreenPositionAndInputLayout()
         }
     }
 
