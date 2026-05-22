@@ -225,6 +225,7 @@ struct PlayerView: View {
     @State private var runtimeViewport: RuntimeViewport = .zero
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
+    @State private var pendingInitialSurfaceSync = true
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -330,10 +331,6 @@ struct PlayerView: View {
             hasInitializedPlayer = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                applyAndroidParityScreenPositionAndInputLayout()
-                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
-            }
             applySettings()
             applyPreferredOrientationMode()
             buttonMappingStore.applyToPlayer()
@@ -378,6 +375,15 @@ struct PlayerView: View {
             if rev != lastSurfaceGeometryRevision {
                 lastSurfaceGeometryRevision = rev
                 applyAndroidParityScreenPositionAndInputLayout()
+                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+
+                // First non-zero geometry change implies SDL surface/window became
+                // available after async runtime startup. Re-apply settings once
+                // so DisplayUi-dependent scheduled operations are not dropped.
+                if pendingInitialSurfaceSync && rev > 0 {
+                    pendingInitialSurfaceSync = false
+                    applySettings()
+                }
             }
         }
     }
