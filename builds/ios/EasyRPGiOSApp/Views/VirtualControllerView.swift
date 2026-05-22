@@ -22,7 +22,9 @@ struct VirtualControllerView: View {
             // while SDL surface itself is resized separately.
             let geometryWidth = geo.size.width
             let geometryHeight = geo.size.height
-            let isLandscape = geometryWidth > geometryHeight
+            // Match Android orientation-switch behavior by using the shared
+            // runtime viewport orientation discriminator.
+            let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
             let buttons = layoutStore.buttons(isLandscape: isLandscape)
             let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }
             let others = buttons.filter { !["up", "down", "left", "right"].contains($0.id) }
@@ -386,4 +388,3 @@ private struct MenuGlyphButtonShape: Shape {
         return p
     }
 }
-
