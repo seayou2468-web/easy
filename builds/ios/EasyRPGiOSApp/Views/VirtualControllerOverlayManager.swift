@@ -60,6 +60,7 @@ final class VirtualControllerOverlayManager {
     }
 
     private var overlayWindow: PassThroughWindow?
+    private var hostingController: UIHostingController<OverlayRootView>?
     private weak var scene: UIWindowScene?
     private var refreshScheduled = false
     private var lastStableFrame: CGRect = .zero
@@ -82,10 +83,17 @@ final class VirtualControllerOverlayManager {
         overlayState.onDirectionInput = onDirectionInput
         overlayState.onButtonInput = onButtonInput
 
-        let hosting = UIHostingController(rootView: OverlayRootView(state: overlayState))
-        hosting.view.backgroundColor = .clear
-        hosting.view.isUserInteractionEnabled = true
-        hosting.view.isOpaque = false
+        let hosting: UIHostingController<OverlayRootView>
+        if let existingHost = hostingController {
+            hosting = existingHost
+        } else {
+            let created = UIHostingController(rootView: OverlayRootView(state: overlayState))
+            created.view.backgroundColor = .clear
+            created.view.isUserInteractionEnabled = true
+            created.view.isOpaque = false
+            hostingController = created
+            hosting = created
+        }
 
         let window: PassThroughWindow
         if let existing = overlayWindow, existing.windowScene === scene {
@@ -118,8 +126,11 @@ final class VirtualControllerOverlayManager {
         overlayWindow?.isHidden = true
         overlayWindow?.rootViewController = nil
         overlayWindow = nil
+        hostingController = nil
         scene = nil
         lastStableFrame = .zero
+        overlayState.onDirectionInput = { _, _ in }
+        overlayState.onButtonInput = { _, _ in }
     }
 
     func schedulePostLayoutRefresh(
