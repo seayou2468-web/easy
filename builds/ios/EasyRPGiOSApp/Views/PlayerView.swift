@@ -23,13 +23,8 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func gameplayFrame(in viewport: RuntimeViewport) -> CGRect {
-        gameplayFrame(in: viewport.size)
-    }
-
-    static func gameplayFrame(in containerSize: CGSize, safeInsets: UIEdgeInsets = .zero) -> CGRect {
+    static func gameplayFrame(in containerSize: CGSize) -> CGRect {
         guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
-        _ = safeInsets
         // SDL にレイアウト責務を集約するため、Swift 側では画面全域のみを扱う。
         return CGRect(origin: .zero, size: containerSize)
     }
@@ -49,7 +44,7 @@ enum IOSDisplayCoordinator {
             // If SDL is hosted in a different UIWindow than SwiftUI, using the
             // SwiftUI window here can push the surface off-screen.
             let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size, safeInsets: .zero)
+            let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
 
             // Android parity layering:
