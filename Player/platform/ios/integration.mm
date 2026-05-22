@@ -603,6 +603,8 @@ bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 }
 }
 
+} // namespace
+
 extern "C" {
 void EasyRPG_iOS_EndGame() {
 	LogBridgeCall("EasyRPG_iOS_EndGame");
