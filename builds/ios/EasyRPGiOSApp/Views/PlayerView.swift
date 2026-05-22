@@ -10,6 +10,7 @@ struct RuntimeViewport: Equatable {
     static let zero = RuntimeViewport()
 }
 
+@MainActor
 enum IOSDisplayCoordinator {
     static func isLandscape(viewport: RuntimeViewport) -> Bool {
         if viewport.size.width > 0 && viewport.size.height > 0 {
@@ -23,33 +24,18 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func gameplayFrame(in viewport: RuntimeViewport) -> CGRect {
-        gameplayFrame(in: viewport.size)
+    static func gameplayFrame(in viewport: RuntimeViewport, safeInsets: UIEdgeInsets = .zero) -> CGRect {
+        gameplayFrame(in: viewport.size, safeInsets: safeInsets)
     }
 
     static func gameplayFrame(in containerSize: CGSize, safeInsets: UIEdgeInsets = .zero) -> CGRect {
         guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
 
-        // Keep RPG frame aspect ratio (4:3) while fitting inside safe bounds.
-        // This prevents overlap with notch/dynamic-island and avoids overflow on
-        // repeated orientation changes.
-        // iOS can transiently report unstable safeAreaInsets during window
-        // creation/rotation. Clamp and fallback so gameplay frame never vanishes.
-        let left = min(max(0, safeInsets.left), containerSize.width)
-        let right = min(max(0, safeInsets.right), containerSize.width)
-        let top = min(max(0, safeInsets.top), containerSize.height)
-        let bottom = min(max(0, safeInsets.bottom), containerSize.height)
-
-        let safeWidth = containerSize.width - left - right
-        let safeHeight = containerSize.height - top - bottom
-
-        let safeRect: CGRect
-        if safeWidth > 1, safeHeight > 1 {
-            safeRect = CGRect(x: left, y: top, width: safeWidth, height: safeHeight)
-        } else {
-            // Fallback to full bounds instead of returning .zero (black screen).
-            safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
-        }
+        // SDL render area should use the full host bounds.
+        // Applying iOS safe-area here can clip the native surface twice
+        // (UIKit-safe-area + SDL viewport), which causes right-side/partial
+        // rendering cuts reported on real devices.
+        let safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
 
         let aspect: CGFloat = 4.0 / 3.0
         let safeAspect = safeRect.width / safeRect.height
@@ -65,10 +51,12 @@ enum IOSDisplayCoordinator {
             frameSize = CGSize(width: width, height: width / aspect)
         }
 
-        // Keep top edge at safe-area top (portrait: below notch/island), and
-        // center horizontally within safe width to avoid side clipping.
+        // Center inside safe-area on both axes so Swift-side clipping frame
+        // stays consistent with SDL's internal letterbox viewport placement.
+        // Top-aligning here can desync with SDL (which centers on Y), causing
+        // partial/off-screen rendering like the attached screenshots.
         let x = safeRect.minX + (safeRect.width - frameSize.width) / 2.0
-        let y = safeRect.minY
+        let y = safeRect.minY + (safeRect.height - frameSize.height) / 2.0
 
         // Keep final frame strictly inside safeRect. CGRect.integral expands
         // outward, which can reintroduce 1px overflow into notch/island area.
@@ -91,26 +79,14 @@ enum IOSDisplayCoordinator {
             for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
-            // Android parity: updateScreenPosition() uses display width directly.
-            // Compute in window/display space first, then convert to SDL container space.
-            // Android parity intent: size from the active SDL display window.
-            // If SDL is hosted in a different UIWindow than SwiftUI, using the
-            // SwiftUI window here can push the surface off-screen.
-            let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size, safeInsets: baseWindow.safeAreaInsets)
+            // Use the actual SDL host-container bounds as the single source of
+            // truth. Window bounds can lag one orientation behind during iOS
+            // rotation transitions, which can make portrait inherit landscape
+            // sizing (or vice versa).
+            let containerBounds = container.bounds
+            let displayFrame = gameplayFrame(in: containerBounds.size, safeInsets: .zero)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
-
-            // Android parity: updateScreenPosition() applies x=0,y=0 in the
-            // same parent layout that hosts the surface. Prefer direct parent-
-            // local frame when container/window already match, fallback to
-            // conversion only when needed.
-            let frame: CGRect
-            if container.window === baseWindow {
-                // Keep safe-area-aware origin (x/y), not only size.
-                frame = displayFrame
-            } else {
-                frame = container.convert(displayFrame, from: baseWindow)
-            }
+            let frame = displayFrame
 
             if sdlView.frame != frame {
                 UIView.performWithoutAnimation {
@@ -130,10 +106,13 @@ enum IOSDisplayCoordinator {
 
             applyOverlayInputSafety(to: sdlView)
 
-            let scale = baseWindow.screen.nativeScale
+            let scale = (container.window ?? window).screen.nativeScale
+            let displayedPxW = Int(frame.width * scale)
+            let displayedPxH = Int(frame.height * scale)
+            AppLogger.log("[DisplaySync] applyGameplayFrame containerPt=\(containerBounds.size) framePt=\(frame) displayedPx=\(displayedPxW)x\(displayedPxH) scale=\(scale)")
             PlayerBridge.notifyWindowSize(
-                widthPx: Int(frame.width * scale),
-                heightPx: Int(frame.height * scale)
+                widthPx: displayedPxW,
+                heightPx: displayedPxH
             )
 
             appliedFrame = displayFrame
@@ -166,6 +145,14 @@ enum IOSDisplayCoordinator {
         // virtual-controller overlay when SDL is hosted in its own UIWindow.
         // Gameplay input is routed through virtual button key events.
         sdlView.isUserInteractionEnabled = false
+        // NOTE:
+        // Disabling the SDL superview can intermittently break responder-chain
+        // hit-testing during rotations/window reattachment and cause touch
+        // absorption (virtual controller taps appear to be dropped).
+        // Only disable the concrete SDL render view.
+        if sdlView.superview?.isUserInteractionEnabled == false {
+            sdlView.superview?.isUserInteractionEnabled = true
+        }
         // Do not force SDL UIWindow level down here.
         // Some SDL/iOS setups render into their own window and lowering its
         // level can hide gameplay entirely behind other app windows.
@@ -231,8 +218,10 @@ struct PlayerView: View {
     @State private var fastForwardAToggleActive = false
     @State private var runtimeViewport: RuntimeViewport = .zero
     @State private var gameplayFrame: CGRect = .zero
+    @State private var pendingViewportSizeForStabilization: CGSize = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var pendingInitialSurfaceSync = true
+    @State private var lastLoggedFrameSignature: String = ""
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -281,9 +270,21 @@ struct PlayerView: View {
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
-                if newSize.width > 0, newSize.height > 0 {
+                AppLogger.log("[DisplaySync] rootGeo.size changed newSize=\(newSize) orientation=\(currentOrientationLogString())")
+                guard newSize.width > 0, newSize.height > 0 else { return }
+                pendingViewportSizeForStabilization = newSize
+                let settledSize = newSize
+                DispatchQueue.main.async {
+                    guard pendingViewportSizeForStabilization == settledSize else { return }
+                    guard runtimeViewport.size == settledSize else { return }
                     applyAndroidParityScreenPositionAndInputLayout()
                     IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    DispatchQueue.main.async {
+                        guard pendingViewportSizeForStabilization == settledSize else { return }
+                        guard runtimeViewport.size == settledSize else { return }
+                        applyAndroidParityScreenPositionAndInputLayout()
+                        IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                    }
                 }
             }
         }
@@ -356,12 +357,16 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: .configManagerDidSaveSettings)) { _ in
             applySettings()
             applyPreferredOrientationMode()
+            applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            AppLogger.log("[DisplaySync] willEnterForeground orientation=\(currentOrientationLogString()) viewport=\(runtimeViewport.size)")
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            AppLogger.log("[DisplaySync] didBecomeActive orientation=\(currentOrientationLogString()) viewport=\(runtimeViewport.size)")
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
@@ -402,6 +407,13 @@ struct PlayerView: View {
         let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
         if frame.width > 0, frame.height > 0 {
             gameplayFrame = frame
+            let signature = "\(Int(frame.origin.x)):\(Int(frame.origin.y)):\(Int(frame.width)):\(Int(frame.height)):\(Int(runtimeViewport.size.width)):\(Int(runtimeViewport.size.height))"
+            if signature != lastLoggedFrameSignature {
+                lastLoggedFrameSignature = signature
+                AppLogger.log("[DisplaySync] gameplayFrame=\(frame) runtimeViewport=\(runtimeViewport.size) touchUI=\(touchUIEnabled)")
+            }
+        } else {
+            AppLogger.log("[DisplaySync] gameplayFrame is zero. runtimeViewport=\(runtimeViewport.size)")
         }
         applyVirtualLayoutToPlayer()
     }
@@ -409,6 +421,15 @@ struct PlayerView: View {
     private func applyPreferredOrientationMode() {
         // Android parity: do not force runtime geometry updates here.
         // Orientation policy is handled by app-level settings/system rotation.
+    }
+
+    private func currentOrientationLogString() -> String {
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) {
+            return scene.interfaceOrientation.isLandscape ? "landscape" : "portrait"
+        }
+        return runtimeViewport.isLandscape ? "landscape(viewport)" : "portrait(viewport)"
     }
 
 

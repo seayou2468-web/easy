@@ -931,11 +931,14 @@ void EasyRPG_iOS_NotifyWindowSize(int32_t width_px, int32_t height_px) {
 	if (width_px <= 0 || height_px <= 0) {
 		return;
 	}
+	Output::Debug("[iOSDisplaySync] NotifyWindowSize requested_px={}x{}", width_px, height_px);
+	surface_geometry_revision.fetch_add(1, std::memory_order_relaxed);
 	Schedule([width_px, height_px]() {
 		SDL_Event ev{};
 		ev.type = SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED;
 		ev.window.data1 = width_px;
 		ev.window.data2 = height_px;
+		Output::Debug("[iOSDisplaySync] Push SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED px={}x{}", width_px, height_px);
 		SDL_PushEvent(&ev);
 	});
 }
