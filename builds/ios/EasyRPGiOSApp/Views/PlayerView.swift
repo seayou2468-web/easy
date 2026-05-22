@@ -86,7 +86,8 @@ enum IOSDisplayCoordinator {
             // conversion only when needed.
             let frame: CGRect
             if container.window === baseWindow {
-                frame = CGRect(x: 0, y: 0, width: displayFrame.width, height: displayFrame.height)
+                // Keep safe-area-aware origin (x/y), not only size.
+                frame = displayFrame
             } else {
                 frame = container.convert(displayFrame, from: baseWindow)
             }
