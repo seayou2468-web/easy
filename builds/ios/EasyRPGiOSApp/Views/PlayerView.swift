@@ -316,11 +316,8 @@ struct PlayerView: View {
             VirtualControllerOverlayManager.shared.dismiss()
             return
         }
-        VirtualControllerOverlayManager.shared.registerOnDismiss { [layoutStore, runtimeViewport] in
-            let buttons = layoutStore.buttons(isLandscape: IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport))
-            for button in buttons {
-                PlayerBridge.sendKeyUp(button.id)
-            }
+        VirtualControllerOverlayManager.shared.registerOnDismiss {
+            PlayerBridge.releaseAllVirtualInputs()
         }
         VirtualControllerOverlayManager.shared.present(
             in: scene,
