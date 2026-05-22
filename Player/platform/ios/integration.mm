@@ -53,6 +53,7 @@ bool has_pending_relaunch_args = false;
 std::vector<Input::Keys::InputKey> held_keys;
 std::atomic<bool> runtime_started{false};
 std::atomic<bool> restart_requested{false};
+std::atomic<uint32_t> surface_geometry_revision{0};
 
 bool ConsumeLaunchArgs(std::vector<std::string>& out_args);
 
@@ -240,6 +241,7 @@ void NotifySurfaceGeometryIfNeeded() {
 	SDL_Rect current{0,0,0,0};
 	if (SDL_GetDisplayBounds(0, &current) == 0) {
 		last_reported_display_bounds = current;
+		surface_geometry_revision.fetch_add(1, std::memory_order_relaxed);
 	}
 }
 
@@ -896,6 +898,11 @@ void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t valu
 			}
 		}
 	});
+}
+
+
+uint32_t EasyRPG_iOS_GetSurfaceGeometryRevision() {
+	return surface_geometry_revision.load(std::memory_order_relaxed);
 }
 
 void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const char* value) {

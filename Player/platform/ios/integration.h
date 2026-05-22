@@ -66,6 +66,7 @@ void EasyRPG_iOS_SetLanguageSelectOnStart(int32_t mode);
 void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value);
 void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t value);
 void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const char* value);
+uint32_t EasyRPG_iOS_GetSurfaceGeometryRevision(void);
 
 #ifdef __cplusplus
 }

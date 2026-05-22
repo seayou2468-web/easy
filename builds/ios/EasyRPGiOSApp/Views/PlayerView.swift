@@ -140,6 +140,7 @@ struct PlayerView: View {
     @State private var fastForwardAToggleActive = false
     @State private var runtimeViewport: RuntimeViewport = .zero
     @State private var gameplayFrame: CGRect = .zero
+    @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -327,6 +328,13 @@ struct PlayerView: View {
 
                 .onChange(of: config.touchUI) { _, _ in
             applyAndroidParityScreenPositionAndInputLayout()
+        }
+.onReceive(Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()) { _ in
+            let rev = PlayerBridge.surfaceGeometryRevision()
+            if rev != lastSurfaceGeometryRevision {
+                lastSurfaceGeometryRevision = rev
+                applyAndroidParityScreenPositionAndInputLayout()
+            }
         }
     }
 
