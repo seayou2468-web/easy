@@ -245,6 +245,8 @@ void NotifySurfaceGeometryIfNeeded() {
 	}
 }
 
+} // namespace
+
 namespace IOSIntegration {
 void InitPlatformFeatures() {
 	SDL_SetHint("SDL_IOS_HIDE_HOME_INDICATOR", "1");
@@ -603,7 +605,6 @@ bool ConsumeLaunchArgs(std::vector<std::string>& out_args) {
 }
 }
 
-} // namespace
 
 extern "C" {
 void EasyRPG_iOS_EndGame() {
