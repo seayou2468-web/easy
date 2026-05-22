@@ -35,6 +35,7 @@ enum IOSDisplayCoordinator {
 
         var appliedFrame: CGRect = .zero
         for scene in scenes {
+            ensureOverlayWindowsAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
             guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
 
@@ -68,6 +69,7 @@ enum IOSDisplayCoordinator {
         guard !scenes.isEmpty else { return }
 
         for scene in scenes {
+            ensureOverlayWindowsAboveSDL(in: scene)
             for window in scene.windows where !window.isHidden {
                 guard let sdlView = findSDLView(in: window) else { continue }
                 applyOverlayInputSafety(to: sdlView)
@@ -98,6 +100,22 @@ enum IOSDisplayCoordinator {
             if let found = findSDLView(in: v) { return found }
         }
         return nil
+    }
+
+    private static func ensureOverlayWindowsAboveSDL(in scene: UIWindowScene) {
+        let visible = scene.windows.filter { !$0.isHidden }
+        guard !visible.isEmpty else { return }
+
+        let sdlWindows = visible.filter { findSDLView(in: $0) != nil }
+        guard !sdlWindows.isEmpty else { return }
+        let topSDLLevel = sdlWindows.map(\.windowLevel).max() ?? .normal
+
+        for window in visible where findSDLView(in: window) == nil {
+            let required = UIWindow.Level(rawValue: topSDLLevel.rawValue + 1)
+            if window.windowLevel.rawValue < required.rawValue {
+                window.windowLevel = required
+            }
+        }
     }
 }
 
