@@ -52,7 +52,7 @@ private enum IOSDisplayCoordinator {
                         sdlView.layoutIfNeeded()
                     }
                 }
-                appliedFrame = sdlView.frame
+                appliedFrame = frame
             }
         }
         return appliedFrame
@@ -559,7 +559,7 @@ struct VirtualControllerView: View {
                 }
             }
              .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
-            .offset(x: activeGameplayFrame.minX, y: activeGameplayFrame.minY)
+            .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cornerRadius(8)
