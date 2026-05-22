@@ -143,13 +143,16 @@ final class VirtualControllerOverlayManager {
     ) {
         guard !refreshScheduled else { return }
         refreshScheduled = true
-        RunLoop.main.perform {
-            CATransaction.flush()
-            self.refreshScheduled = false
-            guard let scene = self.scene ?? UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
-            self.present(in: scene, layoutStore: layoutStore, config: config, viewport: viewport, gameplayFrame: gameplayFrame, onDirectionInput: onDirectionInput, onButtonInput: onButtonInput)
+        RunLoop.main.perform { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                CATransaction.flush()
+                self.refreshScheduled = false
+                guard let scene = self.scene ?? UIApplication.shared.connectedScenes
+                    .compactMap({ $0 as? UIWindowScene })
+                    .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
+                self.present(in: scene, layoutStore: layoutStore, config: config, viewport: viewport, gameplayFrame: gameplayFrame, onDirectionInput: onDirectionInput, onButtonInput: onButtonInput)
+            }
         }
     }
 
@@ -171,7 +174,6 @@ final class VirtualControllerOverlayManager {
             window.bounds = CGRect(origin: .zero, size: target.size)
             window.center = CGPoint(x: target.midX, y: target.midY)
         }
-        if window.screen !== scene.screen { window.screen = scene.screen }
         lastStableFrame = target
     }
 

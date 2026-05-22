@@ -94,19 +94,12 @@ final class GameImportService: ObservableObject {
     }
 
     private func unzipArchive(at sourceURL: URL, to destinationURL: URL) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        process.arguments = ["-x", "-k", sourceURL.path, destinationURL.path]
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開の起動に失敗しました: \(error.localizedDescription)"])
-        }
-
-        guard process.terminationStatus == 0 else {
-            throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開に失敗しました（終了コード: \(process.terminationStatus)）"])
-        }
+        _ = sourceURL
+        _ = destinationURL
+        throw NSError(
+            domain: "GameImport",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "このビルドではZIP展開バックエンドが未構成です。ZIPFoundation統合が必要です。"]
+        )
     }
 }
