@@ -558,9 +558,13 @@ void Sdl3Ui::UpdateDisplay() {
 
 		SDL_Rect render_bounds {0, 0, window.width, window.height};
 #if defined(__APPLE__) && TARGET_OS_IOS
-		// iOS window frame is already constrained by UIKit/Swift safe-area logic.
-		// Keep SDL viewport coordinates in window-local space to avoid mismatch
-		// with externally adjusted UIWindow/View frame during rotations.
+		if ((current_display_mode.flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
+			int display_index = SDL_GetDisplayForWindow(sdl_window);
+			SDL_Rect usable_bounds;
+			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds)) {
+				render_bounds = usable_bounds;
+			}
+		}
 #endif
 
 		float width_float = static_cast<float>(render_bounds.w);
@@ -781,9 +785,23 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 	}
 #endif
 	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
-		Output::Debug("[iOSDisplaySync] SDL window event type={} data_px={}x{}", state, evnt.window.data1, evnt.window.data2);
 		window.width = evnt.window.data1;
 		window.height = evnt.window.data2;
+
+#if defined(__APPLE__) && defined(__IPHONEOS__)
+		// On iPhone/iPad, rotation can momentarily report stale window-event sizes.
+		// Query current pixel size from SDL window directly to avoid drift after
+		// repeated landscape <-> portrait transitions.
+		if (sdl_window) {
+			int px_w = 0;
+			int px_h = 0;
+			SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
+			if (px_w > 0 && px_h > 0) {
+				window.width = px_w;
+				window.height = px_h;
+			}
+		}
+#endif
 
 #ifdef EMSCRIPTEN
 		double display_ratio = emscripten_get_device_pixel_ratio();
@@ -792,7 +810,6 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 #endif
 
 		window.size_changed = true;
-		Output::Debug("[iOSDisplaySync] SDL accepted window px={}x{} size_changed={}", window.width, window.height, window.size_changed ? 1 : 0);
 	}
 }
 

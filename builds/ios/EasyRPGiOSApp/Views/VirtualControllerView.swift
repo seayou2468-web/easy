@@ -22,8 +22,9 @@ struct VirtualControllerView: View {
             // while SDL surface itself is resized separately.
             let geometryWidth = geo.size.width
             let geometryHeight = geo.size.height
-            // GeometryReaderサイズを優先して向きを判定し、回転直後の1フレーム不一致を回避。
-            let isLandscape = geometryWidth > geometryHeight
+            // Match Android orientation-switch behavior by using the shared
+            // runtime viewport orientation discriminator.
+            let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
             let buttons = layoutStore.buttons(isLandscape: isLandscape)
             let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }
             let others = buttons.filter { !["up", "down", "left", "right"].contains($0.id) }
@@ -127,7 +128,8 @@ struct VirtualControllerView: View {
     }
 
     static func visualSize(for button: VirtualButtonLayout, config: ConfigManager, viewport: RuntimeViewport) -> CGFloat {
-        let screenMin = min(max(viewport.size.width, 1), max(viewport.size.height, 1))
+        let baseSize = viewport.size == .zero ? UIScreen.main.bounds.size : viewport.size
+        let screenMin = min(baseSize.width, baseSize.height)
         let androidParityBase = max(44, min(104, screenMin * 0.135))
         let manualBase = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
         let base: CGFloat = config.ignoreLayoutSize ? manualBase : androidParityBase

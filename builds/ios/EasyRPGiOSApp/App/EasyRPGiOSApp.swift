@@ -46,10 +46,7 @@ struct EasyRPGiOSApp: App {
                     .onAppear {
                         AppLogger.log("Root view appeared")
                         mappingStore.applyToPlayer()
-                        let isLandscape = (UIApplication.shared.connectedScenes
-                            .compactMap { $0 as? UIWindowScene }
-                            .first { $0.activationState == .foregroundActive }?
-                            .interfaceOrientation.isLandscape) ?? (UIScreen.main.bounds.width > UIScreen.main.bounds.height)
+                        let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
                         for button in layoutStore.buttons(isLandscape: isLandscape) {
                             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: button.x, y: button.y)
                         }

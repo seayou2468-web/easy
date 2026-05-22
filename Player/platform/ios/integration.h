@@ -67,7 +67,6 @@ void EasyRPG_iOS_SetConfigBool(const char* section, const char* key, bool value)
 void EasyRPG_iOS_SetConfigInt(const char* section, const char* key, int32_t value);
 void EasyRPG_iOS_SetConfigString(const char* section, const char* key, const char* value);
 uint32_t EasyRPG_iOS_GetSurfaceGeometryRevision(void);
-void EasyRPG_iOS_NotifyWindowSize(int32_t width_px, int32_t height_px);
 
 #ifdef __cplusplus
 }
