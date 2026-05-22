@@ -1,26 +1,39 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
+import Darwin
 
 struct VirtualControllerEditorView: View {
     struct DevicePreset: Identifiable, Hashable {
         let id: String
         let name: String
         let points: CGSize
+        let hasNotch: Bool
 
         var aspectRatio: CGFloat { points.width / points.height }
     }
 
     private static let devicePresets: [DevicePreset] = [
-        .init(id: "iphone_se_3", name: "iPhone SE (3rd)", points: CGSize(width: 375, height: 667)),
-        .init(id: "iphone_12_mini", name: "iPhone 12 mini", points: CGSize(width: 360, height: 780)),
-        .init(id: "iphone_12_12_pro", name: "iPhone 12 / 12 Pro", points: CGSize(width: 390, height: 844)),
-        .init(id: "iphone_13_14", name: "iPhone 13/14", points: CGSize(width: 390, height: 844)),
-        .init(id: "iphone_14_pro", name: "iPhone 14 Pro", points: CGSize(width: 393, height: 852)),
-        .init(id: "iphone_14_pro_max", name: "iPhone 14 Pro Max", points: CGSize(width: 430, height: 932)),
-        .init(id: "iphone_15_16", name: "iPhone 15/16", points: CGSize(width: 393, height: 852)),
-        .init(id: "iphone_15_16_plus", name: "iPhone 15/16 Plus", points: CGSize(width: 430, height: 932))
+        .init(id: "iphone_se_3", name: "iPhone SE (3rd)", points: CGSize(width: 375, height: 667), hasNotch: false),
+        .init(id: "iphone_12_mini", name: "iPhone 12 mini", points: CGSize(width: 360, height: 780), hasNotch: true),
+        .init(id: "iphone_12_12_pro", name: "iPhone 12 / 12 Pro", points: CGSize(width: 390, height: 844), hasNotch: true),
+        .init(id: "iphone_13_14", name: "iPhone 13/14", points: CGSize(width: 390, height: 844), hasNotch: true),
+        .init(id: "iphone_14_pro", name: "iPhone 14 Pro", points: CGSize(width: 393, height: 852), hasNotch: true),
+        .init(id: "iphone_14_pro_max", name: "iPhone 14 Pro Max", points: CGSize(width: 430, height: 932), hasNotch: true),
+        .init(id: "iphone_15_16", name: "iPhone 15/16", points: CGSize(width: 393, height: 852), hasNotch: true),
+        .init(id: "iphone_15_16_plus", name: "iPhone 15/16 Plus", points: CGSize(width: 430, height: 932), hasNotch: true)
     ]
 
+    private static let modelMap: [String: String] = [
+        "iPhone14,6": "iphone_se_3",
+        "iPhone13,1": "iphone_12_mini",
+        "iPhone13,2": "iphone_12_12_pro",
+        "iPhone14,5": "iphone_13_14", "iPhone14,7": "iphone_13_14", "iPhone14,8": "iphone_13_14",
+        "iPhone15,2": "iphone_14_pro", "iPhone15,3": "iphone_14_pro_max",
+        "iPhone15,4": "iphone_15_16", "iPhone15,5": "iphone_15_16_plus",
+        "iPhone16,1": "iphone_15_16", "iPhone16,2": "iphone_15_16_plus",
+        "iPhone17,1": "iphone_15_16", "iPhone17,2": "iphone_15_16_plus"
+    ]
     @Environment(\.dismiss) private var dismiss
     @StateObject private var store = VirtualControllerLayoutStore()
     @State private var workingButtons: [VirtualButtonLayout] = []
@@ -87,6 +100,10 @@ struct VirtualControllerEditorView: View {
     }
 
     private static func detectCurrentDevicePreset() -> DevicePreset {
+        let model = deviceModelIdentifier()
+        if let pid = modelMap[model], let preset = devicePresets.first(where: { $0.id == pid }) {
+            return preset
+        }
         let bounds = UIScreen.main.bounds
         let portraitSize = CGSize(width: min(bounds.width, bounds.height), height: max(bounds.width, bounds.height))
         return devicePresets.min(by: {
@@ -96,12 +113,22 @@ struct VirtualControllerEditorView: View {
         }) ?? devicePresets[0]
     }
 
+    private static func deviceModelIdentifier() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        return withUnsafePointer(to: &systemInfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) { ptr in
+                String(cString: ptr)
+            }
+        }
+    }
+
     private var editorMenuOverlay: some View {
         ZStack {
             Color.black.opacity(0.55).ignoresSafeArea().onTapGesture { showMenu = false }
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("編集メニュー").font(.headline)
+                    HStack { Text("編集メニュー").font(.headline); Spacer(); Button("閉じる") { showMenu = false } }
                     menuAction(isLandscapeEditing ? "縦向きを編集" : "横向きを編集") { isLandscapeEditing.toggle() }
                     menuAction(config.ignoreLayoutSize ? "自動サイズON" : "自動サイズOFF") { config.ignoreLayoutSize.toggle(); config.saveSettings() }
                     menuAction("全ボタンを少し大きく") { adjustAllButtons(by: 5) }
@@ -244,10 +271,12 @@ private struct DeviceFrameEditorCanvas: View {
                     )
 
                 VStack {
-                    Capsule()
-                        .fill(Color.black.opacity(0.75))
-                        .frame(width: frameWidth * 0.28, height: 22)
-                        .padding(.top, 12)
+                    if preset.hasNotch {
+                        Capsule()
+                            .fill(Color.black.opacity(0.95))
+                            .frame(width: frameWidth * 0.36, height: 26)
+                            .padding(.top, 10)
+                    }
                     Spacer()
                 }
 
