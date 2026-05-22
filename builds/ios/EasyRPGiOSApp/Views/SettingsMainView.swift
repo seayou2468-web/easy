@@ -367,9 +367,9 @@ struct SettingsInputView: View {
 
                 Section(header: Text("レイアウト設定").font(.headline)) {
                     HStack {
-                        Text("レイアウト透明度")
+                        Text("レイアウト不透明度")
                         Spacer()
-                        Text("\(Int(config.layoutTransparency))%").foregroundStyle(.secondary)
+                        Text("\(Int((Double(255 - config.layoutTransparency) / 255.0) * 100.0))%").foregroundStyle(.secondary)
                     }
                     Slider(value: .init(
                         get: { Double(config.layoutTransparency) },

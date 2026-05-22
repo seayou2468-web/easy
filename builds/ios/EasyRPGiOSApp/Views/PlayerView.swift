@@ -23,8 +23,8 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func gameplayFrame(in viewport: RuntimeViewport) -> CGRect {
-        gameplayFrame(in: viewport.size)
+    static func gameplayFrame(in viewport: RuntimeViewport, safeInsets: UIEdgeInsets = .zero) -> CGRect {
+        gameplayFrame(in: viewport.size, safeInsets: safeInsets)
     }
 
     static func gameplayFrame(in containerSize: CGSize, safeInsets: UIEdgeInsets = .zero) -> CGRect {
@@ -51,7 +51,15 @@ enum IOSDisplayCoordinator {
             safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
         }
 
-        let aspect: CGFloat = 4.0 / 3.0
+        let aspect: CGFloat
+        switch ConfigManager.shared.gameResolution {
+        case 1:
+            aspect = 16.0 / 9.0
+        case 2:
+            aspect = 20.0 / 9.0
+        default:
+            aspect = 4.0 / 3.0
+        }
         let safeAspect = safeRect.width / safeRect.height
 
         let frameSize: CGSize
@@ -166,6 +174,7 @@ enum IOSDisplayCoordinator {
         // virtual-controller overlay when SDL is hosted in its own UIWindow.
         // Gameplay input is routed through virtual button key events.
         sdlView.isUserInteractionEnabled = false
+        sdlView.superview?.isUserInteractionEnabled = false
         // Do not force SDL UIWindow level down here.
         // Some SDL/iOS setups render into their own window and lowering its
         // level can hide gameplay entirely behind other app windows.
@@ -281,7 +290,12 @@ struct PlayerView: View {
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
-                if newSize.width > 0, newSize.height > 0 {
+                guard newSize.width > 0, newSize.height > 0 else { return }
+                DispatchQueue.main.async {
+                    applyAndroidParityScreenPositionAndInputLayout()
+                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                     applyAndroidParityScreenPositionAndInputLayout()
                     IOSDisplayCoordinator.enforceSDLTouchPassthrough()
                 }
