@@ -53,7 +53,17 @@ enum IOSDisplayCoordinator {
             let baseWindow = sdlView.window ?? window
             let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
-            let frame = container.convert(displayFrame, from: baseWindow)
+
+            // Android parity: updateScreenPosition() applies x=0,y=0 in the
+            // same parent layout that hosts the surface. Prefer direct parent-
+            // local frame when container/window already match, fallback to
+            // conversion only when needed.
+            let frame: CGRect
+            if container.window === baseWindow {
+                frame = CGRect(x: 0, y: 0, width: displayFrame.width, height: displayFrame.height)
+            } else {
+                frame = container.convert(displayFrame, from: baseWindow)
+            }
 
             if sdlView.frame != frame {
                 UIView.performWithoutAnimation {
