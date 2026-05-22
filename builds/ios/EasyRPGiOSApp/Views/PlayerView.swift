@@ -79,6 +79,20 @@ struct PlayerView: View {
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
+    @ViewBuilder
+    private var virtualControllerLayer: some View {
+        if config.touchUI {
+            VirtualControllerView(
+                layoutStore: layoutStore,
+                config: config,
+                onDirectionInput: handleDirectionInput,
+                onButtonInput: handleButtonInput,
+                viewport: runtimeViewport
+            )
+            .ignoresSafeArea()
+        }
+    }
+
     var body: some View {
         GeometryReader { rootGeo in
             ZStack {
@@ -167,16 +181,7 @@ struct PlayerView: View {
                 .transition(.opacity)
             }
 
-            if config.touchUI {
-                VirtualControllerView(
-                    layoutStore: layoutStore,
-                    config: config,
-                    onDirectionInput: handleDirectionInput,
-                    onButtonInput: handleButtonInput,
-                    viewport: runtimeViewport
-                )
-                .ignoresSafeArea()
-            }
+            virtualControllerLayer
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
