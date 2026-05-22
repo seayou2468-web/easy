@@ -109,12 +109,18 @@ enum IOSDisplayCoordinator {
         let sdlWindows = visible.filter { findSDLView(in: $0) != nil }
         guard !sdlWindows.isEmpty else { return }
         let topSDLLevel = sdlWindows.map(\.windowLevel).max() ?? .normal
+        let overlayCandidates = visible.filter { findSDLView(in: $0) == nil }
+        guard !overlayCandidates.isEmpty else { return }
 
-        for window in visible where findSDLView(in: window) == nil {
-            let required = UIWindow.Level(rawValue: topSDLLevel.rawValue + 1)
-            if window.windowLevel.rawValue < required.rawValue {
-                window.windowLevel = required
-            }
+        // Root fix:
+        // raise only the app overlay host window (prefer key window),
+        // avoid mutating unrelated windows (alerts/keyboard/system windows).
+        let overlayWindow = overlayCandidates.first(where: \.isKeyWindow) ?? overlayCandidates.first
+        guard let overlayWindow else { return }
+
+        let required = UIWindow.Level(rawValue: topSDLLevel.rawValue + 1)
+        if overlayWindow.windowLevel.rawValue < required.rawValue {
+            overlayWindow.windowLevel = required
         }
     }
 }
