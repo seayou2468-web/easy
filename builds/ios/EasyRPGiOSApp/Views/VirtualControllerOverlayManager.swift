@@ -9,28 +9,13 @@ final class VirtualControllerOverlayManager {
     private final class PassThroughWindow: UIWindow {
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             guard let hit = super.hitTest(point, with: event) else { return nil }
+            // If super hit-tests only the window itself, pass through.
             if hit === self { return nil }
 
-            // iOS 18+ can intermittently return only the hosting root view on the
-            // first hit test, even when a child SwiftUI control is interactive.
-            // Retry against the hosting root and pass through when no concrete
-            // interactive descendant can be resolved.
-            if let rootView = rootViewController?.view, hit === rootView {
-                let localPoint = rootView.convert(point, from: self)
-                let resolved = rootView.hitTest(localPoint, with: event)
-                if let resolved, resolved !== rootView {
-                    return resolved
-                }
-
-                // SwiftUI can attach gesture recognizers to the hosting root
-                // itself. In that case root-only is still an interactive hit.
-                if let recognizers = rootView.gestureRecognizers, !recognizers.isEmpty {
-                    return rootView
-                }
-
-                return nil
-            }
-
+            // Keep root-view hits interactive. SwiftUI frequently resolves
+            // gesture/touch handling through the hosting root, and forcing
+            // pass-through here can make the virtual controller visible but
+            // unresponsive.
             return hit
         }
     }
