@@ -590,6 +590,7 @@ struct VirtualControllerView: View {
                         activeDirection = nil
                     }
             )
+        .contentShape(Rectangle())
     }
 
     private func resolveDPadDirection(from point: CGPoint, size: CGFloat) -> String? {
@@ -665,6 +666,7 @@ struct VirtualControllerView: View {
             size: buttonSize,
             config: config
         )
+        .contentShape(Rectangle())
         .position(
             x: button.x * geometryWidth,
             y: button.y * geometryHeight
