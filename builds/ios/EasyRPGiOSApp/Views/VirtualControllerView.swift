@@ -37,6 +37,7 @@ struct VirtualControllerView: View {
                     runtimeButtonView(button, geometryWidth: geometryWidth, geometryHeight: geometryHeight)
                 }
             }
+            .contentShape(Rectangle())
              .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
             .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
         }
@@ -58,7 +59,7 @@ struct VirtualControllerView: View {
         DPadCrossView(opacity: effectiveOpacity, size: dpadSize)
             .contentShape(Rectangle())
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
-            .gesture(
+            .highPriorityGesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         let direction = resolveDPadDirection(from: value.location, size: dpadSize)
@@ -77,6 +78,7 @@ struct VirtualControllerView: View {
                         if let old = activeDirection { onDirectionInput(old, false) }
                         activeDirection = nil
                     }
+                , including: .all
             )
         .contentShape(Rectangle())
     }
@@ -178,6 +180,7 @@ struct VirtualControllerView: View {
                 .onEnded { _ in
                     handleDragEnded(button: button)
                 }
+            , including: .all
         )
     }
 
