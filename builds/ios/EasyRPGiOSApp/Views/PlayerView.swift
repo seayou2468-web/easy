@@ -827,7 +827,7 @@ private struct DPadCrossView: View {
     var body: some View {
         ZStack {
             AndroidDPadShape()
-                .stroke(Color.white.opacity(opacity), lineWidth: 3)
+                .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
         }
         .frame(width: size, height: size)
     }
@@ -879,17 +879,17 @@ struct VirtualButtonView: View {
             Group {
                 if isDirectional {
                     AndroidInsetCircleShape()
-                        .stroke(Color.white.opacity(opacity), lineWidth: 3)
+                        .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                 } else {
                     if button.id == "menu" {
                         MenuGlyphButtonShape()
-                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
+                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                     } else if button.id == "fast_forward_a" {
                         AndroidInsetRectShape()
-                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
+                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                     } else {
                         AndroidInsetCircleShape()
-                            .stroke(Color.white.opacity(opacity), lineWidth: 3)
+                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                     }
                 }
             }
