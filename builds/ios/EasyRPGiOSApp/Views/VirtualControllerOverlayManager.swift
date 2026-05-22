@@ -16,6 +16,7 @@ final class VirtualControllerOverlayManager {
     private var overlayWindow: PassThroughWindow?
     private weak var scene: UIWindowScene?
     private var refreshScheduled = false
+    private var lastStableFrame: CGRect = .zero
 
     func present(in scene: UIWindowScene, content: some View) {
         self.scene = scene
@@ -54,6 +55,7 @@ final class VirtualControllerOverlayManager {
         overlayWindow?.isHidden = true
         overlayWindow = nil
         scene = nil
+        lastStableFrame = .zero
     }
 
     func schedulePostLayoutRefresh(content: some View) {
@@ -70,10 +72,24 @@ final class VirtualControllerOverlayManager {
     }
 
     private func alignFrame(window: UIWindow, scene: UIWindowScene) {
-        if let key = scene.windows.first(where: { $0.isKeyWindow }) {
-            window.frame = key.bounds
-        } else {
-            window.frame = scene.coordinateSpace.bounds
+        let keyBounds = scene.windows.first(where: { $0.isKeyWindow })?.bounds ?? .zero
+        let sceneBounds = scene.coordinateSpace.bounds
+
+        // iOS 18+ can transiently produce zero-sized keyWindow bounds during
+        // scene detach/reattach. Prefer non-zero stable bounds and avoid
+        // redundant frame transactions.
+        var target = keyBounds
+        if target.width <= 1 || target.height <= 1 {
+            target = sceneBounds
         }
+        if target.width <= 1 || target.height <= 1 {
+            target = lastStableFrame
+        }
+        guard target.width > 1, target.height > 1 else { return }
+
+        if window.frame != target {
+            window.frame = target
+        }
+        lastStableFrame = target
     }
 }
