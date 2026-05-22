@@ -194,6 +194,7 @@ struct PlayerView: View {
         .padding(16)
         .background(LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom).allowsHitTesting(false))
         .opacity(showHud ? 1.0 : 0.0)
+        .allowsHitTesting(showHud)
         .animation(.easeInOut(duration: 0.2), value: showHud)
 
         if !showHud {
