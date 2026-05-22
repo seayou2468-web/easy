@@ -552,22 +552,6 @@ void Sdl3Ui::UpdateDisplay() {
 	SDL_UpdateTexture(sdl_texture_game, nullptr, main_surface->pixels(), main_surface->pitch());
 #endif
 
-#if defined(__APPLE__) && defined(__IPHONEOS__)
-	// iOS rotation can occasionally miss or delay pixel-size window events.
-	// Keep SDL as the single layout authority by reconciling against the
-	// current SDL window pixel size every frame.
-	if (sdl_window) {
-		int px_w = 0;
-		int px_h = 0;
-		SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-		if (px_w > 0 && px_h > 0 && (px_w != window.width || px_h != window.height)) {
-			window.width = px_w;
-			window.height = px_h;
-			window.size_changed = true;
-		}
-	}
-#endif
-
 	if (window.size_changed && window.width > 0 && window.height > 0) {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
@@ -762,6 +746,18 @@ void Sdl3Ui::ProcessEvent(SDL_Event &evnt) {
 
 void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 	int state = evnt.type;
+	auto sync_window_size_from_sdl = [this]() {
+		if (!sdl_window) return;
+		int px_w = 0;
+		int px_h = 0;
+		SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
+		if (px_w <= 0 || px_h <= 0) return;
+		if (window.width != px_w || window.height != px_h) {
+			window.width = px_w;
+			window.height = px_h;
+		}
+		window.size_changed = true;
+	};
 
 	if (state == SDL_EVENT_WINDOW_FOCUS_LOST) {
 		auto cfg = vcfg;
@@ -803,23 +799,22 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		mouse_focus = false;
 	}
 #endif
-	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
-		window.width = evnt.window.data1;
-		window.height = evnt.window.data2;
+	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
+		state == SDL_EVENT_WINDOW_RESIZED ||
+		state == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||
+		state == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED ||
+		state == SDL_EVENT_WINDOW_ORIENTATION_CHANGED) {
 
 #if defined(__APPLE__) && defined(__IPHONEOS__)
-		// On iPhone/iPad, rotation can momentarily report stale window-event sizes.
-		// Query current pixel size from SDL window directly to avoid drift after
-		// repeated landscape <-> portrait transitions.
-		if (sdl_window) {
-			int px_w = 0;
-			int px_h = 0;
-			SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-			if (px_w > 0 && px_h > 0) {
-				window.width = px_w;
-				window.height = px_h;
-			}
+		// Root fix for iOS rotation:
+		// trust SDL window's current pixel size at event time, not event payload.
+		sync_window_size_from_sdl();
+#else
+		if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
+			window.width = evnt.window.data1;
+			window.height = evnt.window.data2;
 		}
+		window.size_changed = true;
 #endif
 
 #ifdef EMSCRIPTEN
@@ -827,8 +822,6 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		window.width = static_cast<int>(window.width * display_ratio);
 		window.height = static_cast<int>(window.height * display_ratio);
 #endif
-
-		window.size_changed = true;
 	}
 }
 
