@@ -935,7 +935,7 @@ private final class AndroidStrokeTextView: UIView {
         let font = UIFont.boldSystemFont(ofSize: fontSize)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
         let ns = text as NSString
-        var bounds = ns.boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+        var bounds = ns.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
                                      options: [.usesLineFragmentOrigin, .usesFontLeading],
                                      attributes: attrs,
                                      context: nil)
