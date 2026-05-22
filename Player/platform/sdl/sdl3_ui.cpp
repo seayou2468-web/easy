@@ -804,9 +804,6 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		state == SDL_EVENT_WINDOW_RESIZED ||
 		state == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||
 		state == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED
-#ifdef SDL_EVENT_WINDOW_ORIENTATION_CHANGED
-		|| state == SDL_EVENT_WINDOW_ORIENTATION_CHANGED
-#endif
 		;
 	if (is_size_related_event) {
 
