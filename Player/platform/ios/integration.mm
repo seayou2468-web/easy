@@ -240,8 +240,13 @@ SDL_Rect last_reported_display_bounds{0,0,0,0};
 void NotifySurfaceGeometryIfNeeded() {
 	SDL_Rect current{0,0,0,0};
 	if (SDL_GetDisplayBounds(0, &current) == 0) {
-		last_reported_display_bounds = current;
-		surface_geometry_revision.fetch_add(1, std::memory_order_relaxed);
+		if (current.x != last_reported_display_bounds.x ||
+			current.y != last_reported_display_bounds.y ||
+			current.w != last_reported_display_bounds.w ||
+			current.h != last_reported_display_bounds.h) {
+			last_reported_display_bounds = current;
+			surface_geometry_revision.fetch_add(1, std::memory_order_relaxed);
+		}
 	}
 }
 
