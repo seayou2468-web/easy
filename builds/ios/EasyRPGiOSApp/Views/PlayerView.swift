@@ -242,6 +242,7 @@ struct PlayerView: View {
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
                 applyAndroidParityScreenPositionAndInputLayout()
+                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
@@ -315,6 +316,7 @@ struct PlayerView: View {
             let d = UIDevice.current.orientation
             if d == .landscapeLeft || d == .landscapeRight || d == .portrait || d == .portraitUpsideDown {
                 applyAndroidParityScreenPositionAndInputLayout()
+                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             }
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
@@ -326,12 +328,19 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeVisibleNotification)) { _ in
             applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { _ in
+            applyAndroidParityScreenPositionAndInputLayout()
+            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -343,9 +352,6 @@ struct PlayerView: View {
                 lastSurfaceGeometryRevision = rev
                 applyAndroidParityScreenPositionAndInputLayout()
             }
-        }
-        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
         }
     }
 
