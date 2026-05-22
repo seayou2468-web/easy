@@ -33,13 +33,23 @@ enum IOSDisplayCoordinator {
         // Keep RPG frame aspect ratio (4:3) while fitting inside safe bounds.
         // This prevents overlap with notch/dynamic-island and avoids overflow on
         // repeated orientation changes.
-        let safeRect = CGRect(
-            x: safeInsets.left,
-            y: safeInsets.top,
-            width: max(0, containerSize.width - safeInsets.left - safeInsets.right),
-            height: max(0, containerSize.height - safeInsets.top - safeInsets.bottom)
-        )
-        guard safeRect.width > 0, safeRect.height > 0 else { return .zero }
+        // iOS can transiently report unstable safeAreaInsets during window
+        // creation/rotation. Clamp and fallback so gameplay frame never vanishes.
+        let left = min(max(0, safeInsets.left), containerSize.width)
+        let right = min(max(0, safeInsets.right), containerSize.width)
+        let top = min(max(0, safeInsets.top), containerSize.height)
+        let bottom = min(max(0, safeInsets.bottom), containerSize.height)
+
+        let safeWidth = containerSize.width - left - right
+        let safeHeight = containerSize.height - top - bottom
+
+        let safeRect: CGRect
+        if safeWidth > 1, safeHeight > 1 {
+            safeRect = CGRect(x: left, y: top, width: safeWidth, height: safeHeight)
+        } else {
+            // Fallback to full bounds instead of returning .zero (black screen).
+            safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
+        }
 
         let aspect: CGFloat = 4.0 / 3.0
         let safeAspect = safeRect.width / safeRect.height
