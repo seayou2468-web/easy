@@ -238,6 +238,7 @@ struct PlayerView: View {
     @State private var pendingViewportSizeForStabilization: CGSize = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var pendingInitialSurfaceSync = true
+    @State private var lastLoggedFrameSignature: String = ""
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -420,6 +421,13 @@ struct PlayerView: View {
         let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
         if frame.width > 0, frame.height > 0 {
             gameplayFrame = frame
+            let signature = "\(Int(frame.origin.x)):\(Int(frame.origin.y)):\(Int(frame.width)):\(Int(frame.height)):\(Int(runtimeViewport.size.width)):\(Int(runtimeViewport.size.height))"
+            if signature != lastLoggedFrameSignature {
+                lastLoggedFrameSignature = signature
+                AppLogger.log("[DisplaySync] gameplayFrame=\(frame) runtimeViewport=\(runtimeViewport.size) touchUI=\(touchUIEnabled)")
+            }
+        } else {
+            AppLogger.log("[DisplaySync] gameplayFrame is zero. runtimeViewport=\(runtimeViewport.size)")
         }
         applyVirtualLayoutToPlayer()
     }
