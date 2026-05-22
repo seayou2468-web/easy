@@ -10,6 +10,7 @@ struct VirtualControllerView: View {
 
     @State private var pressedButtons: Set<String> = []
     @State private var activeDirection: String?
+    @State private var rootGlobalFrame: CGRect = .zero
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
@@ -41,6 +42,15 @@ struct VirtualControllerView: View {
             .contentShape(Rectangle())
              .frame(width: geometryWidth, height: geometryHeight, alignment: .topLeading)
             .position(x: geometryWidth / 2.0, y: geometryHeight / 2.0)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { rootGlobalFrame = proxy.frame(in: .global) }
+                        .onChange(of: proxy.frame(in: .global)) { _, newFrame in
+                            rootGlobalFrame = newFrame
+                        }
+                }
+            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(true)
@@ -67,8 +77,8 @@ struct VirtualControllerView: View {
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
                         let dpadFrame = CGRect(
-                            x: centerX * geometryWidth - dpadSize / 2,
-                            y: centerY * geometryHeight - dpadSize / 2,
+                            x: rootGlobalFrame.minX + centerX * geometryWidth - dpadSize / 2,
+                            y: rootGlobalFrame.minY + centerY * geometryHeight - dpadSize / 2,
                             width: dpadSize,
                             height: dpadSize
                         )
@@ -188,8 +198,8 @@ struct VirtualControllerView: View {
             DragGesture(minimumDistance: 0, coordinateSpace: .global)
                 .onChanged { value in
                     let frame = CGRect(
-                        x: button.x * geometryWidth - buttonSize / 2,
-                        y: button.y * geometryHeight - buttonSize / 2,
+                        x: rootGlobalFrame.minX + button.x * geometryWidth - buttonSize / 2,
+                        y: rootGlobalFrame.minY + button.y * geometryHeight - buttonSize / 2,
                         width: buttonSize,
                         height: buttonSize
                     )
