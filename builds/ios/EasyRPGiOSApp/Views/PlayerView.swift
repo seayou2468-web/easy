@@ -47,9 +47,13 @@ enum IOSDisplayCoordinator {
 
             // Android parity: updateScreenPosition() uses display width directly.
             // Compute in window/display space first, then convert to SDL container space.
-            let displayFrame = gameplayFrame(in: window.bounds.size)
+            // Android parity intent: size from the active SDL display window.
+            // If SDL is hosted in a different UIWindow than SwiftUI, using the
+            // SwiftUI window here can push the surface off-screen.
+            let baseWindow = sdlView.window ?? window
+            let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
-            let frame = container.convert(displayFrame, from: window)
+            let frame = container.convert(displayFrame, from: baseWindow)
 
             if sdlView.frame != frame {
                 UIView.performWithoutAnimation {
