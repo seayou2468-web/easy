@@ -40,25 +40,29 @@ private enum IOSDisplayCoordinator {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }) else { return .zero }
+
         var appliedFrame: CGRect = .zero
         for window in scene.windows where !window.isHidden {
-            if let sdlView = findSDLView(in: window), let container = sdlView.superview {
-                let frame = gameplayFrame(in: container.bounds.size)
-                guard frame.width > 0, frame.height > 0 else { continue }
-                if sdlView.frame != frame {
-                    UIView.performWithoutAnimation {
-                        sdlView.frame = frame
-                        sdlView.setNeedsLayout()
-                        sdlView.layoutIfNeeded()
-                    }
+            guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
+
+            // Android parity: updateScreenPosition() uses display width directly.
+            // Compute in window/display space first, then convert to SDL container space.
+            let displayFrame = gameplayFrame(in: window.bounds.size)
+            guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
+            let frame = container.convert(displayFrame, from: window)
+
+            if sdlView.frame != frame {
+                UIView.performWithoutAnimation {
+                    sdlView.frame = frame
+                    sdlView.setNeedsLayout()
+                    sdlView.layoutIfNeeded()
                 }
-                // Android parity layering: surface is added first, virtual buttons are above it.
-                // Keep SDL render view behind SwiftUI overlay/touch controls.
-                if container.subviews.last !== sdlView {
-                    container.sendSubviewToBack(sdlView)
-                }
-                appliedFrame = frame
             }
+            // Android parity layering: surface is added first, virtual buttons are above it.
+            if container.subviews.last !== sdlView {
+                container.sendSubviewToBack(sdlView)
+            }
+            appliedFrame = displayFrame
         }
         return appliedFrame
     }
