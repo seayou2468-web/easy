@@ -239,7 +239,21 @@ void ClearHeldKeys() {
 SDL_Rect last_reported_display_bounds{0,0,0,0};
 void NotifySurfaceGeometryIfNeeded() {
 	SDL_Rect current{0,0,0,0};
-	if (SDL_GetDisplayBounds(0, &current)) {
+	int display_index = 0;
+
+	if (SDL_Window* focused = SDL_GetKeyboardFocus()) {
+		const int idx = SDL_GetDisplayForWindow(focused);
+		if (idx >= 0) {
+			display_index = idx;
+		}
+	} else if (SDL_Window* hovered = SDL_GetMouseFocus()) {
+		const int idx = SDL_GetDisplayForWindow(hovered);
+		if (idx >= 0) {
+			display_index = idx;
+		}
+	}
+
+	if (SDL_GetDisplayBounds(display_index, &current)) {
 		if (current.x != last_reported_display_bounds.x ||
 			current.y != last_reported_display_bounds.y ||
 			current.w != last_reported_display_bounds.w ||
