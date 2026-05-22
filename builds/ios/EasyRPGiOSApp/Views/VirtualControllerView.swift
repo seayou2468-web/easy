@@ -64,15 +64,22 @@ struct VirtualControllerView: View {
             .contentShape(Rectangle())
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
             .highPriorityGesture(
-                DragGesture(minimumDistance: 0)
+                DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
-                        let direction = resolveDPadDirection(from: value.location, size: dpadSize)
+                        let dpadFrame = CGRect(
+                            x: centerX * geometryWidth - dpadSize / 2,
+                            y: centerY * geometryHeight - dpadSize / 2,
+                            width: dpadSize,
+                            height: dpadSize
+                        )
+                        let localPoint = CGPoint(x: value.location.x - dpadFrame.minX, y: value.location.y - dpadFrame.minY)
+                        let direction = resolveDPadDirection(from: localPoint, size: dpadSize)
                         if direction != activeDirection {
                             if let old = activeDirection { onDirectionInput(old, false) }
                             activeDirection = direction
                             if let direction {
                                 onDirectionInput(direction, true)
-                                if config.enableVibration && (config.vibrateWhenSliding || activeDirection == nil) {
+                                if config.enableVibration {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 }
                             }
@@ -84,7 +91,7 @@ struct VirtualControllerView: View {
                     }
                 , including: .all
             )
-        .contentShape(Rectangle())
+            .contentShape(Rectangle())
     }
 
     private func resolveDPadDirection(from point: CGPoint, size: CGFloat) -> String? {
@@ -178,9 +185,15 @@ struct VirtualControllerView: View {
             y: button.y * geometryHeight
         )
         .highPriorityGesture(
-            DragGesture(minimumDistance: 0)
+            DragGesture(minimumDistance: 0, coordinateSpace: .global)
                 .onChanged { value in
-                    handleDragChanged(value: value, button: button, buttonSize: buttonSize)
+                    let frame = CGRect(
+                        x: button.x * geometryWidth - buttonSize / 2,
+                        y: button.y * geometryHeight - buttonSize / 2,
+                        width: buttonSize,
+                        height: buttonSize
+                    )
+                    handleDragChanged(value: value, button: button, buttonFrame: frame)
                 }
                 .onEnded { _ in
                     handleDragEnded(button: button)
@@ -189,18 +202,9 @@ struct VirtualControllerView: View {
         )
     }
 
-    private func handleDragChanged(value: DragGesture.Value, button: VirtualButtonLayout, buttonSize: CGFloat) {
-        // Android-like touch lifecycle:
-        // - anchor at initial touch-down
-        // - slide keeps press while within tolerance zone
-        // - release when out; re-press if finger returns into zone
-        // SwiftUI DragGesture location is already in local coordinates of the button view.
-        // Using startLocation+translation can drift on rotation/layout updates and miss taps.
-        let currentPoint = CGPoint(x: value.startLocation.x + value.translation.width, y: value.startLocation.y + value.translation.height)
-
-        // Android parity (VirtualButton): keep press only while pointer stays within button bounds.
-        let buttonRect = CGRect(x: 0, y: 0, width: buttonSize, height: buttonSize)
-        let isInside = buttonRect.contains(currentPoint)
+    private func handleDragChanged(value: DragGesture.Value, button: VirtualButtonLayout, buttonFrame: CGRect) {
+        // Use global coordinate space for deterministic hit-testing across .position transforms.
+        let isInside = buttonFrame.contains(value.location)
 
         if isInside && !pressedButtons.contains(button.instanceId) {
             pressedButtons.insert(button.instanceId)
