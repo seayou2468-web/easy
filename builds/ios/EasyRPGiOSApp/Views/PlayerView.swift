@@ -1,151 +1,59 @@
 import SwiftUI
 
-private final class TouchPassthroughWindow: UIWindow {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        let hitView = super.hitTest(point, with: event)
-        // Pass through only when this window itself was hit.
-        // Returning nil for the SwiftUI hosting root breaks DragGesture and taps.
-        if hitView === self {
-            return nil
+private struct RuntimeViewport: Equatable {
+    var size: CGSize = .zero
+
+    var isLandscape: Bool {
+        size.width > size.height
+    }
+
+    static let zero = RuntimeViewport()
+}
+
+private enum IOSDisplayCoordinator {
+    static func isLandscape(viewport: RuntimeViewport) -> Bool {
+        if viewport.size.width > 0 && viewport.size.height > 0 {
+            return viewport.isLandscape
         }
-        return hitView
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) {
+            return scene.interfaceOrientation.isLandscape
+        }
+        return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 }
 
-private final class VirtualControllerOverlayWindowManager {
-    static let shared = VirtualControllerOverlayWindowManager()
-    private var overlayWindow: TouchPassthroughWindow?
-    private weak var overlayScene: UIWindowScene?
-    private var overlayHost: UIHostingController<AnyView>?
-    private var keepAliveTimer: Timer?
-
-    var currentOrientationIsLandscape: Bool? {
-        guard let scene = overlayScene ?? UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else {
-            return nil
+private enum IOSInputCoordinator {
+    static func applyVirtualLayout(layoutStore: VirtualControllerLayoutStore, viewport: RuntimeViewport) {
+        let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
+        for button in layoutStore.buttons(isLandscape: isLandscape) {
+            let normalizedX = min(max(0.0, button.x), 1.0)
+            let normalizedY = min(max(0.0, button.y), 1.0)
+            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: normalizedX, y: normalizedY)
         }
-        return scene.interfaceOrientation.isLandscape
     }
 
-    func present(
-        layoutStore: VirtualControllerLayoutStore,
-        config: ConfigManager,
-        onDirectionInput: @escaping (String, Bool) -> Void,
-        onButtonInput: @escaping (String, Bool) -> Void
-    ) {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else {
+    static func sendButton(buttonId: String, isPressed: Bool, showMenu: () -> Void, config: ConfigManager, fastForwardAToggleActive: inout Bool) {
+        if buttonId == "menu" {
+            if !isPressed { showMenu() }
             return
         }
 
-        let sceneBounds = resolvedBounds(for: scene)
-
-        if overlayWindow == nil || overlayScene !== scene {
-            let window = TouchPassthroughWindow(windowScene: scene)
-            window.backgroundColor = .clear
-            window.frame = sceneBounds
-            window.windowLevel = preferredOverlayLevel(in: scene)
-            let host = UIHostingController(rootView: AnyView(EmptyView()))
-            host.view.backgroundColor = .clear
-            host.view.frame = sceneBounds
-            window.rootViewController = host
-            overlayHost = host
-            overlayWindow = window
-            overlayScene = scene
-        }
-
-        if let window = overlayWindow {
-            window.frame = sceneBounds
-            window.windowLevel = preferredOverlayLevel(in: scene)
-        }
-
-        overlayHost?.rootView = AnyView(
-            VirtualControllerView(
-                layoutStore: layoutStore,
-                config: config,
-                onDirectionInput: onDirectionInput,
-                onButtonInput: onButtonInput
-            )
-            .ignoresSafeArea()
-            .background(Color.clear)
-        )
-
-        if let rootView = overlayHost?.view {
-            rootView.frame = sceneBounds
-            rootView.setNeedsLayout()
-            rootView.layoutIfNeeded()
-        }
-
-        overlayWindow?.isHidden = false
-    }
-
-    func dismiss() {
-        stopKeepAlive()
-        overlayWindow?.isHidden = true
-        overlayWindow?.rootViewController = nil
-        overlayHost = nil
-        overlayScene = nil
-        overlayWindow = nil
-    }
-
-    func keepInFrontTemporarily(
-        layoutStore: VirtualControllerLayoutStore,
-        config: ConfigManager,
-        onDirectionInput: @escaping (String, Bool) -> Void,
-        onButtonInput: @escaping (String, Bool) -> Void
-    ) {
-        stopKeepAlive()
-        var tick = 0
-        let maxTick = 30
-        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
-            guard let self else {
-                timer.invalidate()
-                return
+        if buttonId == "fast_forward_a" && config.fastForwardMode == 1 {
+            if !isPressed {
+                if fastForwardAToggleActive {
+                    PlayerBridge.sendKeyUp(buttonId)
+                    fastForwardAToggleActive = false
+                } else {
+                    PlayerBridge.sendKeyDown(buttonId)
+                    fastForwardAToggleActive = true
+                }
             }
-            self.present(
-                layoutStore: layoutStore,
-                config: config,
-                onDirectionInput: onDirectionInput,
-                onButtonInput: onButtonInput
-            )
-            tick += 1
-            if tick >= maxTick {
-                timer.invalidate()
-                self.keepAliveTimer = nil
-            }
-        }
-    }
-
-    private func stopKeepAlive() {
-        keepAliveTimer?.invalidate()
-        keepAliveTimer = nil
-    }
-
-    private func preferredOverlayLevel(in scene: UIWindowScene) -> UIWindow.Level {
-        // `scene.windows` also contains our own overlay window once it is visible.
-        // Exclude it to avoid self-referential level escalation on repeated present().
-        let highestSceneLevel = scene.windows
-            .map(\.windowLevel)
-            .max() ?? .normal
-        let minimumOverlayLevel = UIWindow.Level.alert + 1
-        return max(minimumOverlayLevel, highestSceneLevel + 1)
-    }
-
-    private func resolvedBounds(for scene: UIWindowScene) -> CGRect {
-        // Android parity-like behavior: anchor overlay to active app window
-        // bounds so game and controller share the same geometry space.
-        if let appWin = scene.windows.first(where: { !$0.isHidden && $0 !== overlayWindow }) {
-            let b = appWin.bounds
-            if b.width > 0 && b.height > 0 {
-                return b
-            }
+            return
         }
 
-        let b = scene.screen.bounds
-        if b.width > 0 && b.height > 0 { return b }
-        return scene.coordinateSpace.bounds
+        if isPressed { PlayerBridge.sendKeyDown(buttonId) } else { PlayerBridge.sendKeyUp(buttonId) }
     }
 }
 
@@ -166,12 +74,14 @@ struct PlayerView: View {
     @State private var hasProjectSecurityScopeAccess = false
     @State private var projectSecurityScopeURL: URL?
     @State private var fastForwardAToggleActive = false
+    @State private var runtimeViewport: RuntimeViewport = .zero
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
     var body: some View {
-        ZStack {
+        GeometryReader { rootGeo in
+            ZStack {
             // Keep SwiftUI layer transparent so the native EasyRPG render surface stays visible.
             Color.clear
                 .ignoresSafeArea()
@@ -261,9 +171,18 @@ struct PlayerView: View {
                     layoutStore: layoutStore,
                     config: config,
                     onDirectionInput: handleDirectionInput,
-                    onButtonInput: handleButtonInput
+                    onButtonInput: handleButtonInput,
+                    viewport: runtimeViewport
                 )
                 .ignoresSafeArea()
+            }
+            }
+            .onAppear {
+                runtimeViewport = RuntimeViewport(size: rootGeo.size)
+            }
+            .onChange(of: rootGeo.size) { _, newSize in
+                runtimeViewport = RuntimeViewport(size: newSize)
+                scheduleOrientationRealignment()
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -562,21 +481,7 @@ struct PlayerView: View {
 
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
-        let isLandscape: Bool = {
-            guard let scene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first(where: { $0.activationState == .foregroundActive }) else {
-                return UIScreen.main.bounds.width > UIScreen.main.bounds.height
-            }
-            return scene.interfaceOrientation.isLandscape
-        }()
-        for button in layoutStore.buttons(isLandscape: isLandscape) {
-            // Keep bridge coordinates aligned with editor/runtime normalized layout.
-            // Legacy fixed canvas mapping (450x500) caused large position drift.
-            let normalizedX = min(max(0.0, button.x), 1.0)
-            let normalizedY = min(max(0.0, button.y), 1.0)
-            PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: normalizedX, y: normalizedY)
-        }
+        IOSInputCoordinator.applyVirtualLayout(layoutStore: layoutStore, viewport: runtimeViewport)
     }
 
     private func handleDirectionInput(direction: String, isPressed: Bool) {
@@ -591,33 +496,7 @@ struct PlayerView: View {
 
     private func handleButtonInput(buttonId: String, isPressed: Bool) {
         AppLogger.log("ENTER handleButtonInput")
-        // Android parity: the virtual menu button opens/closes app menu on release
-        // instead of sending an in-game key event.
-        if buttonId == "menu" {
-            if !isPressed {
-                showMenu = true
-            }
-            return
-        }
-
-        if buttonId == "fast_forward_a" && config.fastForwardMode == 1 {
-            if !isPressed {
-                if fastForwardAToggleActive {
-                    PlayerBridge.sendKeyUp(buttonId)
-                    fastForwardAToggleActive = false
-                } else {
-                    PlayerBridge.sendKeyDown(buttonId)
-                    fastForwardAToggleActive = true
-                }
-            }
-            return
-        }
-
-        if isPressed {
-            PlayerBridge.sendKeyDown(buttonId)
-        } else {
-            PlayerBridge.sendKeyUp(buttonId)
-        }
+        IOSInputCoordinator.sendButton(buttonId: buttonId, isPressed: isPressed, showMenu: { showMenu = true }, config: config, fastForwardAToggleActive: &fastForwardAToggleActive)
     }
 }
 
@@ -626,10 +505,10 @@ struct VirtualControllerView: View {
     @ObservedObject var config: ConfigManager
     let onDirectionInput: (String, Bool) -> Void
     let onButtonInput: (String, Bool) -> Void
+    let viewport: RuntimeViewport
 
     @State private var pressedButtons: Set<String> = []
     @State private var activeDirection: String?
-    @State private var buttonTouchAnchors: [String: CGPoint] = [:]
 
     private var effectiveOpacity: Double {
         // Keep controller visible even when a broken/legacy value is loaded.
@@ -737,11 +616,12 @@ struct VirtualControllerView: View {
     }
 
     private func sizeFor(_ button: VirtualButtonLayout) -> CGFloat {
-        Self.visualSize(for: button, config: config)
+        Self.visualSize(for: button, config: config, viewport: viewport)
     }
 
-    static func visualSize(for button: VirtualButtonLayout, config: ConfigManager) -> CGFloat {
-        let screenMin = min(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
+    static func visualSize(for button: VirtualButtonLayout, config: ConfigManager, viewport: RuntimeViewport) -> CGFloat {
+        let baseSize = viewport.size == .zero ? UIScreen.main.bounds.size : viewport.size
+        let screenMin = min(baseSize.width, baseSize.height)
         let androidParityBase = max(44, min(104, screenMin * 0.135))
         let manualBase = max(32, min(CGFloat(config.layoutSize) * 0.35, 96))
         let base: CGFloat = config.ignoreLayoutSize ? manualBase : androidParityBase
@@ -786,16 +666,13 @@ struct VirtualControllerView: View {
         // - anchor at initial touch-down
         // - slide keeps press while within tolerance zone
         // - release when out; re-press if finger returns into zone
-        if buttonTouchAnchors[button.instanceId] == nil {
-            buttonTouchAnchors[button.instanceId] = value.startLocation
-        }
+        // SwiftUI DragGesture location is already in local coordinates of the button view.
+        // Using startLocation+translation can drift on rotation/layout updates and miss taps.
+        let currentPoint = value.location
 
-        let anchor = buttonTouchAnchors[button.instanceId] ?? value.startLocation
-        let translatedPoint = CGPoint(x: anchor.x + value.translation.width, y: anchor.y + value.translation.height)
-
-        // Android parity (VirtualButton): use button bounds containment in parent coords.
+        // Android parity (VirtualButton): keep press only while pointer stays within button bounds.
         let buttonRect = CGRect(x: 0, y: 0, width: buttonSize, height: buttonSize)
-        let isInside = buttonRect.contains(translatedPoint)
+        let isInside = buttonRect.contains(currentPoint)
 
         if isInside && !pressedButtons.contains(button.instanceId) {
             pressedButtons.insert(button.instanceId)
@@ -810,7 +687,6 @@ struct VirtualControllerView: View {
     }
 
     private func handleDragEnded(button: VirtualButtonLayout) {
-        buttonTouchAnchors.removeValue(forKey: button.instanceId)
         pressedButtons.remove(button.instanceId)
         sendPress(for: button.id, isPressed: false)
     }
@@ -822,14 +698,13 @@ struct VirtualControllerView: View {
         }
 
         if !pressedButtons.isEmpty {
-            let buttons = layoutStore.buttons(isLandscape: UIScreen.main.bounds.width > UIScreen.main.bounds.height)
+            let buttons = layoutStore.buttons(isLandscape: IOSDisplayCoordinator.isLandscape(viewport: viewport))
             let pressedIds = Set(pressedButtons)
             for button in buttons where pressedIds.contains(button.instanceId) {
                 sendPress(for: button.id, isPressed: false)
             }
             pressedButtons.removeAll()
         }
-        buttonTouchAnchors.removeAll()
     }
 }
 
