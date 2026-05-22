@@ -255,6 +255,16 @@ struct PlayerView: View {
                 .padding(.top, 20)
                 .transition(.opacity)
             }
+
+            if config.touchUI {
+                VirtualControllerView(
+                    layoutStore: layoutStore,
+                    config: config,
+                    onDirectionInput: handleDirectionInput,
+                    onButtonInput: handleButtonInput
+                )
+                .ignoresSafeArea()
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
@@ -307,14 +317,12 @@ struct PlayerView: View {
             hasInitializedPlayer = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
-            presentVirtualControllerOverlayWindow()
             applySettings()
             applyPreferredOrientationMode()
             buttonMappingStore.applyToPlayer()
         }
         .onDisappear {
             AppLogger.log("PlayerView onDisappear")
-            VirtualControllerOverlayWindowManager.shared.dismiss()
             restoreDefaultOrientationMode()
             releaseProjectSecurityScope()
         }
@@ -342,34 +350,14 @@ struct PlayerView: View {
         }
     }
 
-    private func presentVirtualControllerOverlayWindow() {
-        VirtualControllerOverlayWindowManager.shared.present(
-            layoutStore: layoutStore,
-            config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput
-        )
-    }
-
-    private func keepOverlayInFrontTemporarily() {
-        VirtualControllerOverlayWindowManager.shared.keepInFrontTemporarily(
-            layoutStore: layoutStore,
-            config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput
-        )
-    }
-
     private func scheduleOrientationRealignment() {
         orientationSettleTask?.cancel()
 
         // Android parity-style behavior: apply one deterministic realignment
         // after rotation settles, avoid repeated overlay churn.
         let task = DispatchWorkItem {
-            presentVirtualControllerOverlayWindow()
             applyVirtualLayoutToPlayer()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                presentVirtualControllerOverlayWindow()
                 applyVirtualLayoutToPlayer()
             }
         }
@@ -574,8 +562,14 @@ struct PlayerView: View {
 
     private func applyVirtualLayoutToPlayer() {
         AppLogger.log("ENTER applyVirtualLayoutToPlayer")
-        let isLandscape = VirtualControllerOverlayWindowManager.shared.currentOrientationIsLandscape
-            ?? (UIScreen.main.bounds.width > UIScreen.main.bounds.height)
+        let isLandscape: Bool = {
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                return UIScreen.main.bounds.width > UIScreen.main.bounds.height
+            }
+            return scene.interfaceOrientation.isLandscape
+        }()
         for button in layoutStore.buttons(isLandscape: isLandscape) {
             // Keep bridge coordinates aligned with editor/runtime normalized layout.
             // Legacy fixed canvas mapping (450x500) caused large position drift.
