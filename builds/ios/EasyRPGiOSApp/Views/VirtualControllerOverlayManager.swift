@@ -21,6 +21,13 @@ final class VirtualControllerOverlayManager {
                 if let resolved, resolved !== rootView {
                     return resolved
                 }
+
+                // SwiftUI can attach gesture recognizers to the hosting root
+                // itself. In that case root-only is still an interactive hit.
+                if let recognizers = rootView.gestureRecognizers, !recognizers.isEmpty {
+                    return rootView
+                }
+
                 return nil
             }
 
