@@ -9,8 +9,26 @@ final class VirtualControllerOverlayManager {
     private final class PassThroughWindow: UIWindow {
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             guard let hit = super.hitTest(point, with: event) else { return nil }
-            // If super hit-tests only the window itself, pass through.
-            if hit === self { return nil }
+            // iOS 18+/26 can intermittently return UIWindow(self) for the
+            // first touch frame even when SwiftUI gestures are attached in
+            // the hosting hierarchy. If we pass-through immediately, the
+            // gesture begin can be dropped and SDL window takes ownership.
+            if hit === self {
+                guard let rootView = rootViewController?.view,
+                      rootView.isUserInteractionEnabled,
+                      !rootView.isHidden,
+                      rootView.alpha > 0.01 else {
+                    return nil
+                }
+
+                let local = rootView.convert(point, from: self)
+                if let resolved = rootView.hitTest(local, with: event), resolved !== rootView {
+                    return resolved
+                }
+
+                // Keep gesture start inside hosting tree instead of dropping it.
+                return rootView
+            }
 
             // Keep root-view hits interactive. SwiftUI frequently resolves
             // gesture/touch handling through the hosting root, and forcing
@@ -30,6 +48,7 @@ final class VirtualControllerOverlayManager {
         let hosting = UIHostingController(rootView: AnyView(content))
         hosting.view.backgroundColor = .clear
         hosting.view.isUserInteractionEnabled = true
+        hosting.view.isOpaque = false
 
         let window: PassThroughWindow
         if let existing = overlayWindow, existing.windowScene === scene {
@@ -40,6 +59,8 @@ final class VirtualControllerOverlayManager {
             window.isHidden = false
             if let host = window.rootViewController as? UIHostingController<AnyView> {
                 host.rootView = AnyView(content)
+                host.view.isUserInteractionEnabled = true
+                host.view.isOpaque = false
             } else {
                 window.rootViewController = hosting
             }
