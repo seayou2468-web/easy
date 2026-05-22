@@ -36,14 +36,16 @@ private enum IOSDisplayCoordinator {
         return CGRect(x: 0, y: 0, width: width, height: height)
     }
 
-    static func applyGameplayFrameToSDLView() {
+    static func applyGameplayFrameToSDLView() -> CGRect {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) else { return }
+            .first(where: { $0.activationState == .foregroundActive }) else { return .zero }
+        var appliedFrame: CGRect = .zero
         for window in scene.windows where !window.isHidden {
             if let sdlView = findSDLView(in: window), let container = sdlView.superview {
                 let frame = gameplayFrame(in: container.bounds.size)
                 guard frame.width > 0, frame.height > 0 else { continue }
+                appliedFrame = frame
                 if sdlView.frame != frame {
                     UIView.performWithoutAnimation {
                         sdlView.frame = frame
@@ -53,6 +55,7 @@ private enum IOSDisplayCoordinator {
                 }
             }
         }
+        return appliedFrame
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
@@ -116,6 +119,7 @@ struct PlayerView: View {
     @State private var projectSecurityScopeURL: URL?
     @State private var fastForwardAToggleActive = false
     @State private var runtimeViewport: RuntimeViewport = .zero
+    @State private var gameplayFrame: CGRect = .zero
     @StateObject private var layoutStore = VirtualControllerLayoutStore()
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -132,7 +136,8 @@ struct PlayerView: View {
                 config: config,
                 onDirectionInput: handleDirectionInput,
                 onButtonInput: handleButtonInput,
-                viewport: runtimeViewport
+                viewport: runtimeViewport,
+                gameplayFrame: gameplayFrame
             )
             .ignoresSafeArea()
         }
@@ -293,7 +298,11 @@ struct PlayerView: View {
         // Android parity: EasyRpgPlayerActivity calls updateScreenPosition()
         // and showInputLayout() once per event (onCreate/onConfigurationChanged/
         // surfaceChanged/onRestart). Mirror that ordering and call count.
-        IOSDisplayCoordinator.applyGameplayFrameToSDLView()
+        let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
+        if frame.width > 0, frame.height > 0 {
+            gameplayFrame = frame
+            runtimeViewport = RuntimeViewport(size: frame.size)
+        }
         applyVirtualLayoutToPlayer()
     }
 
@@ -519,6 +528,7 @@ struct VirtualControllerView: View {
     let onDirectionInput: (String, Bool) -> Void
     let onButtonInput: (String, Bool) -> Void
     let viewport: RuntimeViewport
+    let gameplayFrame: CGRect
 
     @State private var pressedButtons: Set<String> = []
     @State private var activeDirection: String?
@@ -530,11 +540,11 @@ struct VirtualControllerView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let gameplayFrame = IOSDisplayCoordinator.gameplayFrame(
-                in: RuntimeViewport(size: geo.size)
-            )
-            let geometryWidth = gameplayFrame.width > 0 ? gameplayFrame.width : geo.size.width
-            let geometryHeight = gameplayFrame.height > 0 ? gameplayFrame.height : geo.size.height
+            let activeGameplayFrame = gameplayFrame.width > 0 && gameplayFrame.height > 0
+                ? gameplayFrame
+                : IOSDisplayCoordinator.gameplayFrame(in: RuntimeViewport(size: geo.size))
+            let geometryWidth = activeGameplayFrame.width > 0 ? activeGameplayFrame.width : geo.size.width
+            let geometryHeight = activeGameplayFrame.height > 0 ? activeGameplayFrame.height : geo.size.height
             let isLandscape = geometryWidth > geometryHeight
             let buttons = layoutStore.buttons(isLandscape: isLandscape)
             let directional = buttons.filter { ["up", "down", "left", "right"].contains($0.id) }
