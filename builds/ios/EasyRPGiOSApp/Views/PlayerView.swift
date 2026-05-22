@@ -121,9 +121,13 @@ struct PlayerView: View {
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
 
+    private var touchUIEnabled: Bool {
+        config.touchUI
+    }
+
     @ViewBuilder
     private var virtualControllerLayer: some View {
-        if config.touchUI {
+        if touchUIEnabled {
             VirtualControllerView(
                 layoutStore: layoutStore,
                 config: config,
@@ -148,7 +152,7 @@ struct PlayerView: View {
                     showHud.toggle()
                 }
             }
-            .allowsHitTesting(!config.touchUI)
+            .allowsHitTesting(!touchUIEnabled)
 
         VStack {
             HStack(spacing: 10) {
