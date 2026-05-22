@@ -318,6 +318,9 @@ struct SettingsInputView: View {
 
                     Toggle("A/B を Z/X として表示", isOn: $config.showABasZX)
                         .onChange(of: config.showABasZX) { _, _ in config.saveSettings() }
+
+                    Toggle("タッチUI（仮想コントローラー）", isOn: $config.touchUI)
+                        .onChange(of: config.touchUI) { _, _ in config.saveSettings() }
                 }
                 .padding(.bottom, 8)
 

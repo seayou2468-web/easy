@@ -1,5 +1,4 @@
 import Foundation
-import Compression
 import UniformTypeIdentifiers
 
 @MainActor
@@ -95,11 +94,19 @@ final class GameImportService: ObservableObject {
     }
 
     private func unzipArchive(at sourceURL: URL, to destinationURL: URL) throws {
-        // iOS SDK only path: ZIP extraction via Compression framework helper.
-        // NOTE: Compression itself doesn't provide a high-level ZIP container API,
-        // so this currently reports unsupported when no container parser is present.
-        _ = destinationURL
-        _ = sourceURL
-        throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開はiOS SDK Compressionベース実装に切替中です"])
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        process.arguments = ["-x", "-k", sourceURL.path, destinationURL.path]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開の起動に失敗しました: \(error.localizedDescription)"])
+        }
+
+        guard process.terminationStatus == 0 else {
+            throw NSError(domain: "GameImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP展開に失敗しました（終了コード: \(process.terminationStatus)）"])
+        }
     }
 }

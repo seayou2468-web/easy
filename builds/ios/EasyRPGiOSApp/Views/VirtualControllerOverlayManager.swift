@@ -6,13 +6,42 @@ import QuartzCore
 final class VirtualControllerOverlayManager {
     static let shared = VirtualControllerOverlayManager()
 
+    final class OverlayState: ObservableObject {
+        @Published var layoutStore: VirtualControllerLayoutStore?
+        @Published var config: ConfigManager?
+        @Published var viewport: RuntimeViewport = .zero
+        @Published var gameplayFrame: CGRect = .zero
+        var onDirectionInput: (String, Bool) -> Void = { _, _ in }
+        var onButtonInput: (String, Bool) -> Void = { _, _ in }
+        var onDismiss: (() -> Void)?
+    }
+
+    struct OverlayRootView: View {
+        @ObservedObject var state: OverlayState
+
+        var body: some View {
+            Group {
+                if let layoutStore = state.layoutStore, let config = state.config {
+                    VirtualControllerView(
+                        layoutStore: layoutStore,
+                        config: config,
+                        onDirectionInput: state.onDirectionInput,
+                        onButtonInput: state.onButtonInput,
+                        viewport: state.viewport,
+                        gameplayFrame: state.gameplayFrame
+                    )
+                } else {
+                    EmptyView()
+                }
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(true)
+        }
+    }
+
     private final class PassThroughWindow: UIWindow {
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             guard let hit = super.hitTest(point, with: event) else { return nil }
-            // iOS 18+/26 can intermittently return UIWindow(self) for the
-            // first touch frame even when SwiftUI gestures are attached in
-            // the hosting hierarchy. If we pass-through immediately, the
-            // gesture begin can be dropped and SDL window takes ownership.
             if hit === self {
                 guard let rootView = rootViewController?.view,
                       rootView.isUserInteractionEnabled,
@@ -20,20 +49,12 @@ final class VirtualControllerOverlayManager {
                       rootView.alpha > 0.01 else {
                     return nil
                 }
-
                 let local = rootView.convert(point, from: self)
                 if let resolved = rootView.hitTest(local, with: event), resolved !== rootView {
                     return resolved
                 }
-
-                // Keep gesture start inside hosting tree instead of dropping it.
                 return rootView
             }
-
-            // Keep root-view hits interactive. SwiftUI frequently resolves
-            // gesture/touch handling through the hosting root, and forcing
-            // pass-through here can make the virtual controller visible but
-            // unresponsive.
             return hit
         }
     }
@@ -42,10 +63,26 @@ final class VirtualControllerOverlayManager {
     private weak var scene: UIWindowScene?
     private var refreshScheduled = false
     private var lastStableFrame: CGRect = .zero
+    private let overlayState = OverlayState()
 
-    func present(in scene: UIWindowScene, content: some View) {
+    func present(
+        in scene: UIWindowScene,
+        layoutStore: VirtualControllerLayoutStore,
+        config: ConfigManager,
+        viewport: RuntimeViewport,
+        gameplayFrame: CGRect,
+        onDirectionInput: @escaping (String, Bool) -> Void,
+        onButtonInput: @escaping (String, Bool) -> Void
+    ) {
         self.scene = scene
-        let hosting = UIHostingController(rootView: AnyView(content))
+        overlayState.layoutStore = layoutStore
+        overlayState.config = config
+        overlayState.viewport = viewport
+        overlayState.gameplayFrame = gameplayFrame
+        overlayState.onDirectionInput = onDirectionInput
+        overlayState.onButtonInput = onButtonInput
+
+        let hosting = UIHostingController(rootView: OverlayRootView(state: overlayState))
         hosting.view.backgroundColor = .clear
         hosting.view.isUserInteractionEnabled = true
         hosting.view.isOpaque = false
@@ -57,8 +94,7 @@ final class VirtualControllerOverlayManager {
             alignFrame(window: window, scene: scene)
             window.isUserInteractionEnabled = true
             window.isHidden = false
-            if let host = window.rootViewController as? UIHostingController<AnyView> {
-                host.rootView = AnyView(content)
+            if let host = window.rootViewController as? UIHostingController<OverlayRootView> {
                 host.view.isUserInteractionEnabled = true
                 host.view.isOpaque = false
             } else {
@@ -75,20 +111,25 @@ final class VirtualControllerOverlayManager {
         }
     }
 
-    func update(content: some View) {
-        guard let window = overlayWindow,
-              let host = window.rootViewController as? UIHostingController<AnyView> else { return }
-        host.rootView = AnyView(content)
-    }
+    func registerOnDismiss(_ action: @escaping () -> Void) { overlayState.onDismiss = action }
 
     func dismiss() {
+        overlayState.onDismiss?()
         overlayWindow?.isHidden = true
+        overlayWindow?.rootViewController = nil
         overlayWindow = nil
         scene = nil
         lastStableFrame = .zero
     }
 
-    func schedulePostLayoutRefresh(content: some View) {
+    func schedulePostLayoutRefresh(
+        layoutStore: VirtualControllerLayoutStore,
+        config: ConfigManager,
+        viewport: RuntimeViewport,
+        gameplayFrame: CGRect,
+        onDirectionInput: @escaping (String, Bool) -> Void,
+        onButtonInput: @escaping (String, Bool) -> Void
+    ) {
         guard !refreshScheduled else { return }
         refreshScheduled = true
         RunLoop.main.perform {
@@ -97,47 +138,33 @@ final class VirtualControllerOverlayManager {
             guard let scene = self.scene ?? UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
-            self.present(in: scene, content: content)
+            self.present(in: scene, layoutStore: layoutStore, config: config, viewport: viewport, gameplayFrame: gameplayFrame, onDirectionInput: onDirectionInput, onButtonInput: onButtonInput)
         }
     }
 
     private func alignFrame(window: UIWindow, scene: UIWindowScene) {
         let referenceBounds = bestReferenceBounds(in: scene)
         let sceneBounds = scene.coordinateSpace.bounds
-
-        // iOS 18+ can transiently produce zero-sized keyWindow bounds during
-        // scene detach/reattach. Prefer non-zero stable bounds and avoid
-        // redundant frame transactions.
         var target = referenceBounds
-        if target.width <= 1 || target.height <= 1 {
-            target = sceneBounds
-        }
-        if target.width <= 1 || target.height <= 1 {
-            target = lastStableFrame
-        }
+        if target.width <= 1 || target.height <= 1 { target = sceneBounds }
+        if target.width <= 1 || target.height <= 1 { target = lastStableFrame }
+        if target.width <= 1 || target.height <= 1 { target = UIScreen.main.bounds }
         guard target.width > 1, target.height > 1 else { return }
-
         let dx = abs(window.frame.origin.x - target.origin.x)
         let dy = abs(window.frame.origin.y - target.origin.y)
         let dw = abs(window.frame.size.width - target.size.width)
         let dh = abs(window.frame.size.height - target.size.height)
-        // iOS 18+ can oscillate sub-pixel values across transactions.
-        // Use tolerance to prevent endless frame-update transactions.
         let epsilon: CGFloat = 0.5
         if dx > epsilon || dy > epsilon || dw > epsilon || dh > epsilon {
             window.frame = target
             window.bounds = CGRect(origin: .zero, size: target.size)
             window.center = CGPoint(x: target.midX, y: target.midY)
         }
-        if window.screen !== scene.screen {
-            window.screen = scene.screen
-        }
+        if window.screen !== scene.screen { window.screen = scene.screen }
         lastStableFrame = target
     }
 
     private func bestReferenceBounds(in scene: UIWindowScene) -> CGRect {
-        // Prefer the largest visible non-overlay window to avoid keyWindow
-        // instability when SDL/internal windows temporarily steal key focus.
         let candidates = scene.windows.filter { window in
             window !== overlayWindow && !window.isHidden && window.alpha > 0.01
         }
@@ -148,8 +175,6 @@ final class VirtualControllerOverlayManager {
     }
 
     private func targetOverlayWindowLevel(in scene: UIWindowScene) -> UIWindow.Level {
-        // Keep overlay above app windows (including SDL dedicated windows)
-        // while staying below system-critical windows.
         let highestAppLevel = scene.windows
             .filter { $0 !== overlayWindow }
             .map(\.windowLevel.rawValue)

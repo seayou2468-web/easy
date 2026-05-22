@@ -187,7 +187,6 @@ struct PlayerView: View {
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
                     scheduleRelayout()
                 }
-                refreshOverlayWindow()
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
@@ -314,31 +313,40 @@ struct PlayerView: View {
             VirtualControllerOverlayManager.shared.dismiss()
             return
         }
-        let content = VirtualControllerView(
+        VirtualControllerOverlayManager.shared.registerOnDismiss { [layoutStore, runtimeViewport] in
+            let buttons = layoutStore.buttons(isLandscape: IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport))
+            for button in buttons {
+                PlayerBridge.sendKeyUp(button.id)
+            }
+        }
+        VirtualControllerOverlayManager.shared.present(
+            in: scene,
             layoutStore: layoutStore,
             config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput,
             viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame
+            gameplayFrame: gameplayFrame,
+            onDirectionInput: { direction, isPressed in
+                handleDirectionInput(direction: direction, isPressed: isPressed)
+            },
+            onButtonInput: { buttonId, isPressed in
+                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
+            }
         )
-        .ignoresSafeArea()
-        .allowsHitTesting(true)
-        VirtualControllerOverlayManager.shared.present(in: scene, content: content)
     }
 
     private func refreshOverlayWindowPostLayout() {
-        let content = VirtualControllerView(
+        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(
             layoutStore: layoutStore,
             config: config,
-            onDirectionInput: handleDirectionInput,
-            onButtonInput: handleButtonInput,
             viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame
+            gameplayFrame: gameplayFrame,
+            onDirectionInput: { direction, isPressed in
+                handleDirectionInput(direction: direction, isPressed: isPressed)
+            },
+            onButtonInput: { buttonId, isPressed in
+                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
+            }
         )
-        .ignoresSafeArea()
-        .allowsHitTesting(true)
-        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(content: content)
     }
 
     private func applyAndroidParityScreenPositionAndInputLayout() {
@@ -554,11 +562,10 @@ struct PlayerView: View {
 
     private func handleDirectionInput(direction: String, isPressed: Bool) {
         AppLogger.log("ENTER handleDirectionInput")
-        let buttonId = ["up": "up", "down": "down", "left": "left", "right": "right"][direction] ?? direction
         if isPressed {
-            PlayerBridge.sendKeyDown(buttonId)
+            PlayerBridge.sendKeyDown(direction)
         } else {
-            PlayerBridge.sendKeyUp(buttonId)
+            PlayerBridge.sendKeyUp(direction)
         }
     }
 

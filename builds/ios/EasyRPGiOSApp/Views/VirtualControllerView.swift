@@ -196,7 +196,7 @@ struct VirtualControllerView: View {
         // - release when out; re-press if finger returns into zone
         // SwiftUI DragGesture location is already in local coordinates of the button view.
         // Using startLocation+translation can drift on rotation/layout updates and miss taps.
-        let currentPoint = value.location
+        let currentPoint = CGPoint(x: value.startLocation.x + value.translation.width, y: value.startLocation.y + value.translation.height)
 
         // Android parity (VirtualButton): keep press only while pointer stays within button bounds.
         let buttonRect = CGRect(x: 0, y: 0, width: buttonSize, height: buttonSize)
