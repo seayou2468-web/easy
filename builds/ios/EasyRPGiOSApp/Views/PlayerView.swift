@@ -877,27 +877,18 @@ struct VirtualButtonView: View {
         .frame(width: size, height: size)
         .background(
             Group {
-                if isDirectional {
-                    AndroidInsetCircleShape()
+                if button.id == "menu" {
+                    MenuGlyphButtonShape()
+                        .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
+                } else if button.id == "fast_forward_a" {
+                    AndroidInsetRectShape()
                         .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                 } else {
-                    if button.id == "menu" {
-                        MenuGlyphButtonShape()
-                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
-                    } else if button.id == "fast_forward_a" {
-                        AndroidInsetRectShape()
-                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
-                    } else {
-                        AndroidInsetCircleShape()
-                            .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
-                    }
+                    AndroidInsetCircleShape()
+                        .stroke(Color.white.opacity(opacity), style: StrokeStyle(lineWidth: 3, lineCap: .butt, lineJoin: .miter, miterLimit: 10))
                 }
             }
         )
-    }
-
-    private var isDirectional: Bool {
-        ["up", "down", "left", "right"].contains(button.id)
     }
 
     private func displayTitle() -> String {
