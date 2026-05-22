@@ -59,7 +59,17 @@ enum IOSDisplayCoordinator {
         // center horizontally within safe width to avoid side clipping.
         let x = safeRect.minX + (safeRect.width - frameSize.width) / 2.0
         let y = safeRect.minY
-        return CGRect(x: x, y: y, width: frameSize.width, height: frameSize.height).integral
+
+        // Keep final frame strictly inside safeRect. CGRect.integral expands
+        // outward, which can reintroduce 1px overflow into notch/island area.
+        let maxX = safeRect.maxX
+        let maxY = safeRect.maxY
+        let originX = ceil(x)
+        let originY = ceil(y)
+        let width = floor(min(frameSize.width, maxX - originX))
+        let height = floor(min(frameSize.height, maxY - originY))
+        guard width > 0, height > 0 else { return .zero }
+        return CGRect(x: originX, y: originY, width: width, height: height)
     }
 
     static func applyGameplayFrameToSDLView() -> CGRect {
