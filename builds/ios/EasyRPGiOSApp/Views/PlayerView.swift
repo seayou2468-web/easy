@@ -24,11 +24,11 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func gameplayFrame(in viewport: RuntimeViewport, gameResolution: Int, safeInsets: UIEdgeInsets = .zero) -> CGRect {
-        gameplayFrame(in: viewport.size, gameResolution: gameResolution, safeInsets: safeInsets)
+    static func gameplayFrame(in viewport: RuntimeViewport, safeInsets: UIEdgeInsets = .zero) -> CGRect {
+        gameplayFrame(in: viewport.size, safeInsets: safeInsets)
     }
 
-    static func gameplayFrame(in containerSize: CGSize, gameResolution: Int, safeInsets: UIEdgeInsets = .zero) -> CGRect {
+    static func gameplayFrame(in containerSize: CGSize, safeInsets: UIEdgeInsets = .zero) -> CGRect {
         guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
 
         // Keep RPG frame aspect ratio (4:3) while fitting inside safe bounds.
@@ -52,15 +52,7 @@ enum IOSDisplayCoordinator {
             safeRect = CGRect(x: 0, y: 0, width: containerSize.width, height: containerSize.height)
         }
 
-        let aspect: CGFloat
-        switch gameResolution {
-        case 1:
-            aspect = 16.0 / 9.0
-        case 2:
-            aspect = 20.0 / 9.0
-        default:
-            aspect = 4.0 / 3.0
-        }
+        let aspect: CGFloat = 4.0 / 3.0
         let safeAspect = safeRect.width / safeRect.height
 
         let frameSize: CGSize
@@ -91,7 +83,7 @@ enum IOSDisplayCoordinator {
         return CGRect(x: originX, y: originY, width: width, height: height)
     }
 
-    static func applyGameplayFrameToSDLView(gameResolution: Int) -> CGRect {
+    static func applyGameplayFrameToSDLView() -> CGRect {
         let scenes = activeWindowScenes()
         guard !scenes.isEmpty else { return .zero }
 
@@ -106,7 +98,7 @@ enum IOSDisplayCoordinator {
             // If SDL is hosted in a different UIWindow than SwiftUI, using the
             // SwiftUI window here can push the surface off-screen.
             let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size, gameResolution: gameResolution, safeInsets: baseWindow.safeAreaInsets)
+            let displayFrame = gameplayFrame(in: baseWindow.bounds.size, safeInsets: baseWindow.safeAreaInsets)
             guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
 
             // Android parity: updateScreenPosition() applies x=0,y=0 in the
@@ -423,7 +415,7 @@ struct PlayerView: View {
         // Android parity: EasyRpgPlayerActivity calls updateScreenPosition()
         // and showInputLayout() once per event (onCreate/onConfigurationChanged/
         // surfaceChanged/onRestart). Mirror that ordering and call count.
-        let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView(gameResolution: config.gameResolution)
+        let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
         if frame.width > 0, frame.height > 0 {
             gameplayFrame = frame
         }
