@@ -93,6 +93,7 @@ struct PlayerView: View {
                         showHud.toggle()
                     }
                 }
+                .allowsHitTesting(!config.touchUI)
 
             VStack {
                 HStack(spacing: 10) {
@@ -550,6 +551,7 @@ struct VirtualControllerView: View {
         let dpadSize = refSize * 2.2
 
         DPadCrossView(opacity: effectiveOpacity, size: dpadSize)
+            .contentShape(Rectangle())
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -650,7 +652,7 @@ struct VirtualControllerView: View {
             x: button.x * geometryWidth,
             y: button.y * geometryHeight
         )
-        .gesture(
+        .highPriorityGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
                     handleDragChanged(value: value, button: button, buttonSize: buttonSize)
