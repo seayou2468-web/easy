@@ -558,13 +558,9 @@ void Sdl3Ui::UpdateDisplay() {
 
 		SDL_Rect render_bounds {0, 0, window.width, window.height};
 #if defined(__APPLE__) && TARGET_OS_IOS
-		if ((current_display_mode.flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
-			int display_index = SDL_GetDisplayForWindow(sdl_window);
-			SDL_Rect usable_bounds;
-			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds)) {
-				render_bounds = usable_bounds;
-			}
-		}
+		// iOS window frame is already constrained by UIKit/Swift safe-area logic.
+		// Keep SDL viewport coordinates in window-local space to avoid mismatch
+		// with externally adjusted UIWindow/View frame during rotations.
 #endif
 
 		float width_float = static_cast<float>(render_bounds.w);
