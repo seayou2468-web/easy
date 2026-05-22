@@ -447,6 +447,7 @@ struct PlayerView: View {
         PlayerBridge.setConfigInt(section: "Input", key: "LayoutTransparency", value: config.layoutTransparency)
         PlayerBridge.setConfigInt(section: "Input", key: "LayoutSize", value: config.layoutSize)
         PlayerBridge.setConfigBool(section: "Input", key: "IgnoreLayoutSize", value: config.ignoreLayoutSize)
+        PlayerBridge.setConfigBool(section: "Input", key: "TouchUI", value: config.touchUI)
 
         PlayerBridge.setFont1(config.font1Name ?? "")
         PlayerBridge.setFont2(config.font2Name ?? "")

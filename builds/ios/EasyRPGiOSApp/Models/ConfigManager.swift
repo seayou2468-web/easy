@@ -50,6 +50,7 @@ final class ConfigManager: ObservableObject {
     @Published var layoutTransparency = 100
     @Published var layoutSize = 100
     @Published var ignoreLayoutSize = false
+    @Published var touchUI = true
 
     // Font settings
     @Published var preferExternalFonts = false
@@ -149,6 +150,7 @@ final class ConfigManager: ObservableObject {
         defaults.set(layoutTransparency, forKey: userDefaultsPrefix + "layoutTransparency")
         defaults.set(layoutSize, forKey: userDefaultsPrefix + "layoutSize")
         defaults.set(ignoreLayoutSize, forKey: userDefaultsPrefix + "ignoreLayoutSize")
+        defaults.set(touchUI, forKey: userDefaultsPrefix + "touchUI")
 
         defaults.set(preferExternalFonts, forKey: userDefaultsPrefix + "preferExternalFonts")
         defaults.set(font1Name ?? "", forKey: userDefaultsPrefix + "font1Name")
@@ -217,6 +219,7 @@ final class ConfigManager: ObservableObject {
         layoutTransparency = intValue(defaults, key: userDefaultsPrefix + "layoutTransparency", default: 100)
         layoutSize = intValue(defaults, key: userDefaultsPrefix + "layoutSize", default: 100)
         ignoreLayoutSize = defaults.bool(forKey: userDefaultsPrefix + "ignoreLayoutSize")
+        touchUI = defaults.object(forKey: userDefaultsPrefix + "touchUI") as? Bool ?? true
 
         preferExternalFonts = defaults.bool(forKey: userDefaultsPrefix + "preferExternalFonts")
         font1Name = defaults.string(forKey: userDefaultsPrefix + "font1Name")
@@ -309,6 +312,7 @@ final class ConfigManager: ObservableObject {
         iniContent += "LayoutTransparency=\(layoutTransparency)\n"
         iniContent += "LayoutSize=\(layoutSize)\n"
         iniContent += "IgnoreLayoutSize=\(ignoreLayoutSize ? 1 : 0)\n"
+        iniContent += "TouchUI=\(touchUI ? 1 : 0)\n"
         iniContent += "\n"
 
         iniContent += "[Engine]\n"
@@ -368,6 +372,7 @@ final class ConfigManager: ObservableObject {
         iniContent += "LayoutTransparency=\(layoutTransparency)\n"
         iniContent += "LayoutSize=\(layoutSize)\n"
         iniContent += "IgnoreLayoutSize=\(ignoreLayoutSize ? 1 : 0)\n"
+        iniContent += "TouchUI=\(touchUI ? 1 : 0)\n"
         iniContent += "SettingsAutosave=\(settingsAutosave ? 1 : 0)\n"
         iniContent += "SettingsInMenu=\(settingsInMenu ? 1 : 0)\n"
         iniContent += "LanguageSelectOnStart=\(languageSelectOnStart)\n"
