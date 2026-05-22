@@ -66,10 +66,12 @@ enum IOSDisplayCoordinator {
             frameSize = CGSize(width: width, height: width / aspect)
         }
 
-        // Keep top edge at safe-area top (portrait: below notch/island), and
-        // center horizontally within safe width to avoid side clipping.
+        // Center inside safe-area on both axes so Swift-side clipping frame
+        // stays consistent with SDL's internal letterbox viewport placement.
+        // Top-aligning here can desync with SDL (which centers on Y), causing
+        // partial/off-screen rendering like the attached screenshots.
         let x = safeRect.minX + (safeRect.width - frameSize.width) / 2.0
-        let y = safeRect.minY
+        let y = safeRect.minY + (safeRect.height - frameSize.height) / 2.0
 
         // Keep final frame strictly inside safeRect. CGRect.integral expands
         // outward, which can reintroduce 1px overflow into notch/island area.
