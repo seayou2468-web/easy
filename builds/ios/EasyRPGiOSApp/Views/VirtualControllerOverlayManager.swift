@@ -53,7 +53,7 @@ final class VirtualControllerOverlayManager {
                 if let resolved = rootView.hitTest(local, with: event), resolved !== rootView {
                     return resolved
                 }
-                return rootView
+                return nil
             }
             return hit
         }

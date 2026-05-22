@@ -73,7 +73,7 @@ struct VirtualControllerView: View {
             .allowsHitTesting(true)
             .contentShape(Rectangle())
             .position(x: centerX * geometryWidth, y: centerY * geometryHeight)
-            .highPriorityGesture(
+            .simultaneousGesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .global)
                     .onChanged { value in
                         let dpadFrame = CGRect(
@@ -194,7 +194,7 @@ struct VirtualControllerView: View {
             x: button.x * geometryWidth,
             y: button.y * geometryHeight
         )
-        .highPriorityGesture(
+        .simultaneousGesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .global)
                 .onChanged { value in
                     let frame = CGRect(

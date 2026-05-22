@@ -82,13 +82,9 @@ enum IOSDisplayCoordinator {
     }
 
     private static func applyOverlayInputSafety(to sdlView: UIView) {
-        // Keep the SDL surface from stealing touch events from the SwiftUI
-        // virtual-controller overlay when SDL is hosted in its own UIWindow.
-        // Gameplay input is routed through virtual button key events.
-        sdlView.isUserInteractionEnabled = false
-        // Do not force SDL UIWindow level down here.
-        // Some SDL/iOS setups render into their own window and lowering its
-        // level can hide gameplay entirely behind other app windows.
+        // Do not force-disable SDL touch handling here.
+        // Overlay ownership is handled by the overlay window's hitTest policy.
+        _ = sdlView
     }
 
     private static func findSDLView(in root: UIView) -> UIView? {
