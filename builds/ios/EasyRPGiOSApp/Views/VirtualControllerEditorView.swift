@@ -176,7 +176,7 @@ struct VirtualControllerEditorView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("追加するボタン").font(.headline)
                     ForEach(VirtualControllerLayoutStore.addableButtons, id: \.instanceId) { item in
-                        menuAction("\(item.title) (\(item.id))") {
+                        menuRow("\(item.title) (\(item.id))") {
                             var copy = item
                             copy.instanceId = UUID().uuidString
                             workingButtons.append(copy)
