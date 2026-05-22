@@ -325,10 +325,7 @@ struct PlayerView: View {
             applyAndroidParityScreenPositionAndInputLayout()
         }
 
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("EasyRPGIOSSurfaceGeometryDidChange"))) { _ in
-            applyAndroidParityScreenPositionAndInputLayout()
-        }
-        .onChange(of: config.touchUI) { _, _ in
+                .onChange(of: config.touchUI) { _, _ in
             applyAndroidParityScreenPositionAndInputLayout()
         }
     }

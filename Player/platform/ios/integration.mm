@@ -2,8 +2,6 @@
 
 #if defined(__APPLE__) && TARGET_OS_IOS
 
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
 #include <functional>
 #include <mutex>
 #include <atomic>
@@ -237,17 +235,12 @@ void ClearHeldKeys() {
 	held_keys.clear();
 }
 
-CGSize last_reported_screen_size = CGSizeZero;
+SDL_Rect last_reported_display_bounds{0,0,0,0};
 void NotifySurfaceGeometryIfNeeded() {
-	dispatch_async(dispatch_get_main_queue(), ^{
-		CGSize current = UIScreen.mainScreen.bounds.size;
-		if (CGSizeEqualToSize(current, CGSizeZero)) return;
-		if (!CGSizeEqualToSize(current, last_reported_screen_size)) {
-			last_reported_screen_size = current;
-			[[NSNotificationCenter defaultCenter] postNotificationName:@"EasyRPGIOSSurfaceGeometryDidChange" object:nil];
-		}
-	});
-}
+	SDL_Rect current{0,0,0,0};
+	if (SDL_GetDisplayBounds(0, &current) == 0) {
+		last_reported_display_bounds = current;
+	}
 }
 
 namespace IOSIntegration {
