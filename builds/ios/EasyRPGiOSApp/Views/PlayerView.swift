@@ -266,13 +266,17 @@ struct PlayerView: View {
             }
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
-                applyAndroidParityScreenPositionAndInputLayout()
-                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                if rootGeo.size.width > 0, rootGeo.size.height > 0 {
+                    applyAndroidParityScreenPositionAndInputLayout()
+                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                }
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
-                applyAndroidParityScreenPositionAndInputLayout()
-                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                if newSize.width > 0, newSize.height > 0 {
+                    applyAndroidParityScreenPositionAndInputLayout()
+                    IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -326,6 +330,10 @@ struct PlayerView: View {
             hasInitializedPlayer = true
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                applyAndroidParityScreenPositionAndInputLayout()
+                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
+            }
             applySettings()
             applyPreferredOrientationMode()
             buttonMappingStore.applyToPlayer()
@@ -337,13 +345,6 @@ struct PlayerView: View {
         }
         .onReceive(layoutStore.$profiles) { _ in
             applyVirtualLayoutToPlayer()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            let d = UIDevice.current.orientation
-            if d == .landscapeLeft || d == .landscapeRight || d == .portrait || d == .portraitUpsideDown {
-                applyAndroidParityScreenPositionAndInputLayout()
-                IOSDisplayCoordinator.enforceSDLTouchPassthrough()
-            }
         }
         .onChange(of: buttonMappingStore.mappings) { _, _ in
             buttonMappingStore.applyToPlayer()
