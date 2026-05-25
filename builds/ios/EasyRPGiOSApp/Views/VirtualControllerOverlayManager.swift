@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import QuartzCore
 
 @MainActor
 final class VirtualControllerOverlayManager {
@@ -62,7 +61,6 @@ final class VirtualControllerOverlayManager {
     private var overlayWindow: PassThroughWindow?
     private var hostingController: UIHostingController<OverlayRootView>?
     private weak var scene: UIWindowScene?
-    private var refreshScheduled = false
     private var lastStableFrame: CGRect = .zero
     private let overlayState = OverlayState()
 
@@ -131,29 +129,6 @@ final class VirtualControllerOverlayManager {
         lastStableFrame = .zero
         overlayState.onDirectionInput = { _, _ in }
         overlayState.onButtonInput = { _, _ in }
-    }
-
-    func schedulePostLayoutRefresh(
-        layoutStore: VirtualControllerLayoutStore,
-        config: ConfigManager,
-        viewport: RuntimeViewport,
-        gameplayFrame: CGRect,
-        onDirectionInput: @escaping (String, Bool) -> Void,
-        onButtonInput: @escaping (String, Bool) -> Void
-    ) {
-        guard !refreshScheduled else { return }
-        refreshScheduled = true
-        RunLoop.main.perform { [weak self] in
-            Task { @MainActor in
-                guard let self else { return }
-                CATransaction.flush()
-                self.refreshScheduled = false
-                guard let scene = self.scene ?? UIApplication.shared.connectedScenes
-                    .compactMap({ $0 as? UIWindowScene })
-                    .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
-                self.present(in: scene, layoutStore: layoutStore, config: config, viewport: viewport, gameplayFrame: gameplayFrame, onDirectionInput: onDirectionInput, onButtonInput: onButtonInput)
-            }
-        }
     }
 
     private func alignFrame(window: UIWindow, scene: UIWindowScene) {
