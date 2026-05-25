@@ -170,6 +170,7 @@ struct PlayerView: View {
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
+    @State private var lastRelayoutAt: CFTimeInterval = 0
     @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -300,6 +301,8 @@ struct PlayerView: View {
             scheduleRelayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            let orientation = UIDevice.current.orientation
+            guard orientation.isLandscape || orientation.isPortrait else { return }
             scheduleRelayout()
         }
 
@@ -318,10 +321,12 @@ struct PlayerView: View {
 
     private func scheduleRelayout() {
         guard !relayoutScheduled else { return }
+        let now = CACurrentMediaTime()
+        if now - lastRelayoutAt < 0.08 { return }
+        lastRelayoutAt = now
         relayoutScheduled = true
         DispatchQueue.main.async {
             relayoutScheduled = false
-            CATransaction.flush()
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
