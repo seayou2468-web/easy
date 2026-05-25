@@ -12,14 +12,19 @@ struct RuntimeViewport: Equatable {
 
 enum IOSDisplayCoordinator {
     static func isLandscape(viewport: RuntimeViewport) -> Bool {
+        // Prefer the active UIWindowScene orientation because overlay/window geometry
+        // can temporarily lag during iOS rotation transitions.
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }),
+           scene.interfaceOrientation != .unknown {
+            return scene.interfaceOrientation.isLandscape
+        }
+
         if viewport.size.width > 0 && viewport.size.height > 0 {
             return viewport.isLandscape
         }
-        if let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) {
-            return scene.interfaceOrientation.isLandscape
-        }
+
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
