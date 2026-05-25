@@ -131,6 +131,11 @@ final class VirtualControllerOverlayManager {
         overlayState.onButtonInput = { _, _ in }
     }
 
+    var isOverlayVisible: Bool {
+        guard let overlayWindow else { return false }
+        return !overlayWindow.isHidden && overlayWindow.rootViewController != nil
+    }
+
     private func alignFrame(window: UIWindow, scene: UIWindowScene) {
         let referenceBounds = bestReferenceBounds(in: scene)
         let sceneBounds = scene.coordinateSpace.bounds
