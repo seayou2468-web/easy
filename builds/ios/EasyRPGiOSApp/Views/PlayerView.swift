@@ -258,6 +258,12 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout(force: true)
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.didActivateNotification)) { _ in
+            scheduleRelayout(force: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)) { _ in
+            scheduleRelayout(force: true)
+        }
 
         .onChange(of: config.touchUI) { _, _ in
             scheduleRelayout()
@@ -291,7 +297,11 @@ struct PlayerView: View {
     }
 
     private func refreshOverlayWindow() {
-        guard let scene = IOSDisplayCoordinator.preferredGameplayScene() else { return }
+        let scene = IOSDisplayCoordinator.preferredGameplayScene()
+            ?? UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive })
+        guard let scene else { return }
         guard touchUIEnabled else {
             VirtualControllerOverlayManager.shared.dismiss()
             return
