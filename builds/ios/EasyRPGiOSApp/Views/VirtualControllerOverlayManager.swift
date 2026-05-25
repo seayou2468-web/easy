@@ -178,6 +178,13 @@ final class VirtualControllerOverlayManager {
     }
 
     private func bestReferenceBounds(in scene: UIWindowScene) -> CGRect {
+        if let sdlWindow = scene.windows.first(where: { window in
+            guard window !== overlayWindow, !window.isHidden, window.alpha > 0.01 else { return false }
+            return containsSDLView(in: window)
+        }) {
+            return sdlWindow.bounds
+        }
+
         let candidates = scene.windows.filter { window in
             window !== overlayWindow && !window.isHidden && window.alpha > 0.01
         }
@@ -185,6 +192,14 @@ final class VirtualControllerOverlayManager {
             lhs.bounds.width * lhs.bounds.height < rhs.bounds.width * rhs.bounds.height
         }
         return best?.bounds ?? scene.windows.first(where: { $0.isKeyWindow })?.bounds ?? .zero
+    }
+
+    private func containsSDLView(in root: UIView) -> Bool {
+        let name = NSStringFromClass(type(of: root))
+        if name.localizedCaseInsensitiveContains("SDL") {
+            return true
+        }
+        return root.subviews.contains(where: containsSDLView(in:))
     }
 
     private func targetOverlayWindowLevel(in scene: UIWindowScene) -> UIWindow.Level {
