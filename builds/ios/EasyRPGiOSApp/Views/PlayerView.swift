@@ -1,5 +1,4 @@
 import SwiftUI
-import QuartzCore
 
 struct RuntimeViewport: Equatable {
     var size: CGSize = .zero
@@ -27,45 +26,6 @@ enum IOSDisplayCoordinator {
         }
 
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
-    }
-
-    static func gameplayFrame(in containerSize: CGSize) -> CGRect {
-        guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
-        // SDL にレイアウト責務を集約するため、Swift 側では画面全域のみを扱う。
-        return CGRect(origin: .zero, size: containerSize)
-    }
-
-    static func applyGameplayFrameToSDLView() -> CGRect {
-        let scenes = activeWindowScenes()
-        guard !scenes.isEmpty else { return .zero }
-
-        var appliedFrame: CGRect = .zero
-        for scene in scenes {
-            for window in scene.windows where !window.isHidden {
-            guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
-
-            // Android parity: updateScreenPosition() uses display width directly.
-            // Compute in window/display space first, then convert to SDL container space.
-            // Android parity intent: size from the active SDL display window.
-            // If SDL is hosted in a different UIWindow than SwiftUI, using the
-            // SwiftUI window here can push the surface off-screen.
-            let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
-            guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
-
-            // Android parity layering:
-            // gameplay surface is below virtual-controller overlay.
-            // iOS/SDL can host render view in a dedicated UIWindow, so enforce both
-            // intra-container z-order and window stacking.
-            if container.subviews.last !== sdlView {
-                container.sendSubviewToBack(sdlView)
-            }
-
-            applyOverlayInputSafety(to: sdlView)
-            appliedFrame = displayFrame
-            }
-        }
-        return appliedFrame
     }
 
     static func preferredGameplayScene() -> UIWindowScene? {
@@ -171,8 +131,6 @@ struct PlayerView: View {
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
     @State private var relayoutPending = false
-    @State private var lastRelayoutAt: CFTimeInterval = 0
-    @State private var lastAppliedIsLandscape: Bool?
     @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -265,7 +223,6 @@ struct PlayerView: View {
         .onAppear {
             guard !hasInitializedPlayer else { return }
             hasInitializedPlayer = true
-            UIDevice.current.beginGeneratingDeviceOrientationNotifications()
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -280,7 +237,6 @@ struct PlayerView: View {
             VirtualControllerOverlayManager.shared.dismiss()
             restoreDefaultOrientationMode()
             releaseProjectSecurityScope()
-            UIDevice.current.endGeneratingDeviceOrientationNotifications()
         }
         .onReceive(layoutStore.$profiles) { _ in
             applyVirtualLayoutToPlayer()
@@ -302,11 +258,6 @@ struct PlayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout(force: true)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-            let orientation = UIDevice.current.orientation
-            guard orientation.isLandscape || orientation.isPortrait else { return }
-            scheduleRelayout(force: true)
-        }
 
         .onChange(of: config.touchUI) { _, _ in
             scheduleRelayout()
@@ -326,23 +277,9 @@ struct PlayerView: View {
             relayoutPending = true
             return
         }
-        let currentLandscape = IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport)
-        if !force, let lastAppliedIsLandscape, currentLandscape != lastAppliedIsLandscape {
-            // Orientation changed: never drop this transition due to throttling.
-        } else {
-            let now = CACurrentMediaTime()
-            if !force, now - lastRelayoutAt < 0.08 {
-                relayoutPending = true
-                return
-            }
-            lastRelayoutAt = now
-        }
-
-        lastRelayoutAt = CACurrentMediaTime()
         relayoutScheduled = true
         DispatchQueue.main.async {
             relayoutScheduled = false
-            lastAppliedIsLandscape = IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport)
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
@@ -378,13 +315,9 @@ struct PlayerView: View {
     }
 
     private func applyAndroidParityScreenPositionAndInputLayout() {
-        // Android parity: EasyRpgPlayerActivity calls updateScreenPosition()
-        // and showInputLayout() once per event (onCreate/onConfigurationChanged/
-        // surfaceChanged/onRestart). Mirror that ordering and call count.
-        let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
-        if frame.width > 0, frame.height > 0 {
-            gameplayFrame = frame
-        }
+        // iOS SDL 側にゲーム画面責務を完全移譲。
+        // Swift 側ではゲーム画面のサイズ/位置を変更せず、
+        // バーチャルコントローラー座標のみ同期する。
         applyVirtualLayoutToPlayer()
     }
 
