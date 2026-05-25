@@ -1,4 +1,5 @@
 import SwiftUI
+import QuartzCore
 
 struct RuntimeViewport: Equatable {
     var size: CGSize = .zero
@@ -297,11 +298,9 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout()
-            refreshOverlayWindowPostLayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
             scheduleRelayout()
-            refreshOverlayWindowPostLayout()
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -322,6 +321,7 @@ struct PlayerView: View {
         relayoutScheduled = true
         DispatchQueue.main.async {
             relayoutScheduled = false
+            CATransaction.flush()
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
@@ -339,21 +339,6 @@ struct PlayerView: View {
         }
         VirtualControllerOverlayManager.shared.present(
             in: scene,
-            layoutStore: layoutStore,
-            config: config,
-            viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame,
-            onDirectionInput: { direction, isPressed in
-                handleDirectionInput(direction: direction, isPressed: isPressed)
-            },
-            onButtonInput: { buttonId, isPressed in
-                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
-            }
-        )
-    }
-
-    private func refreshOverlayWindowPostLayout() {
-        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(
             layoutStore: layoutStore,
             config: config,
             viewport: runtimeViewport,
