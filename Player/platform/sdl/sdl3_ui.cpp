@@ -580,7 +580,7 @@ void Sdl3Ui::UpdateDisplay() {
 				display_index = 0;
 			}
 			SDL_Rect usable_bounds;
-			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds)) {
+			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds) == 0) {
 				render_bounds = usable_bounds;
 			}
 		}
