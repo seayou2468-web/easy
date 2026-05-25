@@ -170,7 +170,9 @@ struct PlayerView: View {
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
+    @State private var relayoutPending = false
     @State private var lastRelayoutAt: CFTimeInterval = 0
+    @State private var lastAppliedIsLandscape: Bool?
     @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -201,13 +203,13 @@ struct PlayerView: View {
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
-                    scheduleRelayout()
+                    scheduleRelayout(force: true)
                 }
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
                 if newSize.width > 0, newSize.height > 0 {
-                    scheduleRelayout()
+                    scheduleRelayout(force: true)
                 }
             }
         }
@@ -267,7 +269,7 @@ struct PlayerView: View {
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                scheduleRelayout()
+                scheduleRelayout(force: true)
             }
             applySettings()
             applyPreferredOrientationMode()
@@ -292,18 +294,18 @@ struct PlayerView: View {
             applyPreferredOrientationMode()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            scheduleRelayout()
+            scheduleRelayout(force: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             VirtualControllerOverlayManager.shared.dismiss()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            scheduleRelayout()
+            scheduleRelayout(force: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
             let orientation = UIDevice.current.orientation
             guard orientation.isLandscape || orientation.isPortrait else { return }
-            scheduleRelayout()
+            scheduleRelayout(force: true)
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -319,17 +321,35 @@ struct PlayerView: View {
         }
     }
 
-    private func scheduleRelayout() {
-        guard !relayoutScheduled else { return }
-        let now = CACurrentMediaTime()
-        if now - lastRelayoutAt < 0.08 { return }
-        lastRelayoutAt = now
+    private func scheduleRelayout(force: Bool = false) {
+        if relayoutScheduled {
+            relayoutPending = true
+            return
+        }
+        let currentLandscape = IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport)
+        if !force, let lastAppliedIsLandscape, currentLandscape != lastAppliedIsLandscape {
+            // Orientation changed: never drop this transition due to throttling.
+        } else {
+            let now = CACurrentMediaTime()
+            if !force, now - lastRelayoutAt < 0.08 {
+                relayoutPending = true
+                return
+            }
+            lastRelayoutAt = now
+        }
+
+        lastRelayoutAt = CACurrentMediaTime()
         relayoutScheduled = true
         DispatchQueue.main.async {
             relayoutScheduled = false
+            lastAppliedIsLandscape = IOSDisplayCoordinator.isLandscape(viewport: runtimeViewport)
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
+            if relayoutPending {
+                relayoutPending = false
+                scheduleRelayout(force: true)
+            }
         }
     }
 
