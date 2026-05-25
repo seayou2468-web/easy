@@ -253,19 +253,16 @@ struct PlayerView: View {
             scheduleRelayout(force: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            VirtualControllerOverlayManager.shared.dismiss()
+            VirtualControllerOverlayManager.shared.suspend()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout(force: true)
-            ensureVirtualControllerVisible()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIScene.didActivateNotification)) { _ in
             scheduleRelayout(force: true)
-            ensureVirtualControllerVisible()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)) { _ in
             scheduleRelayout(force: true)
-            ensureVirtualControllerVisible()
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -278,7 +275,6 @@ struct PlayerView: View {
                 lastSurfaceGeometryRevision = rev
                 scheduleRelayout()
             }
-            ensureVirtualControllerVisible()
         }
     }
 
@@ -326,14 +322,6 @@ struct PlayerView: View {
                 handleButtonInput(buttonId: buttonId, isPressed: isPressed)
             }
         )
-    }
-
-    private func ensureVirtualControllerVisible() {
-        guard touchUIEnabled else { return }
-        guard UIApplication.shared.applicationState == .active else { return }
-        if !VirtualControllerOverlayManager.shared.isOverlayVisible {
-            refreshOverlayWindow()
-        }
     }
 
     private func applyAndroidParityScreenPositionAndInputLayout() {
