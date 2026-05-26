@@ -12,15 +12,6 @@ struct RuntimeViewport: Equatable {
 
 enum IOSDisplayCoordinator {
     static func isLandscape(viewport: RuntimeViewport) -> Bool {
-        // Prefer the active UIWindowScene orientation because overlay/window geometry
-        // can temporarily lag during iOS rotation transitions.
-        if let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }),
-           scene.interfaceOrientation != .unknown {
-            return scene.interfaceOrientation.isLandscape
-        }
-
         if viewport.size.width > 0 && viewport.size.height > 0 {
             return viewport.isLandscape
         }
@@ -33,9 +24,23 @@ enum IOSDisplayCoordinator {
 
 @MainActor
 private enum IOSInputCoordinator {
+    private struct LayoutSnapshot: Equatable {
+        var isLandscape: Bool
+        var points: [(String, CGFloat, CGFloat)]
+    }
+    private static var lastSnapshot: LayoutSnapshot?
+
     static func applyVirtualLayout(layoutStore: VirtualControllerLayoutStore, viewport: RuntimeViewport) {
         let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
-        for button in layoutStore.buttons(isLandscape: isLandscape) {
+        let buttons = layoutStore.buttons(isLandscape: isLandscape)
+        let snapshot = LayoutSnapshot(
+            isLandscape: isLandscape,
+            points: buttons.map { ($0.id, min(max(0.0, $0.x), 1.0), min(max(0.0, $0.y), 1.0)) }
+        )
+        if lastSnapshot == snapshot { return }
+        lastSnapshot = snapshot
+
+        for button in buttons {
             let normalizedX = min(max(0.0, button.x), 1.0)
             let normalizedY = min(max(0.0, button.y), 1.0)
             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: normalizedX, y: normalizedY)
