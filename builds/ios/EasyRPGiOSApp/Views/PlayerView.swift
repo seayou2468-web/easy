@@ -28,40 +28,7 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func enforceSDLTouchPassthrough() {
-        let scenes = activeWindowScenes()
-        guard !scenes.isEmpty else { return }
-
-        for scene in scenes {
-            for window in scene.windows where !window.isHidden {
-                guard let sdlView = findSDLView(in: window) else { continue }
-                applyOverlayInputSafety(to: sdlView)
-            }
-        }
-    }
-
-    private static func activeWindowScenes() -> [UIWindowScene] {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
-    }
-
-    private static func applyOverlayInputSafety(to sdlView: UIView) {
-        // Do not force-disable SDL touch handling here.
-        // Overlay ownership is handled by the overlay window's hitTest policy.
-        _ = sdlView
-    }
-
-    private static func findSDLView(in root: UIView) -> UIView? {
-        let name = NSStringFromClass(type(of: root))
-        if name.localizedCaseInsensitiveContains("SDL") { return root }
-        for v in root.subviews {
-            if let found = findSDLView(in: v) { return found }
-        }
-        return nil
-    }
-
-    // Overlay window ordering is managed by VirtualControllerOverlayManager.
+    // SDL の表示位置・表示制御は SDL 側を唯一の責務とする。
 }
 
 @MainActor
@@ -263,7 +230,6 @@ struct PlayerView: View {
         DispatchQueue.main.async {
             relayoutScheduled = false
             applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
         }
     }
