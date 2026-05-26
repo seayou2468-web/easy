@@ -28,20 +28,6 @@ enum IOSDisplayCoordinator {
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func preferredGameplayScene() -> UIWindowScene? {
-        for scene in activeWindowScenes() {
-            if scene.windows.contains(where: { window in
-                guard !window.isHidden else { return false }
-                return findSDLView(in: window) != nil
-            }) {
-                return scene
-            }
-        }
-
-        return activeWindowScenes().first
-    }
-
-
     static func enforceSDLTouchPassthrough() {
         let scenes = activeWindowScenes()
         guard !scenes.isEmpty else { return }
@@ -130,7 +116,6 @@ struct PlayerView: View {
     @State private var gameplayFrame: CGRect = .zero
     @State private var lastSurfaceGeometryRevision: UInt32 = 0
     @State private var relayoutScheduled = false
-    @State private var relayoutPending = false
     @StateObject private var layoutStore = VirtualControllerLayoutStore.shared
     @StateObject private var buttonMappingStore = ButtonMappingStore()
     @StateObject private var config = ConfigManager.shared
@@ -161,13 +146,13 @@ struct PlayerView: View {
             .onAppear {
                 runtimeViewport = RuntimeViewport(size: rootGeo.size)
                 if rootGeo.size.width > 0, rootGeo.size.height > 0 {
-                    scheduleRelayout(force: true)
+                    scheduleRelayout()
                 }
             }
             .onChange(of: rootGeo.size) { _, newSize in
                 runtimeViewport = RuntimeViewport(size: newSize)
                 if newSize.width > 0, newSize.height > 0 {
-                    scheduleRelayout(force: true)
+                    scheduleRelayout()
                 }
             }
         }
@@ -226,7 +211,7 @@ struct PlayerView: View {
             AppLogger.log("PlayerView onAppear game=\(game.path)")
             setupPlayerWithGame()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                scheduleRelayout(force: true)
+                scheduleRelayout()
             }
             applySettings()
             applyPreferredOrientationMode()
@@ -250,19 +235,13 @@ struct PlayerView: View {
             applyPreferredOrientationMode()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            scheduleRelayout(force: true)
+            scheduleRelayout()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            VirtualControllerOverlayManager.shared.suspend()
+            VirtualControllerOverlayManager.shared.dismiss()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            scheduleRelayout(force: true)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIScene.didActivateNotification)) { _ in
-            scheduleRelayout(force: true)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIScene.willEnterForegroundNotification)) { _ in
-            scheduleRelayout(force: true)
+            scheduleRelayout()
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -278,30 +257,21 @@ struct PlayerView: View {
         }
     }
 
-    private func scheduleRelayout(force: Bool = false) {
-        if relayoutScheduled {
-            relayoutPending = true
-            return
-        }
+    private func scheduleRelayout() {
+        guard !relayoutScheduled else { return }
         relayoutScheduled = true
         DispatchQueue.main.async {
             relayoutScheduled = false
             applyAndroidParityScreenPositionAndInputLayout()
             IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
-            if relayoutPending {
-                relayoutPending = false
-                scheduleRelayout(force: true)
-            }
         }
     }
 
     private func refreshOverlayWindow() {
-        let scene = IOSDisplayCoordinator.preferredGameplayScene()
-            ?? UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive })
-        guard let scene else { return }
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }) else { return }
         guard touchUIEnabled else {
             VirtualControllerOverlayManager.shared.dismiss()
             return

@@ -131,16 +131,6 @@ final class VirtualControllerOverlayManager {
         overlayState.onButtonInput = { _, _ in }
     }
 
-    func suspend() {
-        overlayWindow?.isHidden = true
-        overlayWindow?.isUserInteractionEnabled = false
-    }
-
-    var isOverlayVisible: Bool {
-        guard let overlayWindow else { return false }
-        return !overlayWindow.isHidden && overlayWindow.rootViewController != nil && overlayWindow.isUserInteractionEnabled
-    }
-
     private func alignFrame(window: UIWindow, scene: UIWindowScene) {
         let referenceBounds = bestReferenceBounds(in: scene)
         let sceneBounds = scene.coordinateSpace.bounds
