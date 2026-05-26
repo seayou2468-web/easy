@@ -713,46 +713,6 @@ void EasyRPG_iOS_SetSoundFont(const char* path) {
 	});
 }
 
-void EasyRPG_iOS_SetFullscreen(bool enabled) {
-	Schedule([enabled]() {
-		if (!DisplayUi) return;
-		if (DisplayUi->GetConfig().fullscreen.Get() != enabled) {
-			DisplayUi->ToggleFullscreen();
-		}
-	});
-}
-
-void EasyRPG_iOS_SetForcedLandscape(bool) {}
-
-void EasyRPG_iOS_SetImageScaleMode(int32_t mode) {
-	Schedule([mode]() {
-		if (!DisplayUi) return;
-		ConfigEnum::ScalingMode sm = ConfigEnum::ScalingMode::Nearest;
-		if (mode == 1) sm = ConfigEnum::ScalingMode::Integer;
-		else if (mode == 2) sm = ConfigEnum::ScalingMode::Bilinear;
-		DisplayUi->SetScalingMode(sm);
-	});
-}
-
-void EasyRPG_iOS_SetStretch(bool enabled) {
-	Schedule([enabled]() {
-		if (!DisplayUi) return;
-		if (DisplayUi->GetConfig().stretch.Get() != enabled) {
-			DisplayUi->ToggleStretch();
-		}
-	});
-}
-
-void EasyRPG_iOS_SetGameResolution(int32_t resolution) {
-	Schedule([resolution]() {
-		if (!DisplayUi) return;
-		ConfigEnum::GameResolution gr = ConfigEnum::GameResolution::Original;
-		if (resolution == 1) gr = ConfigEnum::GameResolution::Widescreen;
-		else if (resolution == 2) gr = ConfigEnum::GameResolution::Ultrawide;
-		DisplayUi->SetGameResolution(gr);
-	});
-}
-
 void EasyRPG_iOS_SetFont1(const char* font_name) {
 	Schedule([font = std::string(font_name ? font_name : "")]() {
 		Player::player_config.font1.Set(font);

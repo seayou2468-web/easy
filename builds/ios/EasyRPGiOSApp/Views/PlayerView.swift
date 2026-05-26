@@ -15,95 +15,32 @@ enum IOSDisplayCoordinator {
         if viewport.size.width > 0 && viewport.size.height > 0 {
             return viewport.isLandscape
         }
-        if let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }) {
-            return scene.interfaceOrientation.isLandscape
-        }
+
         return UIScreen.main.bounds.width > UIScreen.main.bounds.height
     }
 
-    static func gameplayFrame(in containerSize: CGSize) -> CGRect {
-        guard containerSize.width > 0, containerSize.height > 0 else { return .zero }
-        // SDL にレイアウト責務を集約するため、Swift 側では画面全域のみを扱う。
-        return CGRect(origin: .zero, size: containerSize)
-    }
-
-    static func applyGameplayFrameToSDLView() -> CGRect {
-        let scenes = activeWindowScenes()
-        guard !scenes.isEmpty else { return .zero }
-
-        var appliedFrame: CGRect = .zero
-        for scene in scenes {
-            for window in scene.windows where !window.isHidden {
-            guard let sdlView = findSDLView(in: window), let container = sdlView.superview else { continue }
-
-            // Android parity: updateScreenPosition() uses display width directly.
-            // Compute in window/display space first, then convert to SDL container space.
-            // Android parity intent: size from the active SDL display window.
-            // If SDL is hosted in a different UIWindow than SwiftUI, using the
-            // SwiftUI window here can push the surface off-screen.
-            let baseWindow = sdlView.window ?? window
-            let displayFrame = gameplayFrame(in: baseWindow.bounds.size)
-            guard displayFrame.width > 0, displayFrame.height > 0 else { continue }
-
-            // Android parity layering:
-            // gameplay surface is below virtual-controller overlay.
-            // iOS/SDL can host render view in a dedicated UIWindow, so enforce both
-            // intra-container z-order and window stacking.
-            if container.subviews.last !== sdlView {
-                container.sendSubviewToBack(sdlView)
-            }
-
-            applyOverlayInputSafety(to: sdlView)
-            appliedFrame = displayFrame
-            }
-        }
-        return appliedFrame
-    }
-
-
-    static func enforceSDLTouchPassthrough() {
-        let scenes = activeWindowScenes()
-        guard !scenes.isEmpty else { return }
-
-        for scene in scenes {
-            for window in scene.windows where !window.isHidden {
-                guard let sdlView = findSDLView(in: window) else { continue }
-                applyOverlayInputSafety(to: sdlView)
-            }
-        }
-    }
-
-    private static func activeWindowScenes() -> [UIWindowScene] {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
-    }
-
-    private static func applyOverlayInputSafety(to sdlView: UIView) {
-        // Do not force-disable SDL touch handling here.
-        // Overlay ownership is handled by the overlay window's hitTest policy.
-        _ = sdlView
-    }
-
-    private static func findSDLView(in root: UIView) -> UIView? {
-        let name = NSStringFromClass(type(of: root))
-        if name.localizedCaseInsensitiveContains("SDL") { return root }
-        for v in root.subviews {
-            if let found = findSDLView(in: v) { return found }
-        }
-        return nil
-    }
-
-    // Overlay window ordering is managed by VirtualControllerOverlayManager.
+    // SDL の表示位置・表示制御は SDL 側を唯一の責務とする。
 }
 
 @MainActor
 private enum IOSInputCoordinator {
+    private struct LayoutSnapshot: Equatable {
+        var isLandscape: Bool
+        var points: [(String, CGFloat, CGFloat)]
+    }
+    private static var lastSnapshot: LayoutSnapshot?
+
     static func applyVirtualLayout(layoutStore: VirtualControllerLayoutStore, viewport: RuntimeViewport) {
         let isLandscape = IOSDisplayCoordinator.isLandscape(viewport: viewport)
-        for button in layoutStore.buttons(isLandscape: isLandscape) {
+        let buttons = layoutStore.buttons(isLandscape: isLandscape)
+        let snapshot = LayoutSnapshot(
+            isLandscape: isLandscape,
+            points: buttons.map { ($0.id, min(max(0.0, $0.x), 1.0), min(max(0.0, $0.y), 1.0)) }
+        )
+        if lastSnapshot == snapshot { return }
+        lastSnapshot = snapshot
+
+        for button in buttons {
             let normalizedX = min(max(0.0, button.x), 1.0)
             let normalizedY = min(max(0.0, button.y), 1.0)
             PlayerBridge.setVirtualButtonPoint(buttonId: button.id, x: normalizedX, y: normalizedY)
@@ -277,7 +214,6 @@ struct PlayerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             scheduleRelayout()
-            refreshOverlayWindowPostLayout()
         }
 
         .onChange(of: config.touchUI) { _, _ in
@@ -299,7 +235,6 @@ struct PlayerView: View {
         DispatchQueue.main.async {
             relayoutScheduled = false
             applyAndroidParityScreenPositionAndInputLayout()
-            IOSDisplayCoordinator.enforceSDLTouchPassthrough()
             refreshOverlayWindow()
         }
     }
@@ -330,29 +265,10 @@ struct PlayerView: View {
         )
     }
 
-    private func refreshOverlayWindowPostLayout() {
-        VirtualControllerOverlayManager.shared.schedulePostLayoutRefresh(
-            layoutStore: layoutStore,
-            config: config,
-            viewport: runtimeViewport,
-            gameplayFrame: gameplayFrame,
-            onDirectionInput: { direction, isPressed in
-                handleDirectionInput(direction: direction, isPressed: isPressed)
-            },
-            onButtonInput: { buttonId, isPressed in
-                handleButtonInput(buttonId: buttonId, isPressed: isPressed)
-            }
-        )
-    }
-
     private func applyAndroidParityScreenPositionAndInputLayout() {
-        // Android parity: EasyRpgPlayerActivity calls updateScreenPosition()
-        // and showInputLayout() once per event (onCreate/onConfigurationChanged/
-        // surfaceChanged/onRestart). Mirror that ordering and call count.
-        let frame = IOSDisplayCoordinator.applyGameplayFrameToSDLView()
-        if frame.width > 0, frame.height > 0 {
-            gameplayFrame = frame
-        }
+        // iOS SDL 側にゲーム画面責務を完全移譲。
+        // Swift 側ではゲーム画面のサイズ/位置を変更せず、
+        // バーチャルコントローラー座標のみ同期する。
         applyVirtualLayoutToPlayer()
     }
 
@@ -462,11 +378,8 @@ struct PlayerView: View {
 
     private func applySettings() {
         AppLogger.log("ENTER applySettings")
-        PlayerBridge.setFullscreen(config.fullscreen)
-        PlayerBridge.setForcedLandscape(config.forcedLandscape)
-        PlayerBridge.setImageScaleMode(config.scaleMode)
-        PlayerBridge.setStretch(config.stretch)
-        PlayerBridge.setGameResolution(config.gameResolution)
+        // SDL の表示/回転/解像度の「即時制御」は Swift 側から行わない。
+        // ただし、設定値の保存（Config書き込み）は許可する。
         PlayerBridge.setConfigBool(section: "Video", key: "Fullscreen", value: config.fullscreen)
         PlayerBridge.setConfigBool(section: "Video", key: "ForceLandscape", value: config.forcedLandscape)
         PlayerBridge.setConfigBool(section: "Video", key: "Stretch", value: config.stretch)

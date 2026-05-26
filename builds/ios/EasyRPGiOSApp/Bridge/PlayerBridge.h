@@ -42,13 +42,6 @@ void EasyRPG_iOS_SetMusicVolume(int32_t volume);
 void EasyRPG_iOS_SetSoundVolume(int32_t volume);
 void EasyRPG_iOS_SetSoundFont(const char* path);
 
-// Video Settings
-void EasyRPG_iOS_SetFullscreen(bool enabled);
-void EasyRPG_iOS_SetForcedLandscape(bool enabled);
-void EasyRPG_iOS_SetImageScaleMode(int32_t mode);
-void EasyRPG_iOS_SetStretch(bool enabled);
-void EasyRPG_iOS_SetGameResolution(int32_t resolution);
-
 // Font Settings
 void EasyRPG_iOS_SetFont1(const char* font_name);
 void EasyRPG_iOS_SetFont2(const char* font_name);
