@@ -407,8 +407,14 @@ struct PlayerView: View {
 
     private func applySettings() {
         AppLogger.log("ENTER applySettings")
-        // SDL の表示/回転/解像度制御は SDL 側を唯一の責務とする。
-        // Swift 側から Video セクションへは介入しない。
+        // SDL の表示/回転/解像度の「即時制御」は Swift 側から行わない。
+        // ただし、設定値の保存（Config書き込み）は許可する。
+        PlayerBridge.setConfigBool(section: "Video", key: "Fullscreen", value: config.fullscreen)
+        PlayerBridge.setConfigBool(section: "Video", key: "ForceLandscape", value: config.forcedLandscape)
+        PlayerBridge.setConfigBool(section: "Video", key: "Stretch", value: config.stretch)
+        PlayerBridge.setConfigInt(section: "Video", key: "ScalingMode", value: config.scaleMode)
+        PlayerBridge.setConfigInt(section: "Video", key: "GameResolution", value: config.gameResolution)
+        PlayerBridge.setConfigInt(section: "Video", key: "GameBrowserLabelMode", value: config.gameBrowserLabelMode)
 
         PlayerBridge.setMusicVolume(config.musicVolume)
         PlayerBridge.setSoundVolume(config.soundVolume)
