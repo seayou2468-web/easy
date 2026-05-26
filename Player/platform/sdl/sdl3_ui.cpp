@@ -121,23 +121,14 @@ Sdl3Ui::Sdl3Ui(long width, long height, const Game_Config& cfg) : BaseUi(cfg)
 	SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas");
 #endif
 
-		Output::Info("SDL3 startup: initializing SDL video subsystem");
-		if (!SDL_Init(SDL_INIT_VIDEO)) {
-			Output::Error("Couldn't initialize SDL.\n{}\n", SDL_GetError());
-		}
-		Output::Info("SDL3 startup: SDL video subsystem initialized");
+	if (!SDL_Init(SDL_INIT_VIDEO)) {
+		Output::Error("Couldn't initialize SDL.\n{}\n", SDL_GetError());
+	}
 
-		Output::Info("SDL3 startup: requesting video mode {}x{} zoom={} fullscreen={} vsync={}",
-				width,
-				height,
-				cfg.video.window_zoom.Get(),
-				cfg.video.fullscreen.Get(),
-				cfg.video.vsync.Get());
-		RequestVideoMode(width, height,
-				cfg.video.window_zoom.Get(),
-				cfg.video.fullscreen.Get(),
-				cfg.video.vsync.Get());
-		Output::Info("SDL3 startup: video mode request completed");
+	RequestVideoMode(width, height,
+			cfg.video.window_zoom.Get(),
+			cfg.video.fullscreen.Get(),
+			cfg.video.vsync.Get());
 
 	SetTitle(GAME_TITLE);
 
@@ -324,17 +315,10 @@ bool Sdl3Ui::RefreshDisplayMode() {
 		SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, SDL_WINDOW_RESIZABLE | flags);
 
 		if (vcfg.window_x.Get() < 0 || vcfg.window_y.Get() < 0 || vcfg.window_height.Get() <= 0 || vcfg.window_width.Get() <= 0) {
-#if defined(__APPLE__) && TARGET_OS_IOS
-			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, 0);
-			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, 0);
-			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, display_width_zoomed);
-			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, display_height_zoomed);
-#else
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, display_width_zoomed);
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, display_height_zoomed);
-#endif
 		} else {
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_X_NUMBER, vcfg.window_x.Get());
 			SDL_SetNumberProperty(wprops, SDL_PROP_WINDOW_CREATE_Y_NUMBER, vcfg.window_y.Get());
@@ -552,50 +536,20 @@ void Sdl3Ui::UpdateDisplay() {
 	SDL_UpdateTexture(sdl_texture_game, nullptr, main_surface->pixels(), main_surface->pitch());
 #endif
 
-#if defined(__APPLE__) && TARGET_OS_IOS
-	// Root fix for iOS orientation freeze:
-	// even when no size-event arrives, keep drawable/window geometry in sync
-	// with the live SDL window each frame.
-	if (sdl_window) {
-		int px_w = 0;
-		int px_h = 0;
-		SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-		if (px_w > 0 && px_h > 0 && (window.width != px_w || window.height != px_h)) {
-			window.width = px_w;
-			window.height = px_h;
-			window.size_changed = true;
-		}
-	}
-#endif
-
 	if (window.size_changed && window.width > 0 && window.height > 0) {
 		// Based on SDL2 function UpdateLogicalSize
 		window.size_changed = false;
 
-		SDL_Rect render_bounds {0, 0, window.width, window.height};
-#if defined(__APPLE__) && TARGET_OS_IOS
-		if ((current_display_mode.flags & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN) {
-			int display_index = SDL_GetDisplayForWindow(sdl_window);
-			if (display_index < 0) {
-				display_index = 0;
-			}
-			SDL_Rect usable_bounds;
-			if (SDL_GetDisplayUsableBounds(display_index, &usable_bounds) == 0) {
-				render_bounds = usable_bounds;
-			}
-		}
-#endif
-
-		float width_float = static_cast<float>(render_bounds.w);
-		float height_float = static_cast<float>(render_bounds.h);
+		float width_float = static_cast<float>(window.width);
+		float height_float = static_cast<float>(window.height);
 
 		float want_aspect = (float)main_surface->width() / main_surface->height();
 		float real_aspect = width_float / height_float;
 
-		auto do_stretch = [this, &render_bounds]() {
+		auto do_stretch = [this]() {
 			if (vcfg.stretch.Get()) {
-				viewport.x = render_bounds.x;
-				viewport.w = render_bounds.w;
+				viewport.x = 0;
+				viewport.w = window.width;
 			}
 		};
 
@@ -608,9 +562,9 @@ void Sdl3Ui::UpdateDisplay() {
 			}
 
 			viewport.w = static_cast<int>(ceilf(main_surface->width() * window.scale));
-			viewport.x = render_bounds.x + (render_bounds.w - viewport.w) / 2;
+			viewport.x = (window.width - viewport.w) / 2;
 			viewport.h = static_cast<int>(ceilf(main_surface->height() * window.scale));
-			viewport.y = render_bounds.y + (render_bounds.h - viewport.h) / 2;
+			viewport.y = (window.height - viewport.h) / 2;
 			do_stretch();
 
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
@@ -620,26 +574,26 @@ void Sdl3Ui::UpdateDisplay() {
 			SDL_SetRenderViewport(sdl_renderer, nullptr);
 
 			// Only used here for the mouse coordinates
-			viewport.x = render_bounds.x;
-			viewport.y = render_bounds.y;
-			viewport.w = render_bounds.w;
-			viewport.h = render_bounds.h;
+			viewport.x = 0;
+			viewport.y = 0;
+			viewport.w = window.width;
+			viewport.h = window.height;
 		} else if (want_aspect > real_aspect) {
 			// Letterboxing (black bars top and bottom)
 			window.scale = width_float / main_surface->width();
-			viewport.x = render_bounds.x;
-			viewport.w = render_bounds.w;
+			viewport.x = 0;
+			viewport.w = window.width;
 			viewport.h = static_cast<int>(ceilf(main_surface->height() * window.scale));
-			viewport.y = render_bounds.y + (render_bounds.h - viewport.h) / 2;
+			viewport.y = (window.height - viewport.h) / 2;
 			do_stretch();
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
 		} else {
 			// black bars left and right
 			window.scale = height_float / main_surface->height();
-			viewport.y = render_bounds.y;
-			viewport.h = render_bounds.h;
+			viewport.y = 0;
+			viewport.h = window.height;
 			viewport.w = static_cast<int>(ceilf(main_surface->width() * window.scale));
-			viewport.x = render_bounds.x + (render_bounds.w - viewport.w) / 2;
+			viewport.x = (window.width - viewport.w) / 2;
 			do_stretch();
 			SDL_SetRenderViewport(sdl_renderer, &viewport);
 		}
@@ -753,25 +707,6 @@ void Sdl3Ui::ProcessEvent(SDL_Event &evnt) {
 		case SDL_EVENT_FINGER_MOTION:
 			ProcessFingerEvent(evnt);
 			return;
-
-#ifdef SDL_EVENT_DISPLAY_ORIENTATION
-		case SDL_EVENT_DISPLAY_ORIENTATION:
-#if defined(__APPLE__) && defined(__IPHONEOS__)
-			// Display orientation changed (SDL version dependent symbol).
-			// Keep SDL as source of truth and refresh from the live window size.
-			if (sdl_window) {
-				int px_w = 0;
-				int px_h = 0;
-				SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-				if (px_w > 0 && px_h > 0) {
-					window.width = px_w;
-					window.height = px_h;
-				}
-			}
-#endif
-			window.size_changed = true;
-			return;
-#endif
 		default:
 			if (evnt.type >= SDL_EVENT_WINDOW_FIRST && evnt.type <= SDL_EVENT_WINDOW_LAST) {
 				ProcessWindowEvent(evnt);
@@ -781,18 +716,6 @@ void Sdl3Ui::ProcessEvent(SDL_Event &evnt) {
 
 void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 	int state = evnt.type;
-	auto sync_window_size_from_sdl = [this]() {
-		if (!sdl_window) return;
-		int px_w = 0;
-		int px_h = 0;
-		SDL_GetWindowSizeInPixels(sdl_window, &px_w, &px_h);
-		if (px_w <= 0 || px_h <= 0) return;
-		if (window.width != px_w || window.height != px_h) {
-			window.width = px_w;
-			window.height = px_h;
-		}
-		window.size_changed = true;
-	};
 
 	if (state == SDL_EVENT_WINDOW_FOCUS_LOST) {
 		auto cfg = vcfg;
@@ -834,31 +757,17 @@ void Sdl3Ui::ProcessWindowEvent(SDL_Event &evnt) {
 		mouse_focus = false;
 	}
 #endif
-	const bool is_size_related_event =
-		state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
-		state == SDL_EVENT_WINDOW_RESIZED ||
-		state == SDL_EVENT_WINDOW_DISPLAY_CHANGED ||
-		state == SDL_EVENT_WINDOW_SAFE_AREA_CHANGED
-		;
-	if (is_size_related_event) {
-
-#if defined(__APPLE__) && defined(__IPHONEOS__)
-		// Root fix for iOS rotation:
-		// trust SDL window's current pixel size at event time, not event payload.
-		sync_window_size_from_sdl();
-#else
-		if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
-			window.width = evnt.window.data1;
-			window.height = evnt.window.data2;
-		}
-		window.size_changed = true;
-#endif
+	if (state == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || state == SDL_EVENT_WINDOW_RESIZED) {
+		window.width = evnt.window.data1;
+		window.height = evnt.window.data2;
 
 #ifdef EMSCRIPTEN
 		double display_ratio = emscripten_get_device_pixel_ratio();
 		window.width = static_cast<int>(window.width * display_ratio);
 		window.height = static_cast<int>(window.height * display_ratio);
 #endif
+
+		window.size_changed = true;
 	}
 }
 
@@ -1045,21 +954,14 @@ void Sdl3Ui::ProcessFingerEvent(SDL_Event& evnt) {
 			return;
 		}
 
-		// SDL finger coordinates are normalized [0..1] in window space.
-		// Convert them to window pixels first, then map to the active viewport.
 #ifdef EMSCRIPTEN
 		double display_ratio = emscripten_get_device_pixel_ratio();
-		int win_x = static_cast<int>(evnt.tfinger.x * main_surface->width() * display_ratio);
-		int win_y = static_cast<int>(evnt.tfinger.y * main_surface->height() * display_ratio);
+		int x = (evnt.tfinger.x * display_ratio - viewport.x) * main_surface->width() / xw;
+		int y = (evnt.tfinger.y * display_ratio - viewport.y) * main_surface->height() / yh;
 #else
-		int win_w = 0;
-		int win_h = 0;
-		SDL_GetWindowSize(sdl_window, &win_w, &win_h);
-		int win_x = static_cast<int>(evnt.tfinger.x * win_w);
-		int win_y = static_cast<int>(evnt.tfinger.y * win_h);
+		int x = (evnt.tfinger.x - viewport.x) * main_surface->width() / xw;
+		int y = (evnt.tfinger.y - viewport.y) * main_surface->height() / yh;
 #endif
-		int x = (win_x - viewport.x) * main_surface->width() / xw;
-		int y = (win_y - viewport.y) * main_surface->height() / yh;
 
 		fi->Down(evnt.tfinger.fingerID, x, y);
 	} else if (evnt.type == SDL_EVENT_FINGER_UP) {
