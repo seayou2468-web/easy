@@ -135,32 +135,6 @@ enum PlayerBridge {
         }
     }
 
-    // MARK: - Video Settings
-    static func setFullscreen(_ enabled: Bool) {
-        AppLogger.log("ENTER setFullscreen")
-        EasyRPG_iOS_SetFullscreen(enabled)
-    }
-
-    static func setForcedLandscape(_ enabled: Bool) {
-        AppLogger.log("ENTER setForcedLandscape")
-        EasyRPG_iOS_SetForcedLandscape(enabled)
-    }
-
-    static func setImageScaleMode(_ mode: Int) {
-        AppLogger.log("ENTER setImageScaleMode")
-        EasyRPG_iOS_SetImageScaleMode(Int32(mode))
-    }
-
-    static func setStretch(_ enabled: Bool) {
-        AppLogger.log("ENTER setStretch")
-        EasyRPG_iOS_SetStretch(enabled)
-    }
-
-    static func setGameResolution(_ resolution: Int) {
-        AppLogger.log("ENTER setGameResolution")
-        EasyRPG_iOS_SetGameResolution(Int32(resolution))
-    }
-
     // MARK: - Font Settings
     static func setFont1(_ fontName: String) {
         AppLogger.log("ENTER setFont1")
